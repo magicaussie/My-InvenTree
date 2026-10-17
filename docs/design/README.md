@@ -2,11 +2,13 @@
 
 One repository: `magicaussie/My-InvenTree`; one main development line (`master`). Do not create additional forks or experimental branches without approval. Preserve existing WLEDger and its data. Never operate live WLED hardware without explicit approval.
 
+Project 001 investigation and technical design are complete against `c701d8efb9e9a59e05071ce2f62537251f7ccf39`; owner decisions and design approval remain outstanding. No application implementation or hardware operation is authorised by this status.
+
 Each project has one focused Markdown document. Status flow: DRAFT → UNDER REVIEW → APPROVED → IMPLEMENTED → VERIFIED. Draft requirements are not implementation authorisation. Record decisions, open questions, implementation references and test evidence in the relevant file. Update this index when status changes.
 
 | ID | Project | Status |
 |---|---|---|
-| 001 | [Storage Layout & WLED](<001 - Storage Layout & WLED.md>) | DRAFT |
+| 001 | [Storage Layout & WLED](<001 - Storage Layout & WLED.md>) | UNDER REVIEW |
 | 002 | [Inventory Integration](<002 - Inventory Integration.md>) | DRAFT |
 | 003 | [Barcode & Labels](<003 - Barcode & Labels.md>) | DRAFT |
 | 004 | [Purchasing](<004 - Purchasing.md>) | DRAFT |
