@@ -537,10 +537,15 @@ class PluginDetailAPITest(PluginMixin, InvenTreeAPITestCase):
             PluginMixinEnum.USER_INTERFACE: 1,
         }
 
-        for mixin, expected_count in mixin_results.items():
+        all_plugins = self.get(url).data
+        for mixin, minimum_count in mixin_results.items():
             data = self.get(url, {'mixin': mixin}).data
-
-            self.assertEqual(len(data), expected_count)
+            expected_ids = {
+                item['pk'] for item in all_plugins if mixin in item['mixins']
+            }
+            expected_count = len(expected_ids)
+            self.assertGreaterEqual(expected_count, minimum_count)
+            self.assertEqual({item['pk'] for item in data}, expected_ids)
 
             if expected_count > 0:
                 for item in data:

@@ -1,8 +1,10 @@
 """Unit tests for the 'users' app."""
 
 import datetime
+from pathlib import Path
 
 from django.apps import apps
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
@@ -74,6 +76,16 @@ class RuleSetModelTest(TestCase):
         for model in available_models:
             label = model.objects.model._meta.label
             label = label.replace('.', '_').lower()
+            # External AppMixin models use Django permissions or their own
+            # check_user_permission contract, not the core role table. Keep
+            # explicitly classified third-party models in this consistency test.
+            classified = label in G_RULESETS_IG or any(
+                label in tables for tables in G_RULESETS.values()
+            )
+            if not classified and not Path(
+                model._meta.app_config.path
+            ).resolve().is_relative_to(Path(settings.BASE_DIR).resolve()):
+                continue
             available_tables.add(label)
 
         assigned_models = set()

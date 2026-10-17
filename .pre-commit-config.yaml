@@ -75,6 +75,7 @@ repos:
           docs/docs/javascripts/.*|
           docs/docs/webfonts/.* |
           src/frontend/src/locales/.* |
+          src/plugins/storage_layout/frontend/package-lock\.json |
           pyproject.toml |
           src/frontend/vite.config.ts |
       )$

@@ -1,0 +1,53 @@
+{
+  "name": "inventree-storage-layout-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Graphical cabinet and drawer/bin designers for the Storage Layout & WLED InvenTree plugin",
+  "scripts": {
+    "dev": "vite --config vite.dev.config.ts --host",
+    "extract": "lingui extract",
+    "compile": "lingui compile --typescript",
+    "translate": "lingui extract && lingui compile --typescript",
+    "build": "npm run compile && tsc --noEmit && vite build --emptyOutDir",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ./src ./tests",
+    "lint:fix": "biome check ./src ./tests --write",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "harness:prepare": "npm run compile && vite build --emptyOutDir && node scripts/prepare-harness.mjs",
+    "harness": "vite --config harness/vite.config.ts",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "@inventreedb/ui": "^1.5.0",
+    "@lingui/core": "^5.9.2",
+    "@lingui/react": "^5.9.2",
+    "@mantine/core": "^9.7.1",
+    "@mantine/notifications": "^9.7.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@lingui/cli": "^5.9.2",
+    "@lingui/format-po": "^5.9.2",
+    "@playwright/test": "^1.49.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "babel-plugin-macros": "^3.1.0",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.6.3",
+    "vite": "^7.0.0",
+    "vite-plugin-externals": "^0.6.2",
+    "vitest": "^3.2.0"
+  }
+}

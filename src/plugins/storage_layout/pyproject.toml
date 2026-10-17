@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inventree-storage-layout"
+version = "0.1.0"
+description = "Storage Layout & WLED plugin for InvenTree"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "My-InvenTree" }]
+keywords = ["inventree", "plugin", "storage", "wled"]
+classifiers = [
+    "Framework :: Django",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = []
+
+[project.entry-points.inventree_plugins]
+storage_layout = "storage_layout.plugin:StorageLayoutPlugin"
+
+[tool.setuptools.packages.find]
+include = ["storage_layout*"]
+
+# Ship the compiled frontend assets with the plugin package. The `static`
+# directory is not a Python package, so it is not picked up by
+# `packages.find`; it must be declared explicitly. Build the assets first:
+#   cd frontend && npm install && npm run build
+[tool.setuptools.package-data]
+storage_layout = [
+    "static/*",
+    "static/.vite/*",
+    "static/**/*.js",
+    "static/**/*.map",
+    "static/**/*.json",
+    "static/**/*.css",
+]

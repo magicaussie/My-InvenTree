@@ -1,0 +1,1355 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-10-18 01:53+1100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. placeholder {0}: result.errors.length
+#. placeholder {1}: result.warnings.length
+#: src/components/CabinetDesigner.tsx
+msgid "Server validation: {0} error(s), {1} warning(s) — no blocking errors."
+msgstr ""
+
+#. placeholder {0}: result.errors.length
+#. placeholder {1}: result.warnings.length
+#: src/components/CabinetDesigner.tsx
+msgid "Server validation: {0} error(s), {1} warning(s) — blocking errors found."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Loading cabinet layout…"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Unable to load cabinet"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Unknown error"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/DrawerDesigner.tsx
+msgid "Cabinet"
+msgstr ""
+
+#. placeholder {0}: editor.revision ?? '-'
+#. placeholder {0}: revision ?? '-'
+#: src/components/CabinetDesigner.tsx
+#: src/components/editor/TopologyEditor.tsx
+msgid "revision {0}"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Read-only"
+msgstr ""
+
+#. placeholder {0}: editor.totalPixels
+#: src/components/CabinetDesigner.tsx
+msgid "mapping N={0}"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "no mapping"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Add drawer"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/editor/Modals.tsx
+msgid "Archive"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/DrawerDesigner.tsx
+msgid "Layout"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Topology"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/CabinetList.tsx
+#: src/components/editor/MappingPanel.tsx
+msgid "Mapping"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/DrawerDesigner.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Diagnostics"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Drawers"
+msgstr ""
+
+#. placeholder {0}: drawer.label
+#: src/components/CabinetDesigner.tsx
+#: src/components/DrawerDesigner.tsx
+msgid "Drawer {0}"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Cabinet front view"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Select a drawer to edit its properties, native binding and logical allocation. Arrow keys move the selection by one grid unit; Shift+arrows use a larger step."
+msgstr ""
+
+#. placeholder {0}: editor.serverValidation.errors.length
+#. placeholder {1}: editor.serverValidation.warnings.length
+#: src/components/CabinetDesigner.tsx
+msgid "Server diagnostics: {0} error(s), {1} warning(s)"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Archive drawer"
+msgstr ""
+
+#. placeholder {0}: editor.draft.cabinet.width_units
+#. placeholder {1}: editor.draft.cabinet.height_units
+#. placeholder {2}: rangeCount(1, editor.totalPixels)
+#: src/components/CabinetDesigner.tsx
+msgid "Cabinet {0}x{1} units. Grid {grid}. {2} logical pixels."
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Storage Layout"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "cabinets"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+#: src/components/LocationPanel.tsx
+#: src/components/StockItemPanel.tsx
+msgid "Refresh"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+#: src/components/CabinetList.tsx
+msgid "New cabinet"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "No cabinets yet"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Create a cabinet to start designing its drawers and bins. Cabinets are bound to existing native stock locations."
+msgstr ""
+
+#: src/components/CabinetList.tsx
+#: src/components/CabinetList.tsx
+#: src/components/editor/TopologyEditor.tsx
+msgid "Name"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Dimensions"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Revision"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "none"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Design"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Native location ID"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Existing structural StockLocation that anchors the cabinet."
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Width (units)"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Height (units)"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+#: src/components/editor/Modals.tsx
+#: src/components/editor/Modals.tsx
+#: src/components/editor/Modals.tsx
+msgid "Cancel"
+msgstr ""
+
+#: src/components/CabinetList.tsx
+msgid "Create"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+#: src/components/LocationPanel.tsx
+msgid "unbound"
+msgstr ""
+
+#. placeholder {0}: bin.location
+#: src/components/DrawerDesigner.tsx
+msgid "loc {0}"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Loading drawer…"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Unable to load drawer"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Drawer not found."
+msgstr ""
+
+#. placeholder {0}: cabinetId.slice(0, 8)
+#: src/components/DrawerDesigner.tsx
+msgid "Cabinet {0}"
+msgstr ""
+
+#. placeholder {0}: drawer.interior_width
+#. placeholder {1}: drawer.interior_height
+#: src/components/DrawerDesigner.tsx
+msgid "interior {0}x{1}"
+msgstr ""
+
+#. placeholder {0}: formatRange(drawer.allocation.logical_start, drawer.allocation.logical_end)
+#. placeholder {1}: rangeCount(drawer.allocation.logical_start, drawer.allocation.logical_end)
+#: src/components/DrawerDesigner.tsx
+msgid "LEDs {0} ({1})"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "unlit"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Unsaved"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Add bin"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Delete bin"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+#: src/components/editor/Modals.tsx
+msgid "Generate bin grid"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Grid generator"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Bins"
+msgstr ""
+
+#. placeholder {0}: bin.label
+#. placeholder {0}: binding.bin.label
+#: src/components/DrawerDesigner.tsx
+#: src/components/LocationPanel.tsx
+msgid "Bin {0}"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Drawer top-down view"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Select a bin to edit its rectangle and native binding. Bins inherit the drawer's LED range."
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Delete bin overlay"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "The cabinet revision changed. Reload before saving."
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Locate"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Simulate"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Live"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "Locate mode"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "LIVE"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "SIMULATION"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "This item is not mapped to a locatable drawer."
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "No cabinet mapping is available for this location."
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Live mode"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "Live actions write to hardware and require an armed, exclusively owned controller. A crash can leave pixels lit until the device backup timer expires."
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "I approve this live locate"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Request queued; waiting for the background worker…"
+msgstr ""
+
+#. placeholder {0}: session.expires_at
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "expires {0}"
+msgstr ""
+
+#. placeholder {0}: execution.clear_status
+#: src/components/LocateControl.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "clear: {0}"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "Stop locate"
+msgstr ""
+
+#: src/components/LocateControl.tsx
+msgid "Stop"
+msgstr ""
+
+#. placeholder {0}: binding.drawer.display_number
+#. placeholder {1}: binding.drawer.label
+#: src/components/LocationPanel.tsx
+msgid "Drawer {0}. {1}"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "Cabinet root"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Unbound"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "No location id was provided to the panel."
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "Resolving storage binding…"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+#: src/components/StockItemPanel.tsx
+msgid "Storage Layout unavailable"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "Could not resolve this location."
+msgstr ""
+
+#. placeholder {0}: cabinet.name
+#. placeholder {1}: cabinet.slug
+#. placeholder {2}: cabinet.revision
+#. placeholder {3}: cabinet.total_pixels
+#: src/components/LocationPanel.tsx
+msgid "Bound to cabinet {0} ({1}), revision {2}, mapping N={3}."
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "This native location is not bound to a storage layout cabinet, drawer or bin."
+msgstr ""
+
+#. placeholder {0}: binding.drawer.allocation.logical_start
+#. placeholder {1}: binding.drawer.allocation.logical_end
+#: src/components/LocationPanel.tsx
+msgid "Inherited LED range: L{0}–{1}"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "A cabinet root is ambiguous: use the cabinet designer or target a drawer/bin to locate."
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "Open cabinet designer"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "Browse cabinets"
+msgstr ""
+
+#: src/components/LocationPanel.tsx
+msgid "Locate location"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Item {itemId}"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Item"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "In stock"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Not in stock"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "This item is not in stock, so it cannot be located."
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "This item has no current location."
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Resolving location binding…"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Could not resolve the item location."
+msgstr ""
+
+#. placeholder {0}: cabinet.name
+#. placeholder {1}: cabinet.total_pixels
+#: src/components/StockItemPanel.tsx
+msgid "Current location {locationLabel} — cabinet {0}, mapping N={1}"
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Current location {locationLabel} — not bound to a storage layout cabinet."
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "The mapped drawer has no LED allocation."
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "The current location is not mapped to a locatable drawer."
+msgstr ""
+
+#: src/components/StockItemPanel.tsx
+msgid "Locate item"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+#: src/components/editor/EditorCanvas.tsx
+msgid "Zoom in"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+#: src/components/editor/EditorCanvas.tsx
+msgid "Zoom out"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+#: src/components/editor/EditorCanvas.tsx
+msgid "Reset view"
+msgstr ""
+
+#. placeholder {0}: entities.length
+#: src/components/editor/EditorCanvas.tsx
+msgid "{0} item"
+msgstr ""
+
+#. placeholder {0}: entities.length
+#: src/components/editor/EditorCanvas.tsx
+msgid "{0} items"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Drawer"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Archived"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Active"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Modals.tsx
+#: src/components/editor/TopologyEditor.tsx
+msgid "Label"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Display number"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Front rectangle"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "X"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Y"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Width"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Height"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Interior (top-down plane)"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Interior width"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Interior depth"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Native location"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Location ID"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Edit native"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Open"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Unbound: this drawer cannot resolve inventory until a structural native location is assigned."
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Logical allocation"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "No active mapping. Publish a complete mapping before allocating LEDs."
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/MappingPanel.tsx
+msgid "Logical start"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Logical end"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+msgid "Clear allocation"
+msgstr ""
+
+#. placeholder {0}: rangeCount(allocation.logical_start, allocation.logical_end)
+#. placeholder {1}: formatRange(allocation.logical_start, allocation.logical_end)
+#: src/components/editor/Inspector.tsx
+msgid "{0} LEDs ({1})"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Unlit drawer"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Allocation conflicts with another drawer."
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Bin"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Bound"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Rectangle"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "{stockCount} stock item(s) at this location (informational)."
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Inherited LED range"
+msgstr ""
+
+#. placeholder {0}: formatRange(inheritedRange.logical_start, inheritedRange.logical_end)
+#. placeholder {1}: rangeCount(inheritedRange.logical_start, inheritedRange.logical_end)
+#: src/components/editor/Inspector.tsx
+msgid "{0} ({1})"
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Drawer has no allocation."
+msgstr ""
+
+#: src/components/editor/Inspector.tsx
+msgid "Bins inherit the drawer's locating behaviour; per-bin overrides are not supported in v1."
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Spans must start at 1 or greater with positive length."
+msgstr ""
+
+#. placeholder {0}: span.logical_start
+#: src/components/editor/MappingPanel.tsx
+msgid "Logical coverage gap or overlap at {cursor} (next span starts at {0})."
+msgstr ""
+
+#. placeholder {0}: cursor - 1
+#: src/components/editor/MappingPanel.tsx
+msgid "Coverage ends at {0} but the mapping size is {totalPixels}."
+msgstr ""
+
+#. placeholder {0}: result.number
+#. placeholder {1}: result.total_pixels
+#. placeholder {2}: result.mapping_hash.slice(0, 8)
+#: src/components/editor/MappingPanel.tsx
+msgid "Published mapping revision {0} (N={1}, hash {2}…)."
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "No hardware access"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Coverage complete"
+msgstr ""
+
+#. placeholder {0}: errors.length
+#: src/components/editor/MappingPanel.tsx
+msgid "{0} issue(s)"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Total logical pixels (N)"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Preview"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Publish mapping"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Candidate is not publishable"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Length"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "String"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+#: src/components/editor/TopologyEditor.tsx
+msgid "Offset"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Direction"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Forward"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Reversed"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Add span"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+#: src/components/editor/MappingPanel.tsx
+msgid "Mapping hash"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Translation sample"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Run a preview to see sample logical to physical translations."
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Drawer impacts"
+msgstr ""
+
+#. placeholder {0}: impact.label
+#. placeholder {1}: formatRange(impact.logical_start, impact.logical_end)
+#. placeholder {2}: impact.runs.length
+#: src/components/editor/MappingPanel.tsx
+msgid "{0} (L{1}): {2} run(s)"
+msgstr ""
+
+#. placeholder {0}: impact.label
+#. placeholder {1}: formatRange(impact.logical_start, impact.logical_end)
+#. placeholder {2}: impact.error ?? 'invalid'
+#: src/components/editor/MappingPanel.tsx
+msgid "{0} (L{1}): {2}"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Published mapping"
+msgstr ""
+
+#. placeholder {0}: published.number
+#. placeholder {1}: published.total_pixels
+#. placeholder {2}: published.changed_count ?? 0
+#: src/components/editor/MappingPanel.tsx
+msgid "Revision {0}, N={1}, {2} physical pixel(s) changed (list truncated)."
+msgstr ""
+
+#. placeholder {0}: published.number
+#. placeholder {1}: published.total_pixels
+#. placeholder {2}: published.changed_count ?? 0
+#: src/components/editor/MappingPanel.tsx
+msgid "Revision {0}, N={1}, {2} physical pixel(s) changed."
+msgstr ""
+
+#. placeholder {0}: published.changed_pixels[0].logical
+#. placeholder {1}: published.changed_pixels[0].before?.join(':') ?? 'none'
+#. placeholder {2}: published.changed_pixels[0].after?.join(':') ?? 'none'
+#: src/components/editor/MappingPanel.tsx
+msgid "e.g. logical {0}: {1} → {2}"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "Replacement allocations attached"
+msgstr ""
+
+#. placeholder {0}: replacementAllocations.length
+#: src/components/editor/MappingPanel.tsx
+msgid "{0} drawer allocation(s) will be replaced atomically when this mapping is published."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Columns"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Rows"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Gutter"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Margin"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Label prefix"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Grid preview"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Grid does not fit"
+msgstr ""
+
+#. placeholder {0}: preview.cells.length
+#. placeholder {1}: preview.totalWidth
+#. placeholder {2}: preview.totalHeight
+#: src/components/editor/Modals.tsx
+msgid "{0} new bin(s) of {1}x{2} units."
+msgstr ""
+
+#. placeholder {0}: preview.collisions.length
+#. placeholder {1}: existing.length
+#: src/components/editor/Modals.tsx
+msgid "{0} cell(s) skipped to avoid overwriting existing bins ({1} present)."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Reduce the counts or gutter so the grid fits the drawer interior."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Generate"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+#: src/components/editor/Toolbar.tsx
+msgid "Renumber preview"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Drawers are sorted top-to-bottom, left-to-right. Numbering changes only the display number; labels, native locations and LED ranges are left unchanged."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Current"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "New"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Apply numbering"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "This does not delete inventory"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "The unsaved item will be removed from the draft."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "The item is archived in the layout overlay only. Native locations and stock items are never deleted."
+msgstr ""
+
+#. placeholder {0}: affected.length
+#: src/components/editor/Modals.tsx
+msgid "Affected {entityLabel} and {0} related bin(s)."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Affected {entityLabel}."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Remove"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Save conflict (stale revision)"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "The layout changed on the server"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Another operator saved a newer revision. Your draft has been kept."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Reload the server revision to continue from the latest state, or discard your local draft. Edits are never merged automatically."
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Discard draft"
+msgstr ""
+
+#: src/components/editor/Modals.tsx
+msgid "Reload server revision"
+msgstr ""
+
+#. placeholder {0}: formatRange(range.logical_start, range.logical_end)
+#: src/components/editor/Panels.tsx
+msgid "Unlit {0}"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "LED 1"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "LED {totalPixels}"
+msgstr ""
+
+#. placeholder {0}: diagnostic.severity
+#. placeholder {1}: diagnostic.message
+#: src/components/editor/Panels.tsx
+msgid "{0}: {1}"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "Error"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "Warn"
+msgstr ""
+
+#. placeholder {0}: report.errors.length
+#: src/components/editor/Panels.tsx
+msgid "{0} errors"
+msgstr ""
+
+#. placeholder {0}: report.warnings.length
+#: src/components/editor/Panels.tsx
+msgid "{0} warnings"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "Layout cannot be saved"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "Resolve the blocking errors below before saving."
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "Layout is valid"
+msgstr ""
+
+#: src/components/editor/Panels.tsx
+msgid "No blocking errors. Warnings do not prevent saving."
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Mode"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Live actions write to hardware. The controller must be armed, in a supported configuration and exclusively owned. A crash can leave pixels lit until the device backup timer expires."
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "I approve this live operation"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Simulation uses the production translator and session state machine with a fake transport. No network access is performed."
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Target kind"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Location"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Stock item"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Target id"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Duration (s)"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Pixel test / translate range"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Start"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "End"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Test pattern"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Range / single pixel"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Walk (maximum 32 pixels)"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Run pixel test"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Walking sequence"
+msgstr ""
+
+#. placeholder {0}: session.id.slice(0, 8)
+#: src/components/editor/SimulationPanel.tsx
+msgid "Session {0}…"
+msgstr ""
+
+#. placeholder {0}: session.target.kind
+#. placeholder {1}: session.target.label
+#: src/components/editor/SimulationPanel.tsx
+msgid "target {0} {1}"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Stop session"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Emergency cabinet stop"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Hardware reads and arming"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Controller"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Select controller"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Observe ({mode})"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Discovery ({mode})"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Arm"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Disarm"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Hardware read job"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "polling"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Designer toolbar"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Duplicate selection"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Duplicate"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Undo (Ctrl+Z)"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Undo"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Redo (Ctrl+Shift+Z)"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Redo"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Snap"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Snap to grid"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Grid size"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Renumber"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Validate layout"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Validate"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Unsaved changes"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Saved"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Revert changes"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Revert"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Save layout"
+msgstr ""
+
+#: src/components/editor/Toolbar.tsx
+msgid "Save"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Electrical topology saved."
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Stale revision: reload before saving the electrical topology."
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Loading electrical topology…"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Electrical topology"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "{unsupportedCount} unsupported output(s)"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Reload"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Save topology"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Unsupported configuration present"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Outputs with bus reverse or skip cannot be armed for live use. They remain editable for simulation and observation."
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Origin (scheme://host:port)"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Remove controller"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Expected MAC"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Firmware adapter"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Enabled"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Outputs"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Bus"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "WLED start"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Pixel count"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Colour order"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "GPIO pins, comma separated"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Pins"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Bus reverse"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Skip"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Unsupported for live"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Supported (1D identity)"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Strings"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Add string"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Pixels"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Add output"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Add controller"
+msgstr ""
+
+#: src/state/session.ts
+msgid "The cabinet is busy with another operation. Stop it and retry."
+msgstr ""
+
+#: src/state/session.ts
+msgid "The target is not mapped to an allocated drawer."
+msgstr ""
+
+#: src/state/session.ts
+msgid "The background task queue is unavailable. Retry later."
+msgstr ""
+
+#: src/state/session.ts
+msgid "Live locate requires explicit approval."
+msgstr ""
+
+#: src/state/session.ts
+msgid "The cabinet is not armed for live operation."
+msgstr ""
+
+#: src/state/session.ts
+msgid "The mapping changed. Reload the page and retry."
+msgstr ""
+
+#: src/state/session.ts
+msgid "You do not have permission to start this locate."
+msgstr ""
+
+#: src/state/session.ts
+msgid "The cabinet has no active mapping."
+msgstr ""
+
+#: src/storage_layout.tsx
+msgid "Missing cabinet id"
+msgstr ""
+
+#: src/storage_layout.tsx
+msgid "The cabinet designer requires a cabinet id in the route."
+msgstr ""
+
+#: src/storage_layout.tsx
+msgid "Missing drawer id"
+msgstr ""
+
+#: src/storage_layout.tsx
+msgid "The drawer designer requires a drawer id in the route."
+msgstr ""

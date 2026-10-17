@@ -1,0 +1,114 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  clampRect,
+  fitZoom,
+  moveRect,
+  moveRects,
+  rectInside,
+  rectsEqual,
+  rectsOverlap,
+  resizeRect,
+  snapRect,
+  snapValue
+} from '../src/state/geometry';
+
+describe('geometry', () => {
+  it('treats rectangles as half-open and rejects positive-area overlap', () => {
+    const a = { x: 0, y: 0, width: 10, height: 10 };
+    // Touching edges are legal.
+    expect(rectsOverlap(a, { x: 10, y: 0, width: 5, height: 5 })).toBe(false);
+    expect(rectsOverlap(a, { x: 0, y: 10, width: 5, height: 5 })).toBe(false);
+    // Positive-area overlap is rejected.
+    expect(rectsOverlap(a, { x: 9, y: 9, width: 5, height: 5 })).toBe(true);
+    // Zero-area rectangles never overlap.
+    expect(rectsOverlap(a, { x: 0, y: 0, width: 0, height: 5 })).toBe(false);
+  });
+
+  it('checks containment with the half-open convention', () => {
+    const outer = { x: 0, y: 0, width: 100, height: 100 };
+    expect(rectInside({ x: 0, y: 0, width: 100, height: 100 }, outer)).toBe(
+      true
+    );
+    expect(rectInside({ x: 90, y: 90, width: 10, height: 10 }, outer)).toBe(
+      true
+    );
+    expect(rectInside({ x: 95, y: 0, width: 10, height: 10 }, outer)).toBe(
+      false
+    );
+    expect(rectInside({ x: -1, y: 0, width: 10, height: 10 }, outer)).toBe(
+      false
+    );
+  });
+
+  it('snaps values and rectangles to the grid', () => {
+    expect(snapValue(14, 10)).toBe(10);
+    expect(snapValue(16, 10)).toBe(20);
+    expect(snapRect({ x: 3, y: 4, width: 11, height: 9 }, 10)).toEqual({
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10
+    });
+  });
+
+  it('moves and clamps rectangles inside the bounds', () => {
+    const rect = { x: 5, y: 5, width: 10, height: 10 };
+    expect(moveRect(rect, 3, -2)).toEqual({
+      x: 8,
+      y: 3,
+      width: 10,
+      height: 10
+    });
+    expect(
+      clampRect(moveRect(rect, 200, 0), { width: 50, height: 50 })
+    ).toEqual({
+      x: 40,
+      y: 5,
+      width: 10,
+      height: 10
+    });
+  });
+
+  it('resizes from each handle while preserving minimum size', () => {
+    const rect = { x: 10, y: 10, width: 20, height: 20 };
+    expect(resizeRect(rect, 'e', 5, 0, { grid: 1 })).toEqual({
+      x: 10,
+      y: 10,
+      width: 25,
+      height: 20
+    });
+    // Dragging the west edge past the east edge yields a minimum size, not a
+    // negative rectangle.
+    const tiny = resizeRect(rect, 'w', 100, 0, { minSize: 2 });
+    expect(tiny.width).toBe(2);
+  });
+
+  it('moves multiple rectangles by a shared offset', () => {
+    const moved = moveRects(
+      {
+        a: { x: 0, y: 0, width: 1, height: 1 },
+        b: { x: 5, y: 5, width: 1, height: 1 }
+      },
+      2,
+      3
+    );
+    expect(moved.a).toEqual({ x: 2, y: 3, width: 1, height: 1 });
+    expect(moved.b).toEqual({ x: 7, y: 8, width: 1, height: 1 });
+  });
+
+  it('compares rectangles and fits zoom deterministically', () => {
+    expect(
+      rectsEqual(
+        { x: 1, y: 2, width: 3, height: 4 },
+        { x: 1, y: 2, width: 3, height: 4 }
+      )
+    ).toBe(true);
+    expect(
+      fitZoom({ width: 100, height: 100 }, { width: 100, height: 100 }, 0)
+    ).toBeCloseTo(1);
+    expect(
+      fitZoom({ width: 100, height: 100 }, { width: 200, height: 200 }, 0)
+    ).toBeCloseTo(2);
+  });
+});

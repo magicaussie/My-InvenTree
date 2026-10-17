@@ -1,14 +1,16 @@
 # 001 — Storage Layout & WLED
 
-**Status:** UNDER REVIEW — investigation and technical design complete; owner approval outstanding
+**Status:** IMPLEMENTED FOR LOCAL DEVELOPMENT AND SIMULATION — stages 1–4 implemented; integrated local QA recorded in §17. Production/cross-database qualification and human hardware commissioning are not complete. No physical hardware acceptance is claimed.
 
-**Implementation authorised:** No
+**Implementation authorised:** Yes — the owner's CONTINUE PROJECT 001 instruction authorises implementation and safely defaultable development/simulation decisions. It explicitly forbids physical controller access and production deployment. §16 recommendations are development defaults, not permission for live operation.
 
 **Repository / branch:** `magicaussie/My-InvenTree` / `master`
 
 **Source baseline:** `c701d8efb9e9a59e05071ce2f62537251f7ccf39` (clean worktree at investigation start)
 
 **Reviewed:** 2026-10-17; InvenTree `1.6.0 dev`, UI library `@inventreedb/ui` `1.6.0`
+
+**Implementation reviewed:** 2026-10-18; plugin package `src/plugins/storage_layout` (`inventree-storage-layout` `0.1.0`, plugin slug `storage-layout`). See [Implementation status](#17-implementation-status) below.
 
 ## 1. Purpose, scope and requirement provenance
 
@@ -63,7 +65,7 @@ Paths below are repository-relative and refer to the baseline above. Symbols, ra
 
 No tracked WLED implementation or WLEDger data was identified in this repository; preservation is a constraint, not evidence of a tested migration. WLEDger behaviour/import reconciliation remains project 006. Four parallel DeepSeek V4.1 Flash workers investigated backend, frontend, WLED and schema/test requirements; lead review corrected or narrowed suggestions where source/safety required it (notably native locate actor loss, unstable WLED config, and implicit renumbering).
 
-**Core changes required: none for this scope.** Package a trusted installable plugin in this repository, proposed future root `src/plugins/storage_layout/`, Python app label `storage_layout`, plugin slug `storage-layout`, with its own frontend build/assets. This path does not yet exist. Do not alter stock models/migrations or host router. AppMixin, UrlsMixin, UserInterfaceMixin, SettingsMixin, ScheduleMixin and ValidationMixin suffice. A bounded HTTP adapter is preferable to assuming APICallMixin's single base-URL setting models many controllers.
+**Design expectation: no core changes.** Implementation uncovered one host plugin-module reload defect; §17 records the narrowly scoped registry fix and two plugin-aware core test adjustments. Inventory models, migrations, host router and permission behaviour remain unchanged. Package a trusted installable plugin in this repository, proposed future root `src/plugins/storage_layout/`, Python app label `storage_layout`, plugin slug `storage-layout`, with its own frontend build/assets. This path does not yet exist. Do not alter stock models/migrations or host router. AppMixin, UrlsMixin, UserInterfaceMixin, SettingsMixin, ScheduleMixin and ValidationMixin suffice. A bounded HTTP adapter is preferable to assuming APICallMixin's single base-URL setting models many controllers.
 
 ## 3. Architectural decisions
 
@@ -243,8 +245,8 @@ Mapping publish sorts spans and asserts `first.start=1`, each `next.start=previo
 
 Public references consulted 2026-10-17, with no controller access:
 
-- [Official JSON API](https://kno.wled.ge/interfaces/json-api/): `/json/info`, `/json/state`, `/json/cfg`, `/json/nodes`; segment ranges, individual LED control, `frz`, nightlight and serial-request warning.
-- [Multi-strip](https://kno.wled.ge/features/multi-strip/) and [settings](https://kno.wled.ge/features/settings/): outputs share controller address space, custom starts and hardware preferences.
+- [Official JSON API](https://kno.wled.ge/interfaces/json-api/): `/json/info`, `/json/state`, `/json/cfg`, `/json/nodes`; segment ranges, individual LED control, `frz`, nightlight and serial-request warning. <!-- codespell:ignore kno -->
+- [Multi-strip](https://kno.wled.ge/features/multi-strip/) and [settings](https://kno.wled.ge/features/settings/): outputs share controller address space, custom starts and hardware preferences. <!-- codespell:ignore kno -->
 - [Pinned v16.0.1 cfg.cpp](https://github.com/wled/WLED/blob/v16.0.1/wled00/cfg.cpp): `serializeConfig`/`deserializeConfig`; explicitly says its JSON schema is **not an official stable API**. `hw.led.ins[]` contains `start`, `len`, ordered `pin[]`, `type`, `order`, `rev`, `skip`, `rgbwm`, current limits; bus changes initialise hardware and may persist. There is no output field called `offset`.
 - [Pinned v16.0.1 json.cpp](https://github.com/wled/WLED/blob/v16.0.1/wled00/json.cpp): individual LED handling/state serialisation; [bus_manager.h](https://github.com/wled/WLED/blob/v16.0.1/wled00/bus_manager.h) is the reference for future bus-transform adapters.
 
@@ -387,7 +389,7 @@ Stages 2/3 and adapter fixture research can proceed in parallel after contracts.
 
 ## 16. Remaining owner decisions
 
-These are genuine product/deployment decisions, **not missing technical investigation**. Implementation can use the recommended defaults only after approval; simulation/schema contracts are otherwise fully specified.
+These are genuine product/deployment decisions, **not missing technical investigation**. Implementation uses the recommended defaults below **as unapproved proposed defaults**: they are encoded in the plugin (settings, constraints, validation and adapter policy) but must not be represented as owner-approved or historical agreements until the owner confirms them. Values that a deployment relies on must be set explicitly rather than assumed.
 
 | ID | Decision / alternatives | Recommended default and effect |
 |---|---|---|
@@ -399,7 +401,74 @@ These are genuine product/deployment decisions, **not missing technical investig
 | P6 | Live deployment capability and network/security | Default simulation, temporary arm (15 min), approved VLAN allowlist, single writer, initial v16.0.1 restricted adapter and human commissioning. Actual firmware/board/network are not available in this repository; unknown devices stay blocked. |
 | P7 | Audit/recovery retention and scale | 90-day operational audit/session retention after cleanup with immutable published mappings retained; seven-day local drafts; initial performance fixture 500 drawers/2,000 bins. Confirm legal/storage/scale needs before deployment. |
 
-## 17. Change log
+## 17. Implementation status
+
+**Overall:** the plugin package is implemented and locally tested for the pure-model, editor and simulation stages. Live hardware operation is deliberately **not enabled or commissioned**. Nothing in this repository has been run against a physical controller.
+
+### Implemented
+
+| Stage | State | Notes |
+|---|---|---|
+| 1 — foundation | Implemented | `AppMixin` package, plugin-owned models, additive migrations `0001`–`0003` (stock dependency `0128_remove_stockitem_notes`), custom permissions `configure_hardware`/`operate_hardware`/`emergency_stop` created without granting groups, `validation.py`, DRF API + plugin `schema/`. |
+| 2 — simulation API | Implemented | Aggregate CAS (`If-Match`/`ETag`, 428/412), layout/electrical documents, mapping preview/publish, `translate/`, idempotent locate/test sessions and durable read jobs, simulator transport, append-only audit. |
+| 3 — visual editors | Implemented | React/Vite cabinet and drawer/bin designers, command history, geometry/validation state. Host UI declared through `UserInterfaceMixin`: three routes, a navigation item, a **stock location panel that resolves cabinet/drawer/bin bindings**, and a **stock item locate panel** using the actor-safe session API. All user-visible strings are Lingui `t`-wrapped with extractable/compilable catalogs; async sessions and read jobs are polled. |
+| 4 — WLED adapter | Implemented (simulation-verified) | Bounded adapter with pinned-address transport, SSRF allowlist, capability classification, nightlight backup ordering, chunked individual-LED writes; `observe`/`import-preview`/`import`/`approve-configuration`. No lab device is used by any test. |
+| 5 — integration/QA | Local suites passed; release qualification incomplete | Backend/API/UI declaration, migration, unit and built-bundle browser suites run locally; the complete cross-database, process-crash and deployed host acceptance matrix remains unqualified. |
+| 6 — commissioning gate | Not started | Requires explicit owner hardware authorisation, approved firmware and physical calibration. |
+
+### Verification evidence
+
+- **Frontend** (`src/plugins/storage_layout/frontend`): `npm test` — 63 unit tests across 10 files passed; `npm run typecheck` (`tsc --noEmit`) — clean; `npm run lint` (Biome) — clean; `npm run build` — clean (catalogs compiled, bundle emitted). The Playwright harness is now **run**: `npm run e2e` — 18 browser tests passed in Chromium against a socket-free in-memory fixture API (route/panel/navigation wiring, load, pointer drag + undo/redo, numeric edits, CAS save with `If-Match`, 412 conflict retaining the draft, server validation, bin grid that skips existing bins, drawer/bin and stock-item locate with async `queued -> active` polling, observe `pending -> complete` polling, mapping preview/publish, plus the 500/2,000 performance budgets).
+- **Python**: `python -m compileall` of the plugin package — clean; `ruff check` under the repository configuration (migrations excluded per the pre-commit `exclude`) — clean.
+- **Added during this review**: regression coverage for the mapping-span boundary check in `tests/test_validation.py` (a span on a string with a non-zero `output_offset` was previously mis-reported as overflowing its string — see the fixed defect below).
+- **Python test suite (run)**: `manage.py test storage_layout.tests --keepdb --exclude-tag migration_test` — 425 tests passed; `manage.py test storage_layout.tests.test_migrations --tag migration_test` — 6 tests passed. These were worker results against a prepared SQLite environment. Lead review subsequently found this command depended on saved registry state. Reproducible tests now explicitly use `--settings=storage_layout.test_settings`; final lead results are recorded below, superseding bootstrap assumptions. Worker `manage.py check` and `manage.py spectacular --validate` runs passed.
+
+### Defect fixed in this review
+
+`validation.validate_mapping_spans` compared an **output-local** slice end against the **string-local** `LEDString.pixel_count`. Any published mapping whose string had `output_offset > 0` (i.e. more than one string on an output) was therefore falsely rejected as overflowing its string. The bound is now checked in string-local coordinates; the physical-overlap intervals continue to use output-local coordinates. Covered by new tests.
+
+### Known limitations and open gaps
+
+- **No hardware approval.** `ENABLE_HARDWARE` defaults off, the network allowlist defaults to deny-all, and arm/observe/locate/test fail closed. Human commissioning (stage 6) is outstanding; do not describe the plugin as live-capable.
+- **Owner decisions unapproved.** §16 defaults are implemented as proposed defaults only.
+- **Actor/ownership scoping (resolved).** Cabinet, drawer, controller and session endpoints now resolve native `StockLocation` ownership through the host's `StockLocation.check_ownership` (honouring `STOCK_OWNERSHIP_CONTROL` and the nearest ancestor owner); an unowned object is reported as missing rather than forbidden, so the endpoints cannot be used to probe for other operators' objects. Cabinet, profile and session lists are filtered to owned cabinets. `GET jobs/{id}/` is actor-scoped: only the initiating actor (or a hardware operator) may read a job, and only for a cabinet they own.
+- **Publish response detail (resolved).** `mapping-publish/` now returns `changed_pixels` (bounded to 500 entries), `changed_count` and `changed_truncated`, enumerating the physical pixels whose controller/WLED address changed relative to the previous active mapping.
+- **Durable dispatch and rate limiting (resolved).** Locate/test sessions and hardware read jobs are dispatched asynchronously on transaction commit via Django-Q2; an enqueue failure is persisted on the durable row and an unavailable queue returns 503. Locate/test and observe/discovery are rate limited to 10 requests per minute per user and target.
+- **Test breadth.** The complete cross-database concurrency/upgrade and process-crash qualification matrix remains unmeasured; the full native InvenTree suite is not claimed green (earlier worker runs encountered optional dependency, export, translation and package-download failures). The two plugin-induced core test assumptions found in that run are fixed and pass targeted regression tests. The 500-drawer/2,000-bin browser performance budget **is** now measured (500 drawers: 276–302 ms to interactive; 2,000 bins: 346–359 ms; fresh Chromium, synthetic in-memory fixture). Frontend locales other than English are untranslated placeholders that fall back to the English source, and the browser suite runs in Chromium only.
+- **Single hardware writer.** The operational single-dispatcher limitation (§10.3) is documented. The reconciliation watchdog now performs a live clear only when `DISPATCHER_ENABLED` is set; otherwise an expired live session is marked `unknown` with its cabinet reservation retained, so the watchdog never becomes an unconfirmed second hardware writer.
+
+### Final lead review and reproducible validation
+
+- Fixed host `plugin.registry._purge_plugin_modules` to retain registered Django model packages; purging them during rediscovery created duplicate model identities and invalid FK reverse accessors. App-plugin code upgrades require a process restart. A regression test proves model-class identity survives rediscovery.
+- Core tests now distinguish externally permissioned app models from core ruleset coverage and calculate mixin-filter expectations from installed plugins. No permission exemptions were added.
+- Task execution atomically claims queued sessions/read jobs; rechecks actor permission, ownership, cabinet reservation, expiry, aggregate revision, mapping and target allocation. Preflight failures persist as failed status instead of silently disappearing in a task exception.
+- Cabinet reservation uses generation-based CAS. Live apply and clear hold a cabinet database write lock, including SQLite; clear reconstructs progress from the saved plan if a worker died before writing execution rows.
+- Live output requires explicit dispatcher opt-in, a running worker, and a watchdog heartbeat no older than 15 seconds, checked again at execution. Shared cache and supervised single logical dispatcher remain deployment requirements, not claims of device-level fencing.
+- Simulated observations no longer update physical `last_seen`/online status. Discovery reports bounded saved-origin candidates, visibly labelled simulated; live discovery requires explicit controller IDs and still passes adapter allowlist checks. Autonomous subnet/mDNS discovery is not implemented.
+- Lead frontend rerun: 63 unit tests, 19 Chromium browser tests, typecheck, lint and production build passed. Latest synthetic harness: 500 drawers 265 ms; 2,000 bins 356 ms.
+- Lead migration rerun: 6 forward/reverse lifecycle tests passed in a disposable SQLite test database.
+- Wheel build passed; inspected archive contains the Vite manifest and 23 compiled frontend assets.
+- Final lead backend run: **461 tests passed** (455 plugin tests plus six affected-core tests), using `manage.py test storage_layout.tests users.tests.RuleSetModelTest plugin.test_api.PluginDetailAPITest.test_plugin_filter_by_mixin --keepdb --exclude-tag migration_test --settings=storage_layout.test_settings` in the isolated `/tmp/inv-data` SQLite environment. UI bundle-to-host manifest resolution is included.
+- `manage.py check` passed; `makemigrations storage_layout --check --dry-run` reported no changes. Plugin-only OpenAPI validation (`spectacular --validate --fail-on-warn --urlconf storage_layout.urls`) passed with zero warnings/errors and no unsecured/unscoped paths. The entire host schema is **not** claimed clean: its generator reports unrelated existing errors when run against the full URL configuration.
+- Repository pre-commit hooks passed (format/lint, whitespace, YAML, template lint, spelling, secret scan and test assertion checks). Frontend Biome is run independently because the host hook targets only `src/frontend/`.
+- Added bounded walking calibration (range/walk selector, ordered per-pixel frames, per-step confirmed clear, deadline enforcement), tested with an injected WLED emulator and a browser request-contract test. No physical hardware was used.
+- Additional hardening: OAuth tokens must satisfy scope restrictions **and** Django plugin permissions; read-only tokens cannot operate hardware. Cabinet aggregates are hidden when child locations override ownership for another operator. Configurable audit retention runs daily and preserves evidence for unresolved cabinets.
+- No PostgreSQL/MariaDB server or container runtime is installed in this environment; cross-database qualification cannot be asserted. No physical controller, existing WLEDger data, live database or production deployment was accessed.
+
+### Remaining release qualification and owner defaults
+
+- Physical commissioning is intentionally blocked by the owner's explicit safety boundary. No simulator acknowledgement is evidence of emitted light or electrical safety.
+- Cross-database/process-crash acceptance and a real deployed-host browser acceptance pass remain release work. Current browser tests load the real compiled bundle against an in-memory API fixture; DRF and public host declaration/manifest contracts are tested separately.
+- Automatic subnet/mDNS discovery is not implemented; only explicit bounded registered-origin discovery is supported. Single-pixel/range and bounded walking tests are implemented. Walking is capped at 32 logical pixels within the test-profile duration (maximum ten seconds), clears and confirms each physical step, and exposes explicit simulation frame/timing previews. It cannot run as an unbounded animation. Historical sessions are retained rather than automatically purged; audit records have configurable retention. Non-English catalogs remain untranslated. These limitations mean this is **not a claim that every sentence of the original specification has passed release acceptance**.
+
+### Owner defaults still required for hardware deployment (unchanged from §16)
+
+P1–P7 remain open; P2 (colour/brightness/duration), P3 (black/off takeover), P4 (numbering), P5 (native binding convention), P6 (live deployment/network) and P7 (retention/scale) all affect runtime behaviour once hardware is enabled.
+
+## 18. Change log
 
 - 2026-10-17: Original requirements draft recovered from earlier discussions.
 - 2026-10-17: Completed source-verified plugin architecture investigation, WLED API research and implementation-ready design; moved to UNDER REVIEW, retained owner/hardware/implementation approval gates. No application features implemented.
+- 2026-10-18: Independent implementation review. Recorded stage 1–4 completion (simulation-only), stage 5 partial and stage 6 not started; added the verification evidence and limitations above; fixed the `validate_mapping_spans` string-bound coordinate bug and added regression tests. Design approval and hardware authorisation remain outstanding.
+- 2026-10-18: Backend API/services hardening. Durable asynchronous dispatch for locate/test sessions and read jobs via on-commit Django-Q2 (enqueue failure persisted; unavailable queue returns 503); per-user/per-cabinet rate limiting (10/min) for locate/test and observe/discovery; actor-scoped read jobs; native `StockLocation` ownership filtering for cabinets/drawers/bins/controllers/sessions; `mapping-publish/` enumerates changed physical pixels; bounded five-second reconciliation watchdog with live cleanup gated on `DISPATCHER_ENABLED`. Plugin suite: 425 tests pass; migration suite: 6 tests pass.
+- 2026-10-18: Frontend completion pass. Added the plugin navigation item; rewrote the stock location panel to resolve **drawers and bins** (via an additive, ownership-filtered `locations/<pk>/binding/` lookup) and added a stock item locate panel using the actor-safe session API (never `LocateMixin`); implemented the async polling contract (sessions `queued -> active`, read jobs `pending -> complete`); surfaced `changed_pixels`/`changed_count` on mapping publish; wrapped every user-visible string in Lingui `t` with extractable/compilable catalogs and a host-compatible `PluginLocale` wrapper; and corrected the stock-item context assumption (`part_detail`, not `part_name`). Verified: 63 frontend unit tests, 18 Playwright browser tests in Chromium (socket-free fixture API), `tsc`/Biome clean, `npm run build` clean; measured 500 drawers 276–302 ms and 2,000 bins 346–359 ms. No commits.

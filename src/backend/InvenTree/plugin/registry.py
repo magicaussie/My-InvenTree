@@ -727,7 +727,20 @@ class PluginsRegistry:
             if package := entry.module.split('.')[0]:
                 packages.add(package)
 
+        # Django model classes are process-lifetime identities. Purging an
+        # installed app's modules creates a second set of classes while foreign
+        # keys and signal receivers still reference the first. App plugins need
+        # a process restart to pick up code changes, not an import-only reload.
+        model_packages = (
+            {model.__module__.split('.')[0] for model in apps.get_models()}
+            if apps.models_ready
+            else set()
+        )
+
         for package in packages:
+            if package in model_packages:
+                continue
+
             # Never purge InvenTree's own modules
             module = sys.modules.get(package)
             module_file = getattr(module, '__file__', None)

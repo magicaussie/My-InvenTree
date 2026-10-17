@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.log
+.vite/
+
+# Generated test/harness artifacts
+test-results/
+playwright-report/
+harness/public/
+
+# Compiled Lingui catalogs (regenerate with `npm run compile`); the editable
+# sources in `src/locales/**/messages.po` are tracked.
+src/locales/**/messages.ts

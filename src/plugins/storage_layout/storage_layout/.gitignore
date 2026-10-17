@@ -1,0 +1,8 @@
+# Generated frontend build output.
+#
+# The compiled plugin assets are produced by `npm run build` in
+# ../../frontend (Vite writes them here, and `emptyOutDir` clears this folder
+# on every build). They are collected at deployment time via
+# `invoke collectplugins` and shipped through the setuptools `package-data`
+# declared in pyproject.toml, so they are not tracked in git.
+static/
