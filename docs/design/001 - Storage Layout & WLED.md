@@ -467,6 +467,8 @@ P1–P7 remain open; P2 (colour/brightness/duration), P3 (black/off takeover), P
 
 ## 18. Change log
 
+- 2026-10-18: Integrated implementation committed locally on `master` as `a4b247a546358dc1f73fadca93f8ddaab10c7cad` (`feat: implement storage layout and WLED plugin`), 106 files changed. Final validation: 461 backend/affected-core tests, six migration lifecycle tests, 63 frontend unit tests, 19 Chromium browser tests; plugin-only strict schema validation, build/wheel manifest inspection and all pinned pre-commit hooks passed. No push, physical controller access, WLEDger changes or production deployment. An exploratory check with unpinned Ruff 0.17.1 `--preview` reports 13 additional style/docstring findings; the repository-pinned Ruff 0.15.12 checks pass. Cross-database, deployed-host and physical acceptance remain explicitly unclaimed.
+
 - 2026-10-17: Original requirements draft recovered from earlier discussions.
 - 2026-10-17: Completed source-verified plugin architecture investigation, WLED API research and implementation-ready design; moved to UNDER REVIEW, retained owner/hardware/implementation approval gates. No application features implemented.
 - 2026-10-18: Independent implementation review. Recorded stage 1–4 completion (simulation-only), stage 5 partial and stage 6 not started; added the verification evidence and limitations above; fixed the `validate_mapping_spans` string-bound coordinate bug and added regression tests. Design approval and hardware authorisation remain outstanding.
