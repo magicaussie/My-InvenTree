@@ -21,7 +21,7 @@ import {
   Text,
   TextInput
 } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { StorageLayoutClient } from '../../api/client';
 import {
@@ -52,6 +52,16 @@ interface SpanRow extends ClientSpanInput {
   key: string;
 }
 
+/**
+ * A successful publish is authoritative, but it only describes the candidate
+ * that was sent. The signature records that candidate so the panel can tell a
+ * still-current publication apart from one superseded by later local edits.
+ */
+interface PublishedSnapshot {
+  response: MappingPublishResponse;
+  signature: string;
+}
+
 function toCandidate(row: SpanRow): ClientSpanInput {
   return {
     logical_start: row.logical_start,
@@ -60,6 +70,14 @@ function toCandidate(row: SpanRow): ClientSpanInput {
     string_offset: row.string_offset,
     direction: row.direction
   };
+}
+
+/** Stable identity of a candidate, used to detect edits since a publish. */
+function candidateSignature(size: number, spans: SpanRow[]): string {
+  return JSON.stringify({
+    total_pixels: size,
+    spans: spans.map(toCandidate)
+  });
 }
 
 function coverageDiagnostics(
@@ -129,19 +147,49 @@ export function MappingPanel({
   const [spans, setSpans] = useState<SpanRow[]>(initialSpans);
   const [hash, setHash] = useState<string | null>(null);
   const [preview, setPreview] = useState<MappingPreviewResponse | null>(null);
-  const [published, setPublished] = useState<MappingPublishResponse | null>(
-    null
-  );
+  const [published, setPublished] = useState<PublishedSnapshot | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Monotonic version of the candidate/preview state. Every candidate change
+  // and every new preview request bumps it, so a preview response (or error)
+  // that resolves against an obsolete candidate is discarded instead of
+  // overwriting current state.
+  const requestSeq = useRef(0);
+  // Count of in-flight preview/publish operations, so `busy` stays accurate
+  // even when a stale completion is ignored.
+  const inFlight = useRef(0);
+  // Guards against dispatching a second publish while one is in flight.
+  const publishing = useRef(false);
+
+  /**
+   * Invalidate any preview/hash/message derived from the previous candidate.
+   * Called for every candidate change: span field edits, Add span, total
+   * logical pixels and the topology-driven proposal reset. A prior successful
+   * publish is *not* undone; it is retained and marked stale at render time.
+   */
+  const invalidateCandidate = useCallback(() => {
+    requestSeq.current += 1;
+    setHash(null);
+    setPreview(null);
+    setMessage(null);
+  }, []);
 
   // Re-propose spans whenever the topology or the mapping size changes (the
   // electrical document loads asynchronously after the mapping panel mounts).
   useEffect(() => {
     setSpans(initialSpans);
-    setHash(null);
-    setPreview(null);
-  }, [initialSpans]);
+    invalidateCandidate();
+  }, [initialSpans, invalidateCandidate]);
+
+  // Switching cabinet invalidates any preview/hash/message from the previous
+  // one, so a late response cannot be shown against the new cabinet.
+  const previousCabinet = useRef(cabinetId);
+  useEffect(() => {
+    if (previousCabinet.current === cabinetId) return;
+    previousCabinet.current = cabinetId;
+    invalidateCandidate();
+  }, [cabinetId, invalidateCandidate]);
 
   const errors = coverageDiagnostics(spans, size);
 
@@ -157,11 +205,33 @@ export function MappingPanel({
       next[index] = { ...next[index], ...patch };
       return next;
     });
-    setHash(null);
-    setPreview(null);
+    invalidateCandidate();
+  };
+
+  const addSpan = () => {
+    setSpans((current) => [
+      ...current,
+      {
+        key: `span-${current.length}-${Date.now()}`,
+        logical_start:
+          current.length === 0
+            ? 1
+            : current[current.length - 1].logical_start +
+              current[current.length - 1].length,
+        length: 1,
+        string: topology[0]?.id ?? '',
+        string_offset: 0,
+        direction: 1
+      }
+    ]);
+    invalidateCandidate();
   };
 
   const runPreview = useCallback(async () => {
+    // Ignore duplicate dispatch while another operation is in flight.
+    if (inFlight.current > 0) return;
+    const seq = ++requestSeq.current;
+    inFlight.current += 1;
     setBusy(true);
     setMessage(null);
     try {
@@ -169,22 +239,33 @@ export function MappingPanel({
         total_pixels: size,
         spans: spans.map(toCandidate)
       });
+      // Discard a response that resolved against an obsolete candidate.
+      if (seq !== requestSeq.current) return;
       setPreview(result);
       setHash(result.mapping_hash);
     } catch (error) {
+      if (seq !== requestSeq.current) return;
       const apiError =
         error instanceof StorageLayoutApiError
           ? error
           : new StorageLayoutApiError(String(error), 0);
       setMessage(apiError.message);
     } finally {
-      setBusy(false);
+      inFlight.current = Math.max(0, inFlight.current - 1);
+      if (inFlight.current === 0) setBusy(false);
     }
   }, [cabinetId, client, size, spans]);
 
   const publish = useCallback(async () => {
+    // Never issue a second publish while one is in flight.
+    if (inFlight.current > 0 || publishing.current) return;
+    publishing.current = true;
+    inFlight.current += 1;
     setBusy(true);
     setMessage(null);
+    // Record the candidate this publish describes, so a later local edit can
+    // be distinguished from the published snapshot.
+    const signature = candidateSignature(size, spans);
     try {
       const result = await client.mappingPublish(
         cabinetId,
@@ -195,7 +276,10 @@ export function MappingPanel({
         },
         etag
       );
-      setPublished(result);
+      // A successful server response is authoritative even if the candidate
+      // changed locally while the request was in flight; it is simply shown as
+      // describing the snapshot that was sent, not the current edits.
+      setPublished({ response: result, signature });
       setMessage(
         t`Published mapping revision ${result.number} (N=${result.total_pixels}, hash ${result.mapping_hash.slice(0, 8)}…).`
       );
@@ -207,7 +291,9 @@ export function MappingPanel({
           : new StorageLayoutApiError(String(error), 0);
       setMessage(apiError.message);
     } finally {
-      setBusy(false);
+      publishing.current = false;
+      inFlight.current = Math.max(0, inFlight.current - 1);
+      if (inFlight.current === 0) setBusy(false);
     }
   }, [
     cabinetId,
@@ -233,6 +319,15 @@ export function MappingPanel({
 
   const rows = preview?.samples ?? localSamples;
 
+  // A published snapshot is stale once the candidate no longer matches it.
+  const currentSignature = useMemo(
+    () => candidateSignature(size, spans),
+    [size, spans]
+  );
+  const publishedStale = published
+    ? published.signature !== currentSignature
+    : false;
+
   return (
     <Stack gap='sm' data-testid='mapping-panel'>
       <Group gap='xs'>
@@ -255,8 +350,7 @@ export function MappingPanel({
           readOnly={readOnly}
           onChange={(value) => {
             setSize(Number(value) || 1);
-            setHash(null);
-            setPreview(null);
+            invalidateCandidate();
           }}
         />
         <Button
@@ -380,23 +474,7 @@ export function MappingPanel({
           size='xs'
           variant='default'
           disabled={readOnly}
-          onClick={() =>
-            setSpans((current) => [
-              ...current,
-              {
-                key: `span-${current.length}-${Date.now()}`,
-                logical_start:
-                  current.length === 0
-                    ? 1
-                    : current[current.length - 1].logical_start +
-                      current[current.length - 1].length,
-                length: 1,
-                string: topology[0]?.id ?? '',
-                string_offset: 0,
-                direction: 1
-              }
-            ])
-          }
+          onClick={addSpan}
         >
           {t`Add span`}
         </Button>
@@ -463,13 +541,19 @@ export function MappingPanel({
         >
           <Stack gap={2}>
             <Text size='sm'>
-              {published.changed_truncated
-                ? t`Revision ${published.number}, N=${published.total_pixels}, ${published.changed_count ?? 0} physical pixel(s) changed (list truncated).`
-                : t`Revision ${published.number}, N=${published.total_pixels}, ${published.changed_count ?? 0} physical pixel(s) changed.`}
+              {published.response.changed_truncated
+                ? t`Revision ${published.response.number}, N=${published.response.total_pixels}, ${published.response.changed_count ?? 0} physical pixel(s) changed (list truncated).`
+                : t`Revision ${published.response.number}, N=${published.response.total_pixels}, ${published.response.changed_count ?? 0} physical pixel(s) changed.`}
             </Text>
-            {published.changed_pixels && published.changed_pixels.length > 0 ? (
+            {published.response.changed_pixels &&
+            published.response.changed_pixels.length > 0 ? (
               <Text size='xs' c='dimmed'>
-                {t`e.g. logical ${published.changed_pixels[0].logical}: ${published.changed_pixels[0].before?.join(':') ?? 'none'} → ${published.changed_pixels[0].after?.join(':') ?? 'none'}`}
+                {t`e.g. logical ${published.response.changed_pixels[0].logical}: ${published.response.changed_pixels[0].before?.join(':') ?? 'none'} → ${published.response.changed_pixels[0].after?.join(':') ?? 'none'}`}
+              </Text>
+            ) : null}
+            {publishedStale ? (
+              <Text size='xs' c='dimmed' data-testid='publish-stale'>
+                {t`The candidate has been edited since this revision was published; publish again to apply the current edits.`}
               </Text>
             ) : null}
           </Stack>
