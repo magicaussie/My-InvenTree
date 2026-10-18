@@ -239,6 +239,37 @@ export function clampTranslation(
   };
 }
 
+export interface Viewport {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+/** Invert the SVG viewport transform for a point relative to the SVG origin. */
+export function viewportToCanvas(
+  point: { x: number; y: number },
+  viewport: Viewport
+): { x: number; y: number } {
+  return {
+    x: (point.x - viewport.offsetX) / viewport.zoom,
+    y: (point.y - viewport.offsetY) / viewport.zoom
+  };
+}
+
+/** Change scale while keeping the canvas point beneath the pointer stationary. */
+export function zoomAtPoint(
+  viewport: Viewport,
+  point: { x: number; y: number },
+  zoom: number
+): Viewport {
+  const canvas = viewportToCanvas(point, viewport);
+  return {
+    zoom,
+    offsetX: point.x - canvas.x * zoom,
+    offsetY: point.y - canvas.y * zoom
+  };
+}
+
 /** Convert a screen-space delta into canvas units using a zoom factor. */
 export function screenToCanvasDelta(
   dxScreen: number,

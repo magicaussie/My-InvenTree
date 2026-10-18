@@ -35,7 +35,10 @@ import {
   type Rect,
   type ResizeHandle,
   resizeRect,
-  snapRect
+  snapRect,
+  type Viewport,
+  viewportToCanvas,
+  zoomAtPoint
 } from '../../state/geometry';
 
 export interface CanvasEntity {
@@ -68,12 +71,6 @@ export interface EditorCanvasProps {
   onMove: (ids: string[], dx: number, dy: number, phase: DragPhase) => void;
   onResize: (id: string, rect: Rect, phase: DragPhase) => void;
   onActivate?: (id: string) => void;
-}
-
-interface Viewport {
-  zoom: number;
-  offsetX: number;
-  offsetY: number;
 }
 
 interface DragState {
@@ -139,9 +136,10 @@ export function EditorCanvas(props: EditorCanvasProps) {
       const svg = svgRef.current;
       if (!svg) return { x: 0, y: 0 };
       const rect = svg.getBoundingClientRect();
-      const x = (clientX - rect.left - viewport.offsetX) / viewport.zoom;
-      const y = (clientY - rect.top - viewport.offsetY) / viewport.zoom;
-      return { x, y };
+      return viewportToCanvas(
+        { x: clientX - rect.left, y: clientY - rect.top },
+        viewport
+      );
     },
     [viewport]
   );
@@ -184,23 +182,27 @@ export function EditorCanvas(props: EditorCanvasProps) {
       entity: CanvasEntity,
       handle?: ResizeHandle
     ) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0 || pointerIdRef.current !== null) return;
+      event.preventDefault();
       event.stopPropagation();
+      svgRef.current?.focus();
 
       const additive = event.shiftKey || event.metaKey || event.ctrlKey;
-      const ids =
-        handle === undefined && !additive && selection.includes(entity.id)
+      if (!handle && additive && selection.includes(entity.id)) {
+        // A toggle removes this entity; do not start moving the old selection.
+        onSelect(entity.id, true);
+        return;
+      }
+      const ids = handle
+        ? [entity.id]
+        : !additive && selection.includes(entity.id)
           ? selection
-          : additive && selection.includes(entity.id)
-            ? selection
-            : additive
-              ? [...selection, entity.id]
-              : [entity.id];
+          : additive
+            ? [...selection, entity.id]
+            : [entity.id];
 
       if (handle === undefined && !selection.includes(entity.id)) {
         onSelect(entity.id, additive);
-      } else if (handle === undefined && additive) {
-        onSelect(entity.id, true);
       }
 
       const originRects: Record<string, Rect> = {};
@@ -212,7 +214,8 @@ export function EditorCanvas(props: EditorCanvasProps) {
       const start = toCanvas(event.clientX, event.clientY);
 
       pointerIdRef.current = event.pointerId;
-      (event.target as Element).setPointerCapture?.(event.pointerId);
+      // Capture on the stable SVG, never on a resize handle that may rerender.
+      svgRef.current?.setPointerCapture?.(event.pointerId);
 
       setDrag({
         kind: handle ? 'resize' : 'move',
@@ -295,9 +298,14 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const finishPointer = useCallback(
     (cancelled: boolean) => {
       if (!drag) return;
-      commitDrag(drag, cancelled);
+      const pointerId = pointerIdRef.current;
       pointerIdRef.current = null;
       setDrag(null);
+      const svg = svgRef.current;
+      if (pointerId !== null && svg?.hasPointerCapture?.(pointerId)) {
+        svg.releasePointerCapture(pointerId);
+      }
+      commitDrag(drag, cancelled);
     },
     [commitDrag, drag]
   );
@@ -305,7 +313,6 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<SVGElement>) => {
       if (!drag || pointerIdRef.current !== event.pointerId) return;
-      (event.target as Element).releasePointerCapture?.(event.pointerId);
       finishPointer(false);
     },
     [drag, finishPointer]
@@ -351,9 +358,10 @@ export function EditorCanvas(props: EditorCanvasProps) {
     [drag, finishPointer, grid, onActivate, onClearSelection, onMove, selection]
   );
 
-  const handleWheel = useCallback((event: React.WheelEvent<SVGElement>) => {
+  const handleWheel = useCallback((event: WheelEvent) => {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
+    if (pointerIdRef.current !== null) return;
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -366,16 +374,20 @@ export function EditorCanvas(props: EditorCanvasProps) {
         MAX_ZOOM,
         Math.max(MIN_ZOOM, current.zoom * factor)
       );
-      const scale = zoom / current.zoom;
-      return {
-        zoom,
-        offsetX: pointerX - (pointerX - current.offsetX) * scale,
-        offsetY: pointerY - (pointerY - current.offsetY) * scale
-      };
+      return zoomAtPoint(current, { x: pointerX, y: pointerY }, zoom);
     });
   }, []);
 
+  useEffect(() => {
+    const svg = svgRef.current;
+    // React's wheel listener is passive: a native non-passive listener is
+    // required to keep Ctrl-wheel from also zooming the browser page.
+    svg?.addEventListener('wheel', handleWheel, { passive: false });
+    return () => svg?.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
   const zoomBy = useCallback((factor: number) => {
+    if (pointerIdRef.current !== null) return;
     setViewport((current) => ({
       ...current,
       zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current.zoom * factor))
@@ -383,6 +395,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
   }, []);
 
   const resetView = useCallback(() => {
+    if (pointerIdRef.current !== null) return;
     setViewport({ zoom: 1, offsetX: 0, offsetY: 0 });
   }, []);
 
@@ -392,8 +405,13 @@ export function EditorCanvas(props: EditorCanvasProps) {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') finishPointer(true);
     };
+    const onBlur = () => finishPointer(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', onBlur);
+    };
   }, [drag, finishPointer]);
 
   const handleSize = 8 / viewport.zoom;
@@ -455,26 +473,35 @@ export function EditorCanvas(props: EditorCanvasProps) {
           height='100%'
           style={{ display: 'block', touchAction: 'none', outline: 'none' }}
           onKeyDown={handleKeyDown}
-          onWheel={handleWheel}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={() => finishPointer(true)}
+          onPointerCancel={(event) => {
+            if (pointerIdRef.current === event.pointerId) finishPointer(true);
+          }}
+          onLostPointerCapture={(event) => {
+            if (pointerIdRef.current === event.pointerId) finishPointer(true);
+          }}
           onPointerDown={(event) => {
-            if (event.button === 0 && event.target === svgRef.current) {
+            if (
+              event.button === 0 &&
+              pointerIdRef.current === null &&
+              event.target === svgRef.current
+            ) {
               onClearSelection?.();
             }
           }}
         >
-          <rect
-            x={0}
-            y={0}
-            width={bounds.width}
-            height={bounds.height}
-            fill='var(--mantine-color-body)'
-            stroke='var(--mantine-color-gray-5)'
-          />
           <g transform={transform}>
-            {overlay}
+            <rect
+              pointerEvents='none'
+              x={0}
+              y={0}
+              width={bounds.width}
+              height={bounds.height}
+              fill='var(--mantine-color-body)'
+              stroke='var(--mantine-color-gray-5)'
+            />
+            <g pointerEvents='none'>{overlay}</g>
             {entities.map((entity) => {
               const live = drag?.preview[entity.id];
               const rect = live ?? entity.rect;
@@ -538,37 +565,35 @@ export function EditorCanvas(props: EditorCanvasProps) {
                 </g>
               );
             })}
-            {drag?.kind === 'resize'
-              ? null
-              : entities
-                  .filter((entity) => selection.includes(entity.id))
-                  .map((entity) => {
-                    const rect = drag?.preview[entity.id] ?? entity.rect;
-                    return (
-                      <g key={`handles-${entity.id}`}>
-                        {RESIZE_HANDLES.map((handle) => {
-                          const point = handlePoint(rect, handle);
-                          return (
-                            <rect
-                              key={handle}
-                              x={point.x - handleSize / 2}
-                              y={point.y - handleSize / 2}
-                              width={handleSize}
-                              height={handleSize}
-                              fill='var(--mantine-color-blue-6)'
-                              aria-hidden
-                              style={{
-                                cursor: `${handle}-resize`
-                              }}
-                              onPointerDown={(event) =>
-                                handlePointerDown(event, entity, handle)
-                              }
-                            />
-                          );
-                        })}
-                      </g>
-                    );
-                  })}
+            {entities
+              .filter((entity) => selection.includes(entity.id))
+              .map((entity) => {
+                const rect = drag?.preview[entity.id] ?? entity.rect;
+                return (
+                  <g key={`handles-${entity.id}`}>
+                    {RESIZE_HANDLES.map((handle) => {
+                      const point = handlePoint(rect, handle);
+                      return (
+                        <rect
+                          key={handle}
+                          x={point.x - handleSize / 2}
+                          y={point.y - handleSize / 2}
+                          width={handleSize}
+                          height={handleSize}
+                          fill='var(--mantine-color-blue-6)'
+                          aria-hidden
+                          style={{
+                            cursor: `${handle}-resize`
+                          }}
+                          onPointerDown={(event) =>
+                            handlePointerDown(event, entity, handle)
+                          }
+                        />
+                      );
+                    })}
+                  </g>
+                );
+              })}
           </g>
         </svg>
       </Paper>

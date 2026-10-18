@@ -10,8 +10,52 @@ import {
   rectsOverlap,
   resizeRect,
   snapRect,
-  snapValue
+  snapValue,
+  viewportToCanvas,
+  zoomAtPoint
 } from '../src/state/geometry';
+
+describe('viewport coordinates', () => {
+  it.each([1, 0.5, 2])('maps dragging and resizing at zoom %s', (zoom) => {
+    const viewport = { zoom, offsetX: 37, offsetY: -21 };
+    const start = viewportToCanvas(
+      { x: 10 * zoom + 37, y: 15 * zoom - 21 },
+      viewport
+    );
+    const end = viewportToCanvas(
+      { x: 30 * zoom + 37, y: 25 * zoom - 21 },
+      viewport
+    );
+    expect(start).toEqual({ x: 10, y: 15 });
+    expect(end).toEqual({ x: 30, y: 25 });
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const original = { x: 10, y: 15, width: 20, height: 20 };
+    expect(moveRect(original, dx, dy)).toEqual({ ...original, x: 30, y: 25 });
+    expect(resizeRect(original, 'se', dx, dy)).toEqual({
+      ...original,
+      width: 40,
+      height: 30
+    });
+    expect(original).toEqual({ x: 10, y: 15, width: 20, height: 20 });
+  });
+
+  it.each([0.1, 0.5, 1, 2, 20])(
+    'keeps the mouse anchor fixed when zooming to %s',
+    (zoom) => {
+      const viewport = { zoom: 1.3, offsetX: -72, offsetY: 43 };
+      const pointer = { x: 145, y: 98 };
+      const before = viewportToCanvas(pointer, viewport);
+      const after = viewportToCanvas(
+        pointer,
+        zoomAtPoint(viewport, pointer, zoom)
+      );
+      expect(after.x).toBeCloseTo(before.x);
+      expect(after.y).toBeCloseTo(before.y);
+      expect(viewport).toEqual({ zoom: 1.3, offsetX: -72, offsetY: 43 });
+    }
+  );
+});
 
 describe('geometry', () => {
   it('treats rectangles as half-open and rejects positive-area overlap', () => {
