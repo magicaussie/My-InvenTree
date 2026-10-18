@@ -13,6 +13,7 @@ ambiguous-write handling and fail-closed defaults.
 """
 
 import socket
+from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
@@ -1393,6 +1394,25 @@ class ProtocolTests(SimpleTestCase):
         with self.assertRaises(PreflightError):
             adapter(transport).apply(controller(), plan([make_run(0, 10)]))
 
+        self.assertFalse(transport.state['on'])
+        self.assertFalse(transport.state['nl']['on'])
+
+    def test_apply_cleans_up_when_master_on_verification_fails(self):
+        """Master-on verification failure triggers cleanup before surfacing."""
+        transport = device()
+
+        with patch.object(WledConnection, 'verify_master_on',
+                          side_effect=ProtocolError('master-on readback failed')):
+            with self.assertRaises(ProtocolError):
+                adapter(transport).apply(controller(), plan([make_run(0, 10)]))
+
+        self.assertFalse(transport.state['on'])
+        self.assertFalse(transport.state['nl']['on'])
+        self.assertEqual(transport.individual_writes, [])
+        self.assertFalse(
+            [body['on'] for body in state_posts(transport) if 'on' in body][-1]
+        )
+
     def test_ambiguous_pixel_write_not_retried(self):
         """A timed-out illuminating chunk is surfaced, never retried."""
         transport = device(
@@ -1430,6 +1450,80 @@ class ProtocolTests(SimpleTestCase):
             )
 
         self.assertTrue(transport.state['on'])
+
+    def test_capture_state_does_not_post(self):
+        """Capturing a restorable runtime snapshot is read-only."""
+        transport = device()
+        wled_adapter = adapter(transport)
+
+        snapshot = wled_adapter.capture_state(controller())
+
+        self.assertIsInstance(snapshot, dict)
+        self.assertEqual(state_posts(transport), [])
+
+    def test_capture_state_rejects_malformed_runtime_fields(self):
+        """Unexpected controller JSON fails preflight without changing state."""
+        for fields in ({'seg': [None]}, {'nl': []}):
+            with self.subTest(fields=fields):
+                transport = device()
+                transport.state.update(fields)
+                with self.assertRaises(PreflightError):
+                    adapter(transport).capture_state(controller())
+                self.assertEqual(state_posts(transport), [])
+
+    def test_capture_state_rejects_frozen_segments(self):
+        """Frozen segment state cannot provide reliable individual-pixel colors."""
+        transport = device(state={
+            'on': True,
+            'bri': 80,
+            'nl': {'on': False},
+            'seg': [{'id': 0, 'start': 0, 'stop': 20, 'on': True, 'bri': 80, 'frz': True}],
+            'mainseg': 0,
+        })
+        wled_adapter = adapter(transport)
+
+        with self.assertRaises(PreflightError):
+            wled_adapter.capture_state(controller())
+
+        self.assertEqual(state_posts(transport), [])
+
+    def test_restore_state_roundtrip_after_apply_and_clear(self):
+        """A captured state can be restored after a locate and explicit clear."""
+        original = {
+            'on': False,
+            'bri': 37,
+            'nl': {'on': True, 'dur': 9, 'mode': 2, 'tbri': 41},
+            'seg': [
+                {'id': 0, 'start': 5, 'stop': 25, 'on': True, 'bri': 73,
+                 'grp': 1, 'spc': 0, 'of': 0, 'rev': False, 'mi': False,
+                 'fx': 4, 'frz': False, 'col': [[1, 2, 3]]},
+            ],
+            'mainseg': 0,
+        }
+        transport = device(state=original)
+        wled_adapter = adapter(transport)
+        snapshot = wled_adapter.capture_state(controller())
+
+        wled_adapter.apply(controller(), plan([make_run(0, 10)]))
+        wled_adapter.clear(controller())
+        result = wled_adapter.restore_state(controller(), snapshot)
+
+        self.assertTrue(result.confirmed)
+        self.assertEqual(transport.state['on'], original['on'])
+        self.assertEqual(transport.state['bri'], original['bri'])
+        self.assertEqual(transport.state['nl'], original['nl'])
+        self.assertEqual(transport.state['seg'], original['seg'])
+        self.assertEqual(transport.state['mainseg'], original['mainseg'])
+
+    def test_restore_state_timeout_is_unconfirmed(self):
+        """A restore write timeout is reported as unconfirmed, not success."""
+        transport = device(failures=[{'method': 'POST', 'action': 'timeout'}])
+        wled_adapter = adapter(transport)
+        snapshot = wled_adapter.capture_state(controller())
+
+        result = wled_adapter.restore_state(controller(), snapshot)
+
+        self.assertFalse(result.confirmed)
 
     def test_clear_confirms_off(self):
         """Clear returns off/black/unfrozen and confirms by read-back."""

@@ -1,20 +1,77 @@
 # Storage Layout & WLED — live-test readiness
 
 This document is the operator-facing readiness record for the Storage Layout &
-WLED plugin. It states what is verified, what is not, and the exact, staged,
-human-supervised procedure for the first live hardware test. **Only read-only
-WLED HTTP discovery has been performed; no controller was armed or sent a lighting,
-configuration, or other write command.** Automated checks include simulation
-transport/in-memory fixtures and the current 002J-C real localhost Django HTTP +
-qcluster simulation. The backend/worker simulation did not contact a controller.
-Browser E2E remains fixture-backed; it did not drive Django.
+WLED plugin. **Checkpoint 002J-D has now sent authorised temporary lighting
+commands to both real controllers through Django HTTP and the normal worker.**
+Eight single-pixel boundary tests, drawer locate and bin-native-location locate
+reached active execution. Captured runtime fields were restored and read back on
+both controllers; persistent configuration hashes were unchanged. This is real
+controller protocol evidence, not optical verification. String identity, direction
+and visible output remain pending owner observation. Browser E2E remains
+fixture-backed; it did not drive Django.
 
 Baseline for this record: `development/my-inventree` at
 `9e3de6dd4fc67fd4bc0312552299125c826a8cc6` (start of Checkpoint 002J).
 
 ---
 
-> **Current 002J-C revised-policy result (2026-10-18): backend simulation gates
+## Checkpoint 002J-D result (2026-10-18 UTC)
+
+- Restored checkout on the separate New Volume1 filesystem, based on
+  `f118c6a4c655173d798788eaa6b75e1b9618a5ab`; original recovery archive untouched.
+  Historical edits already present in that baseline were retained, not replayed
+  over newer code. New restoration code is a reviewed implementation, not a claim
+  of byte-identical recovery of the deleted worktree.
+- Adapter commissioning `capture_state` / `restore_state` now preserve writable
+  runtime fields with read-back confirmation. Frozen individual-pixel snapshots
+  are rejected because their per-pixel colours cannot be read back. Effect phase
+  and elapsed nightlight time are not recoverable. Normal session stop remains
+  explicitly off/black/unfrozen; commissioning restoration is a separate finally
+  operation, not automatic restoration on every production stop.
+- Fixed the observed stop/watchdog-expiry race: a completed terminal session is
+  accepted idempotently without clearing a newer session's controller output.
+  Master-on ambiguity/read-back failure now triggers adapter failure cleanup.
+- Fresh regression: **527 tests run, OK, one skipped**; **6 migration tests OK**;
+  migration consistency check found no changes. Focused adapter/service tests:
+  **228 tests, OK**. Normal Git hooks must pass before
+  publication. No frontend changes; previous frontend counts below are historical.
+- Real Django HTTP + qcluster simulation: **56 HTTP requests passed**, including
+  cabinet/drawer/bin creation, layout updates, mapping preview/publish, colours,
+  diagnostics and expected permission/revision/validation rejections.
+- Shared cache: standard Django `FileBasedCache`, same absolute location in web
+  and worker. A separate process read the worker watchdog heartbeat. SQLite's
+  default single worker starved observation jobs behind the long watchdog loop;
+  this disposable setup explicitly used two workers, a separate queue name,
+  timeout 300 seconds and retry 450 seconds. This is not production SQLite
+  concurrency qualification. Production configuration was not changed. A stale
+  disposable watchdog lease was removed only after its prior processes stopped.
+- Real WLED tests: brightness **8/255**, red, two-second duration; first and last
+  pixel of each of the four configured buses reached active execution. Stop or
+  expiry confirmed off/nightlight disabled. Later drawer and bin-location locate
+  used green `[0,24,0]`, brightness 8 and two-second duration; both reached active
+  and stopped. A literal `bin` target is not an API choice: bin locate uses its
+  native stock-location binding and the existing drawer allocation.
+- Commissioning finally restored both captured controller states, including
+  master-on, brightness 128, nightlight settings and unfrozen black segment state.
+  Full `/json/cfg` hashes matched before and after; no presets, persistent config,
+  firmware or network settings were written. Bus table and optical limitations:
+  [hardware reference](../../../docs/hardware/WLED_CONTROLLERS.md).
+- Private evidence stays outside Git in
+  `/media/spetchal/New Volume1/My-InvenTree-reconciliation-002JD/`:
+  `runtime/eight-boundary-tests-evidence.json`,
+  `runtime/authorized-live-evidence.json`, `runtime/adapter-restoration-results.json`,
+  `runtime/heartbeat-evidence.json`, `runtime/focused-tests.log`,
+  `runtime/regression-tests.log`, `runtime/migration-tests.log`, and
+  `http-regression/http-evidence.json`. Earlier failed attempts are retained,
+  including the fixed stop race and an expected rate-limit rejection; they are
+  not relabelled as passing runs.
+
+**Independent review gate:** no merge/deployment. Optical string assignment,
+direction and visible correctness are not established by acknowledgements.
+
+### Historical 002J-C result (superseded where noted above)
+
+> **Historical 002J-C revised-policy result (2026-10-18): backend simulation gates
 > PASS; hardware/live operation remains NO-GO.** Backend plugin suite: 520 passed;
 > migration tests: 6 passed; migration consistency check passed. Frontend: 290 tests
 > passed, lint checked 46 files, typecheck and build passed, and 25 fixture-backed

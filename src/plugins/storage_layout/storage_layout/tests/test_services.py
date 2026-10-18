@@ -1550,6 +1550,60 @@ class LiveSessionTests(ServiceTestCase):
             CabinetOperation.objects.get(cabinet=self.cabinet).current_session_id
         )
 
+    def test_live_stop_is_idempotent_when_watchdog_releases_before_lock(self):
+        """A late stop accepts watchdog completion without touching a new owner."""
+        self.arm()
+        with mock.patch.object(
+            services, 'build_live_adapter', return_value=self.adapter
+        ):
+            session, _ = services.create_locate_session(
+                self.cabinet,
+                self.user,
+                {
+                    'target': {'kind': TargetKind.DRAWER, 'id': str(self.drawer.pk)},
+                    'mode': LocateMode.LIVE,
+                    'approve_live': True,
+                    'idempotency_key': 'watchdog-stop-race',
+                },
+            )
+            services.execute_session(session.pk)
+
+        operation = CabinetOperation.objects.get(cabinet=self.cabinet)
+        new_session = None
+
+        def watchdog_completes_first(*args, **kwargs):
+            nonlocal new_session
+            LocateSession.objects.filter(pk=session.pk).update(
+                state=SessionState.EXPIRED
+            )
+            services._release_reservation(session)
+            new_session, _ = services.create_locate_session(
+                self.cabinet,
+                self.user,
+                {
+                    'target': {'kind': TargetKind.DRAWER, 'id': str(self.drawer.pk)},
+                    'mode': LocateMode.SIMULATE,
+                    'idempotency_key': 'new-session-after-watchdog',
+                },
+            )
+            raise services.CabinetBusyError(
+                'The session no longer owns the cabinet', code='cabinet_busy'
+            )
+
+        lock = mock.MagicMock()
+        lock.__enter__.side_effect = watchdog_completes_first
+        before_requests = len(self.adapter.transport.requests)
+        with (
+            mock.patch.object(services, '_cabinet_io_lock', return_value=lock),
+            mock.patch.object(services, 'build_live_adapter', return_value=self.adapter),
+        ):
+            result = services.stop_session(session, self.user)
+
+        self.assertEqual(result.state, SessionState.EXPIRED)
+        operation.refresh_from_db()
+        self.assertEqual(operation.current_session_id, new_session.pk)
+        self.assertEqual(len(self.adapter.transport.requests), before_requests)
+
     def test_live_stop_confirmed(self):
         """A confirmed live clear marks the session stopped."""
         self.arm()

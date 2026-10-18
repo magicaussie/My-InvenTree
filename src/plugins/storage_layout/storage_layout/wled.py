@@ -2622,14 +2622,12 @@ class WledAdapter:
             connection.verify_nightlight(minutes)
 
             # 3. Switch the master on in its own acknowledged request.
+            # Even an ambiguous master-on write or failed read-back needs cleanup.
+            output_live = True
             connection.post_json(PATH_STATE, master_on_payload(brightness))
             connection.verify_master_on(brightness)
             connection.verify_nightlight(minutes)
             self._verify_identity(connection, observation)
-
-            # Past this point the strip may be visibly lit, so a failure must
-            # not leave it on without an attempt to clear it.
-            output_live = True
 
             # 4. Clear the canonical segment explicitly, then send pixels.
             connection.post_json(PATH_STATE, clear_segment_payload())
@@ -2666,6 +2664,131 @@ class WledAdapter:
         }
 
     # endregion
+
+    def capture_state(self, controller: Any) -> dict[str, Any]:
+        """Capture writable runtime state without changing the controller.
+
+        Frozen individual-pixel colours are not exposed by the state API and
+        cannot be restored from a JSON snapshot. Refuse those snapshots rather
+        than promising restoration that the protocol cannot provide. This does
+        not capture persistent configuration or the phase of running effects.
+        """
+        connection = self.connection(controller)
+        state = connection.get_json(PATH_STATE)
+        if not isinstance(state, Mapping) or not isinstance(state.get('seg'), list):
+            raise PreflightError(_('The controller runtime state is incomplete'))
+        if any(not isinstance(segment, Mapping) for segment in state['seg']) or (
+            'nl' in state and not isinstance(state['nl'], Mapping)
+        ):
+            raise PreflightError(_('The controller runtime state is malformed'))
+        if any(segment.get('frz') for segment in state['seg']):
+            raise PreflightError(_('Frozen individual-pixel state cannot be restored'))
+        segment_fields = (
+            'id',
+            'start',
+            'stop',
+            'grp',
+            'spc',
+            'of',
+            'on',
+            'bri',
+            'cct',
+            'set',
+            'col',
+            'fx',
+            'sx',
+            'ix',
+            'pal',
+            'c1',
+            'c2',
+            'c3',
+            'sel',
+            'rev',
+            'mi',
+            'o1',
+            'o2',
+            'o3',
+            'si',
+            'm12',
+            'bm',
+            'frz',
+        )
+        return {
+            'on': bool(state.get('on', False)),
+            'bri': int(state.get('bri', 0)),
+            'mainseg': int(state.get('mainseg', 0)),
+            'nl': {
+                key: copy.deepcopy(value)
+                for key, value in (state.get('nl') or {}).items()
+                if key in ('on', 'dur', 'mode', 'tbri')
+            },
+            'seg': [
+                {
+                    key: copy.deepcopy(segment[key])
+                    for key in segment_fields
+                    if key in segment
+                }
+                for segment in state['seg']
+            ],
+        }
+
+    def restore_state(
+        self, controller: Any, snapshot: Mapping[str, Any]
+    ) -> ClearResult:
+        """Restore captured runtime fields and confirm them by read-back.
+
+        This is an explicit commissioning operation, not the service stop
+        contract: stop still means off/black/unfrozen. The caller owns the
+        snapshot and must restore in a finally block. No presets or persistent
+        configuration are written; effect phase and elapsed nightlight time
+        cannot be recovered. Ambiguous restoration writes are never retried.
+        """
+        result = ClearResult(clear_status='unconfirmed', acknowledged=False)
+        try:
+            connection = self.connection(controller)
+            if any(segment.get('frz') for segment in snapshot['seg']):
+                raise PreflightError(
+                    _('Frozen individual-pixel state cannot be restored')
+                )
+            connection.post_json(PATH_STATE, master_off_payload(), retries=0)
+            current = connection.get_json(PATH_STATE)
+            wanted = {segment['id'] for segment in snapshot['seg']}
+            deletions = [
+                {'id': segment['id'], 'stop': 0}
+                for segment in current.get('seg', [])
+                if segment['id'] not in wanted
+            ]
+            payload = {
+                'on': False,
+                'tt': 0,
+                'udpn': {'nn': True},
+                'nl': copy.deepcopy(snapshot['nl']),
+                'mainseg': snapshot['mainseg'],
+                'seg': deletions + copy.deepcopy(snapshot['seg']),
+            }
+            connection.post_json(PATH_STATE, payload, retries=0)
+            connection.post_json(
+                PATH_STATE,
+                {
+                    'on': snapshot['on'],
+                    'bri': snapshot['bri'],
+                    'tt': 0,
+                    'udpn': {'nn': True},
+                },
+                retries=0,
+            )
+            result.acknowledged = True
+            actual = self.capture_state(controller)
+            result.state = actual
+            if actual == snapshot:
+                result.clear_status = 'confirmed'
+            else:
+                result.error = (
+                    'Runtime state restoration did not match the captured fields'
+                )
+        except WledError as exc:
+            result.error = str(exc)
+        return result
 
     # region clear / stop
 

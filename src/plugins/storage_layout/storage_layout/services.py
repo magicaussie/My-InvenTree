@@ -3857,8 +3857,18 @@ def _stop_live(session: LocateSession, actor: Any) -> LocateSession:
     session.refresh_from_db()
     if session.state in TERMINAL_SESSION_STATES:
         return session
-    with _cabinet_io_lock(session):
-        return _clear_live(session, actor)
+    try:
+        with _cabinet_io_lock(session):
+            return _clear_live(session, actor)
+    except CabinetBusyError:
+        # The watchdog may have completed the stop and released the reservation
+        # after the refresh above but before this stop acquired the I/O lock.
+        # Treat that race as idempotent only when this session is now terminal;
+        # never clear hardware using a stale session after ownership changed.
+        session.refresh_from_db()
+        if session.state in TERMINAL_SESSION_STATES:
+            return session
+        raise
 
 
 def _clear_live(session: LocateSession, actor: Any) -> LocateSession:

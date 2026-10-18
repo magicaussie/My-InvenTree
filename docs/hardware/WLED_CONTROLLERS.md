@@ -39,31 +39,35 @@ For all four bus entries, the sanitized response reported `type=22`, `order=0`, 
 
 ## Verification status
 
-Device connectivity, WLED version, reported total counts, current logical segment bounds, and configured bus starts/lengths: **verified by read-only HTTP responses** as above. Both controllers were online; all four configured bus lengths and ranges match the owner-reported counts. Physical string-to-bus assignment and wiring: **unverified**.
+Device connectivity, WLED version, reported totals, logical segment bounds and configured bus ranges are verified by HTTP responses. The physical identity/route of the owner-named strings, optical output, and physical pixel direction remain **unverified**: no camera/observer evidence was captured. Runtime acknowledgements prove that commands were applied by the active backend/worker, not what a person would see.
 
-### Acceptance result: read-only only
+### Historical read-only discovery and superseding live results (2026-10-18 UTC)
 
-No controller write or illumination command was sent. The only controller requests were HTTP `GET` requests to `/json/info`, `/json/state` and `/json/cfg` on the two listed hosts, each with a 2-second request timeout. Test brightness and duration: **not applicable** (no test performed). Human observation of physical output: **none**. Restoration: **not needed**; no state was changed.
+The discovery above was read-only **at the time it was performed**. It remains valid as historical configuration evidence, but its “read-only only / no test attempted” acceptance conclusion is superseded by the later Checkpoint 002J-D live results below. Timestamps in this section use UTC timestamps in the evidence, not the host operating-system date.
 
-Backend adapter assessment: its apply operation takes over the canonical segment/master/nightlight state; its clear operation leaves the device off/black rather than restoring a captured prior-state snapshot. Therefore a lighting test through this adapter cannot be described as restoring the previous visible state. This limitation was not exercised on hardware. Although controlled tests are authorized, prerequisites for a safe per-string test were not met: physical string-to-bus correspondence has not been verified, and this adapter does not restore the prior visible state on clear. No test was attempted; no further approval is being requested.
+The eight-boundary run issued real HTTP requests through the application with the qcluster worker active. Each test successfully reached the active runtime state at brightness 8, RGB `(255, 0, 0)`, for 2 seconds; service stop was confirmed for each. The chosen singleton logical indices test each bus's first and last logical pixel, with one-based logical numbering and zero-based WLED indices:
 
-### Owner physical observation checklist
+| Controller | Bus | Tested logical pixel (one-based) | WLED pixel index | Exact WLED interval `[start, stop)` | Result |
+|---|---:|---:|---:|---:|---|
+| 1 | 1 | 1 | 0 | `[0, 1)` | Active, then stop confirmed |
+| 1 | 1 | 546 | 545 | `[545, 546)` | Active, then stop confirmed |
+| 1 | 2 | 547 | 546 | `[546, 547)` | Active, then stop confirmed |
+| 1 | 2 | 1161 | 1160 | `[1160, 1161)` | Active, then stop confirmed |
+| 2 | 1 | 1162 | 0 | `[0, 1)` | Active, then stop confirmed |
+| 2 | 1 | 1689 | 527 | `[527, 528)` | Active, then stop confirmed |
+| 2 | 2 | 1690 | 528 | `[528, 529)` | Active, then stop confirmed |
+| 2 | 2 | 2357 | 1195 | `[1195, 1196)` | Active, then stop confirmed |
 
-When safely observing the installation, record for each controller and each physical string separately:
+Runtime acknowledgements in the evidence span **2026-10-18 13:44:24–13:44:53 UTC**. The service stop action is a clear/off operation; it does **not** restore the pre-test captured runtime state.
 
-- Confirm which physical string responds to a deliberately selected, known-safe logical range; record the controller, bus, and exact zero-based half-open range `[start, stop)`.
-- Confirm the observed string identity/route and whether pixel order is forward or reversed; mark any uncertainty rather than inferring it from matching pixel counts.
-- Verify the other string independently and confirm no unintended string responds.
-- Record observer, date, result, and any unexpected behaviour. Stop if the observed output differs from expectation.
+A separate explicit commissioning capture/restore step then ran. The two controllers' captured runtime fields were restored and read back as confirmed: master on/brightness, segment bounds/on/brightness, black RGB channels, effects and controls, nightlight state, and unfrozen state. Persistent configuration hashes were unchanged for both controllers. No persistent WLED configuration was written. This explicit restore must not be conflated with service stop: service stop leaves output off/black/unfrozen, while the separate commissioning restoration returns the captured runtime fields.
 
-Do not infer physical mapping from HTTP success, matching counts, or bus order alone. Physical illumination and string assignment remain **pending human observation**.
+Later live location runs used brightness 8, green RGB `(0, 24, 0)`, duration 2 seconds. Drawer targeting and bin-native-location targeting both reached `active` and were then stopped. Bin targeting used the native location target (the bin's location); the API does not support a direct `kind=bin` target. These are backend/runtime results only and do not verify which physical drawer/bin/string lit.
 
-## Safe acceptance procedure
+No owner-permission blocker remained for these controlled tests. Do not interpret this as optical or physical-string verification.
 
-1. Read only the two listed origins with short timeouts. Inspect information, state and LED/bus configuration; retain only non-secret observations here.
-2. Treat identity/count discrepancies or ambiguous output/index assignments as blockers for pixel writes. Establish mappings through existing InvenTree disposable development data only.
-3. Capture the previous visible state before testing. Use a single verified pixel or tiny range, low brightness and a duration no greater than 10 seconds, through the existing integration and worker where safe.
-4. Obtain human observation of each string; distinguish that evidence from device responses.
-5. Stop/off the test and restore the captured visible state where feasible, then read back state. Report restoration failures. Never save presets or write persistent bus, LED, network or firmware settings.
+### Remaining physical observation
 
-Do not record credentials, tokens, SSIDs, MAC addresses or raw device configuration in this document.
+When an observer/camera is available, confirm and record the physical string identity/route and whether pixel order is forward or reversed for each bus. Until then, physical string-to-bus assignment, visible colour, and direction remain **pending optical observation**. Do not infer them from HTTP success, runtime acknowledgements, matching counts, or bus order alone.
+
+Never record credentials, tokens, SSIDs, MAC addresses, raw device configuration, or raw configuration hashes in this document.
