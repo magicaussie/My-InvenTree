@@ -1111,3 +1111,197 @@ describe('CabinetDesigner move and resize collisions', () => {
     expect(screen.getByLabelText('Undo')).toBeEnabled();
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Archived drawers are read-only for geometry (Checkpoint 002E)       */
+/* ------------------------------------------------------------------ */
+
+describe('CabinetDesigner archived read-only geometry', () => {
+  function selectOnCanvas(svg: SVGSVGElement, target: Element): void {
+    fireEvent.pointerDown(target, {
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+      pointerId: 1
+    });
+    fireEvent.pointerUp(svg, { pointerId: 1 });
+  }
+
+  function addToSelection(svg: SVGSVGElement, target: Element): void {
+    fireEvent.pointerDown(target, {
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+      pointerId: 1,
+      ctrlKey: true
+    });
+    fireEvent.pointerUp(svg, { pointerId: 1 });
+  }
+
+  it('offers no resize handles for a selected archived drawer and never resizes it', async () => {
+    const ghost = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 1,
+      archived: true
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [ghost] };
+    const { container, context } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    selectOnCanvas(svg, entityRects(container)[0]);
+
+    // Selectable for inspection (highlighted) but with no interactive handles.
+    expect(entityRects(container)[0]).toHaveAttribute(
+      'fill',
+      'var(--mantine-color-blue-1)'
+    );
+    expect(container.querySelector('rect[style*="resize"]')).toBeNull();
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(context.api.put).not.toHaveBeenCalled();
+  });
+
+  it('keeps resize handles for an active drawer and commits a valid resize', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    expect(container.querySelectorAll('rect[style*="resize"]')).toHaveLength(8);
+
+    dragEntity(svg, resizeHandle(container), 10, 0);
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 70,
+      height: 40
+    });
+    expect(screen.getByLabelText('Undo')).toBeEnabled();
+
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    fireEvent.click(screen.getByLabelText('Redo'));
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 70,
+      height: 40
+    });
+  });
+
+  it('ignores keyboard nudges for an archived-only selection', async () => {
+    const ghost = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 1,
+      archived: true
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [ghost] };
+    const { container, context } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    selectOnCanvas(svg, entityRects(container)[0]);
+    const before = svg.innerHTML;
+
+    fireEvent.keyDown(svg, { key: 'ArrowRight' });
+    fireEvent.keyDown(svg, { key: 'ArrowDown' });
+
+    expect(svg.innerHTML).toBe(before);
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(context.api.put).not.toHaveBeenCalled();
+  });
+
+  it('nudges only the active drawer in a mixed selection', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const ghost = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 2,
+      x: 60,
+      archived: true
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, ghost] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    addToSelection(svg, entityRects(container)[1]);
+
+    fireEvent.keyDown(svg, { key: 'ArrowDown' });
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 10,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Undo')).toBeEnabled();
+  });
+
+  it('moves only the active drawer in a mixed selection without over-clamping', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const ghost = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 2,
+      x: 540,
+      archived: true
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, ghost] };
+    const { container, context } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    addToSelection(svg, entityRects(container)[1]);
+
+    // The archived drawer sits against the right edge; it must not clamp the
+    // active drawer's movement, and it must not move itself.
+    dragEntity(svg, entityRects(container)[0], 100, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 100,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 540,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+    expect(context.api.put).not.toHaveBeenCalled();
+  });
+});

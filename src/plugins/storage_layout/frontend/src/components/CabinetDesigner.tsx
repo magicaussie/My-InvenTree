@@ -225,8 +225,9 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
 
   const onResize = useCallback(
     (id: string, rect: Rect) => {
+      // Archived drawers are read-only for geometry: never resize them.
       const drawer = editor.draft.drawers[id];
-      if (!drawer) return;
+      if (!drawer || drawer.archived) return;
       const bounds = {
         width: editor.draft.cabinet.width_units,
         height: editor.draft.cabinet.height_units

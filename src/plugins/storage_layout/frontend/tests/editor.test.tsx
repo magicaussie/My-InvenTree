@@ -4,7 +4,10 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CabinetDesigner } from '../src/components/CabinetDesigner';
-import { EditorCanvas } from '../src/components/editor/EditorCanvas';
+import {
+  type CanvasEntity,
+  EditorCanvas
+} from '../src/components/editor/EditorCanvas';
 import { DrawerInspector } from '../src/components/editor/Inspector';
 import { ValidationPanel } from '../src/components/editor/Panels';
 import { EditorToolbar } from '../src/components/editor/Toolbar';
@@ -21,7 +24,8 @@ const entity = {
 
 function canvasFixture(
   selection = ['e1'],
-  initialBounds = { width: 100, height: 100 }
+  initialBounds = { width: 100, height: 100 },
+  entities?: CanvasEntity[]
 ) {
   const onMove = vi.fn();
   const onResize = vi.fn();
@@ -32,10 +36,11 @@ function canvasFixture(
     label: 'A2',
     rect: { x: 50, y: 50, width: 20, height: 20 }
   };
+  const list = entities ?? [entity, second];
   const canvas = (bounds = initialBounds) => (
     <EditorCanvas
       bounds={bounds}
-      entities={[entity, second]}
+      entities={list}
       selection={selection}
       grid={1}
       snap={false}
@@ -101,6 +106,7 @@ function canvasFixture(
     return 1.1 ** steps;
   };
   return {
+    container,
     svg,
     rects,
     handle,
@@ -995,6 +1001,78 @@ describe('EditorCanvas', () => {
       screen.getByRole('button', { name: 'Fit to view' })
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Reset view')).toBeInTheDocument();
+  });
+});
+
+describe('EditorCanvas archived read-only geometry', () => {
+  const active = {
+    id: 'active',
+    label: 'Active',
+    rect: { x: 10, y: 10, width: 20, height: 20 }
+  };
+  const ghost = {
+    id: 'ghost',
+    label: 'Ghost',
+    rect: { x: 70, y: 10, width: 20, height: 20 },
+    archived: true
+  };
+
+  it('hides resize handles for a selected archived entity but keeps it visible', () => {
+    const { container, rects } = canvasFixture(
+      ['ghost'],
+      { width: 100, height: 100 },
+      [ghost]
+    );
+    expect(rects).toHaveLength(1);
+    expect(container.querySelectorAll('rect[style*="resize"]')).toHaveLength(0);
+    // Archived geometry and dashed styling are preserved for inspection.
+    expect(rects[0]).toHaveAttribute('x', '70');
+    expect(rects[0]).toHaveAttribute('stroke-dasharray');
+  });
+
+  it('keeps resize handles for a selected active entity', () => {
+    const { container } = canvasFixture(
+      ['active'],
+      { width: 100, height: 100 },
+      [active]
+    );
+    expect(container.querySelectorAll('rect[style*="resize"]')).toHaveLength(8);
+  });
+
+  it('moves only the active entity in a mixed selection without over-clamping', () => {
+    const { rects, down, move, up, onMove, onResize } = canvasFixture(
+      ['active', 'ghost'],
+      { width: 100, height: 100 },
+      [active, ghost]
+    );
+
+    down(rects[0]);
+    move(40, 0);
+    // The archived neighbour sits against the right edge; it must neither clamp
+    // the active entity's movement nor move itself.
+    expect(rects[0]).toHaveAttribute('x', '50');
+    expect(rects[1]).toHaveAttribute('x', '70');
+    up();
+
+    expect(onMove).toHaveBeenCalledExactlyOnceWith(['active'], 40, 0, 'end');
+    expect(onResize).not.toHaveBeenCalled();
+  });
+
+  it('leaves an archived-only selection inert when dragged', () => {
+    const { rects, down, move, up, onMove, onResize } = canvasFixture(
+      ['ghost'],
+      { width: 100, height: 100 },
+      [ghost]
+    );
+
+    down(rects[0]);
+    move(30, 30);
+    expect(rects[0]).toHaveAttribute('x', '70');
+    expect(rects[0]).toHaveAttribute('y', '10');
+    up();
+
+    expect(onMove).not.toHaveBeenCalled();
+    expect(onResize).not.toHaveBeenCalled();
   });
 });
 

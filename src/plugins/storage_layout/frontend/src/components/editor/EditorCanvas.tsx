@@ -245,13 +245,18 @@ export function EditorCanvas(props: EditorCanvasProps) {
         onSelect(entity.id, true);
         return;
       }
-      const ids = handle
+      const candidates = handle
         ? [entity.id]
         : !additive && selection.includes(entity.id)
           ? selection
           : additive
             ? [...selection, entity.id]
             : [entity.id];
+      // Archived entities stay selectable for inspection but never move.
+      // Excluding them here keeps the drag preview, bounds clamping and the
+      // committed delta limited to active drawers, so an archived selection
+      // cannot shift an active drawer or over-clamp its movement.
+      const ids = candidates.filter((id) => !entityMap[id]?.archived);
 
       if (handle === undefined && !selection.includes(entity.id)) {
         onSelect(entity.id, additive);
@@ -721,7 +726,9 @@ export function EditorCanvas(props: EditorCanvasProps) {
               );
             })}
             {entities
-              .filter((entity) => selection.includes(entity.id))
+              .filter(
+                (entity) => selection.includes(entity.id) && !entity.archived
+              )
               .map((entity) => {
                 const rect = drag?.preview[entity.id] ?? entity.rect;
                 return (
