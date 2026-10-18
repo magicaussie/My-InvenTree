@@ -290,3 +290,403 @@ describe('CabinetDesigner', () => {
     expect(screen.getByText('Cabinet A')).toBeInTheDocument();
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Duplicate (Checkpoint 002C)                                         */
+/* ------------------------------------------------------------------ */
+
+function drawerFixture(overrides: Partial<DrawerInput> = {}): DrawerInput {
+  return {
+    id: 'drawer',
+    label: 'Drawer',
+    display_number: 1,
+    location: null,
+    x: 0,
+    y: 0,
+    width: 60,
+    height: 40,
+    interior_width: 60,
+    interior_height: 40,
+    archived: false,
+    allocation: null,
+    ...overrides
+  };
+}
+
+interface RectLike {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function entityRects(container: HTMLElement): SVGRectElement[] {
+  return Array.from(
+    container.querySelectorAll<SVGRectElement>('rect[style*="move"]')
+  );
+}
+
+function rectOf(element: Element): RectLike {
+  return {
+    x: Number(element.getAttribute('x')),
+    y: Number(element.getAttribute('y')),
+    width: Number(element.getAttribute('width')),
+    height: Number(element.getAttribute('height'))
+  };
+}
+
+function overlaps(a: RectLike, b: RectLike): boolean {
+  return (
+    a.x < b.x + b.width &&
+    b.x < a.x + a.width &&
+    a.y < b.y + b.height &&
+    b.y < a.y + a.height
+  );
+}
+
+function expectNoOverlaps(rects: RectLike[]): void {
+  for (let i = 0; i < rects.length; i++) {
+    for (let j = i + 1; j < rects.length; j++) {
+      expect(overlaps(rects[i], rects[j])).toBe(false);
+    }
+  }
+}
+
+const DUPLICATE_MESSAGE =
+  'Insufficient free space to duplicate the selected drawers.';
+
+describe('CabinetDesigner duplicate', () => {
+  it('duplicates a single drawer into free space without copying its native binding or LEDs', async () => {
+    const source = drawerFixture({
+      id: 'source',
+      label: 'Source',
+      display_number: 1,
+      location: 42,
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40,
+      interior_width: 50,
+      interior_height: 30,
+      allocation: { logical_start: 1, logical_end: 60 }
+    });
+    const obstacle = drawerFixture({
+      id: 'obstacle',
+      label: 'Obstacle',
+      display_number: 2,
+      x: 60,
+      y: 0,
+      allocation: { logical_start: 61, logical_end: 120 }
+    });
+    const layout: LayoutResponse = {
+      ...LAYOUT,
+      total_pixels: 200,
+      drawers: [source, obstacle]
+    };
+    const { container, context } = await renderCabinet(layout);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer Source' }));
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    const rects = entityRects(container);
+    expect(rects).toHaveLength(3);
+    expect(rectOf(rects[0])).toEqual({ x: 0, y: 0, width: 60, height: 40 });
+    expect(rectOf(rects[1])).toEqual({ x: 60, y: 0, width: 60, height: 40 });
+    // First free grid slot after the two occupied rectangles.
+    expect(rectOf(rects[2])).toEqual({ x: 120, y: 0, width: 60, height: 40 });
+    expectNoOverlaps(rects.map(rectOf));
+
+    const list = within(screen.getByTestId('drawer-list'));
+    expect(list.getByText('3. Source copy')).toBeInTheDocument();
+    expect(
+      list.getByRole('button', { name: 'Drawer Source copy' })
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(list.getByRole('button', { name: 'Drawer Source' })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
+
+    // The copy is unbound and unlit; interior dimensions come from the source.
+    expect(
+      screen.getByText(/Unbound: this drawer cannot resolve inventory/)
+    ).toBeVisible();
+    expect(screen.getByText('Unlit drawer')).toBeVisible();
+    expect(
+      (screen.getByLabelText('Interior width') as HTMLInputElement).value
+    ).toBe('50');
+    expect(
+      (screen.getByLabelText('Interior depth') as HTMLInputElement).value
+    ).toBe('30');
+
+    // Selecting the source shows its binding and LEDs are untouched.
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer Source' }));
+    expect(
+      screen.queryByText(/Unbound: this drawer cannot resolve inventory/)
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('60 LEDs (1\u201360)')).toBeVisible();
+
+    expect(layout.drawers).toEqual([source, obstacle]);
+    expect(context.api.put).not.toHaveBeenCalled();
+    expect(context.api.post).not.toHaveBeenCalled();
+    expect(context.api.patch).not.toHaveBeenCalled();
+  });
+
+  it('duplicates a multi-selection without overlaps and undoes/redoes as one batch', async () => {
+    const a = drawerFixture({
+      id: 'a',
+      label: 'A',
+      display_number: 1,
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    const b = drawerFixture({
+      id: 'b',
+      label: 'B',
+      display_number: 2,
+      x: 0,
+      y: 40,
+      width: 100,
+      height: 60
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container, context } = await renderCabinet(layout);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    const rects = entityRects(container);
+    expect(rects).toHaveLength(4);
+    const geometry = rects.map(rectOf);
+    expectNoOverlaps(geometry);
+    // Originals keep their geometry; copies preserve their source sizes.
+    expect(geometry[0]).toEqual({ x: 0, y: 0, width: 60, height: 40 });
+    expect(geometry[1]).toEqual({ x: 0, y: 40, width: 100, height: 60 });
+    expect(geometry[2]).toEqual({ x: 60, y: 0, width: 60, height: 40 });
+    expect(geometry[3]).toEqual({ x: 120, y: 0, width: 100, height: 60 });
+
+    const list = within(screen.getByTestId('drawer-list'));
+    expect(list.getByText('3. A copy')).toBeInTheDocument();
+    expect(list.getByText('4. B copy')).toBeInTheDocument();
+    for (const name of ['Drawer A copy', 'Drawer B copy']) {
+      expect(list.getByRole('button', { name })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
+    }
+    expect(list.getByRole('button', { name: 'Drawer A' })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
+
+    // One undo removes every copy; one redo restores them with their geometry.
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(entityRects(container)).toHaveLength(2);
+    fireEvent.click(screen.getByLabelText('Redo'));
+    expect(entityRects(container).map(rectOf)).toEqual(geometry);
+    expect(context.api.put).not.toHaveBeenCalled();
+  });
+
+  it('fails atomically when there is not enough room and preserves selection and history', async () => {
+    const a = drawerFixture({
+      id: 'a',
+      label: 'A',
+      display_number: 1,
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    const b = drawerFixture({
+      id: 'b',
+      label: 'B',
+      display_number: 2,
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    const layout: LayoutResponse = {
+      ...LAYOUT,
+      cabinet: { ...CABINET, width_units: 180, height_units: 40 },
+      drawers: [a, b]
+    };
+    const { container, context } = await renderCabinet(layout);
+
+    // Create a copy, then undo it so a redo entry exists before the failure.
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+    expect(entityRects(container)).toHaveLength(3);
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(entityRects(container)).toHaveLength(2);
+    expect(screen.getByLabelText('Redo')).toBeEnabled();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+
+    // Only one of the two copies fits, so the whole operation must fail.
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    const svg = screen.getByRole('application', { name: 'Cabinet front view' });
+    const before = svg.innerHTML;
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    expect(screen.getByText(DUPLICATE_MESSAGE)).toBeVisible();
+    expect(entityRects(container)).toHaveLength(2);
+    expect(svg.innerHTML).toBe(before);
+    expect(screen.getByRole('button', { name: 'Drawer A' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    expect(screen.getByRole('button', { name: 'Drawer B' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(screen.getByLabelText('Redo')).toBeEnabled();
+    expect(context.api.put).not.toHaveBeenCalled();
+    expect(layout.drawers).toEqual([a, b]);
+  });
+
+  it('ignores archived drawers when reserving space for a duplicate', async () => {
+    const archived = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 1,
+      x: 60,
+      y: 0,
+      archived: true
+    });
+    const active = drawerFixture({
+      id: 'live',
+      label: 'Live',
+      display_number: 2,
+      x: 0,
+      y: 0
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [archived, active] };
+    const { container } = await renderCabinet(layout);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer Live' }));
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    const rects = entityRects(container);
+    expect(rects).toHaveLength(3);
+    // The copy reuses the slot held by the archived drawer, proving it is ignored.
+    expect(rectOf(rects[2])).toEqual({ x: 60, y: 0, width: 60, height: 40 });
+    expect(layout.drawers[0]).toEqual(archived);
+  });
+
+  it('does not duplicate an archived drawer that is selected', async () => {
+    const archived = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 1,
+      archived: true
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [archived] };
+    const { container, context } = await renderCabinet(layout);
+
+    const svg = screen.getByRole('application', { name: 'Cabinet front view' });
+    const rect = svg.querySelector('rect[style*="move"]') as SVGRectElement;
+    expect(rect).not.toBeNull();
+    fireEvent.pointerDown(rect, {
+      button: 0,
+      clientX: 0,
+      clientY: 0,
+      pointerId: 1
+    });
+    fireEvent.pointerUp(svg, { pointerId: 1 });
+
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    expect(entityRects(container)).toHaveLength(1);
+    expect(screen.queryByText(DUPLICATE_MESSAGE)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(context.api.put).not.toHaveBeenCalled();
+  });
+
+  it('allows a duplicate to touch an existing drawer along an edge', async () => {
+    const a = drawerFixture({
+      id: 'a',
+      label: 'A',
+      display_number: 1,
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    const layout: LayoutResponse = {
+      ...LAYOUT,
+      cabinet: { ...CABINET, width_units: 120, height_units: 40 },
+      drawers: [a]
+    };
+    const { container } = await renderCabinet(layout);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    const rects = entityRects(container);
+    expect(rects).toHaveLength(2);
+    expect(rectOf(rects[1])).toEqual({ x: 60, y: 0, width: 60, height: 40 });
+    expectNoOverlaps(rects.map(rectOf));
+  });
+
+  it('respects off-grid existing obstacles when placing a duplicate', async () => {
+    const a = drawerFixture({
+      id: 'a',
+      label: 'A',
+      display_number: 1,
+      x: 5,
+      y: 5,
+      width: 60,
+      height: 40
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a] };
+    const { container } = await renderCabinet(layout);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    const rects = entityRects(container);
+    expect(rects).toHaveLength(2);
+    expect(rectOf(rects[1])).toEqual({ x: 70, y: 0, width: 60, height: 40 });
+    expectNoOverlaps(rects.map(rectOf));
+  });
+
+  it.each([
+    {
+      name: 'a full cabinet',
+      cabinet: { width_units: 60, height_units: 40 },
+      drawer: { x: 0, y: 0, width: 60, height: 40 }
+    },
+    {
+      name: 'an oversized source drawer',
+      cabinet: { width_units: 60, height_units: 40 },
+      drawer: { x: 0, y: 0, width: 100, height: 60 }
+    }
+  ])('fails without hanging for $name', async ({ cabinet, drawer }) => {
+    const a = drawerFixture({
+      id: 'a',
+      label: 'A',
+      display_number: 1,
+      ...drawer
+    });
+    const layout: LayoutResponse = {
+      ...LAYOUT,
+      cabinet: { ...CABINET, ...cabinet },
+      drawers: [a]
+    };
+    const { container } = await renderCabinet(layout);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByLabelText('Duplicate selection'));
+
+    expect(screen.getByText(DUPLICATE_MESSAGE)).toBeVisible();
+    expect(entityRects(container)).toHaveLength(1);
+  });
+});

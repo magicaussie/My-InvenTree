@@ -245,12 +245,46 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
   }, [activeDrawers, editor, grid]);
 
   const duplicateSelection = useCallback(() => {
-    if (selected.length === 0) return;
+    // Only active drawers can be duplicated; archived or missing selections are
+    // ignored. Nothing is mutated until every copy has a valid placement, so a
+    // failed duplication leaves the draft, selection and history untouched.
+    const sources = selected.filter((drawer) => !drawer.archived);
+    if (sources.length === 0) return;
+
+    const bounds = {
+      width: editor.draft.cabinet.width_units,
+      height: editor.draft.cabinet.height_units
+    };
+    const occupied = activeDrawers.map(drawerRect);
+    const placements: Array<{ drawer: DrawerDraft; x: number; y: number }> = [];
+    for (const drawer of sources) {
+      const position = findFreeDrawerPosition(
+        bounds,
+        { width: drawer.width, height: drawer.height },
+        occupied,
+        grid
+      );
+      if (!position) {
+        setServerMessage(
+          t`Insufficient free space to duplicate the selected drawers.`
+        );
+        return;
+      }
+      // Reserve the new rectangle so later copies cannot overlap it.
+      occupied.push({
+        ...position,
+        width: drawer.width,
+        height: drawer.height
+      });
+      placements.push({ drawer, ...position });
+    }
+
+    setServerMessage(null);
     const numbers = activeDrawers.map((drawer) => drawer.display_number);
     let next = numbers.length ? Math.max(...numbers) : 0;
     const commands: Command[] = [];
     const newIds: string[] = [];
-    for (const drawer of selected) {
+    for (const { drawer, x, y } of placements) {
       next += 1;
       const copy: DrawerDraft = {
         ...drawer,
@@ -261,14 +295,8 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         location: null,
         allocation: null,
         archived: false,
-        x: Math.min(
-          drawer.x + grid,
-          editor.draft.cabinet.width_units - drawer.width
-        ),
-        y: Math.min(
-          drawer.y + grid,
-          editor.draft.cabinet.height_units - drawer.height
-        )
+        x,
+        y
       };
       commands.push({ type: 'add_drawer', drawer: copy });
       newIds.push(copy.id);
