@@ -280,6 +280,19 @@ class CabinetApiTests(ApiTestCase):
         self.assertEqual(response.data['name'], 'Renamed')
         self.assertEqual(response.data['revision'], self.cabinet.revision + 1)
 
+    def test_patch_archives_cabinet(self):
+        """A cabinet can be archived through the CAS patch."""
+        response = self.patch(
+            f'{BASE}cabinets/{self.cabinet.pk}/',
+            {'archived': True},
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertTrue(response.data['archived'])
+        self.cabinet.refresh_from_db()
+        self.assertTrue(self.cabinet.archived)
+
     def test_error_shape(self):
         """Domain errors use the documented shape."""
         response = self.patch(

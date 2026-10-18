@@ -15,7 +15,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from InvenTree.unit_test import InvenTreeTestCase
-from stock.models import StockLocation
+from part.models import Part
+from stock.models import StockItem, StockLocation
 from storage_layout import services, wled
 from storage_layout.models import (
     Bin,
@@ -827,6 +828,74 @@ class MappingServiceTests(ServiceTestCase):
         self.assertEqual(previous.state, MappingState.SUPERSEDED)
         self.assertEqual(self.cabinet.active_mapping.number, 2)
 
+    def test_publish_applies_replacement_allocations(self):
+        """Publishing can atomically replace a drawer allocation."""
+        DrawerAllocation.objects.create(
+            drawer=self.drawer, logical_start=1, logical_end=10
+        )
+        candidate = {
+            'total_pixels': 120,
+            'spans': [
+                {
+                    'logical_start': 1,
+                    'length': 120,
+                    'string': str(self.string.pk),
+                    'string_offset': 0,
+                    'direction': 1,
+                }
+            ],
+        }
+
+        services.publish_mapping(
+            self.cabinet,
+            candidate,
+            self.user,
+            self.cabinet.revision,
+            replacement_allocations=[
+                {
+                    'drawer': str(self.drawer.pk),
+                    'logical_start': 1,
+                    'logical_end': 60,
+                }
+            ],
+        )
+
+        allocation = DrawerAllocation.objects.get(drawer=self.drawer)
+        self.assertEqual(allocation.logical_start, 1)
+        self.assertEqual(allocation.logical_end, 60)
+
+    def test_publish_rejects_out_of_bounds_replacement_allocation(self):
+        """A replacement allocation beyond the mapping size is rejected."""
+        candidate = {
+            'total_pixels': 120,
+            'spans': [
+                {
+                    'logical_start': 1,
+                    'length': 120,
+                    'string': str(self.string.pk),
+                    'string_offset': 0,
+                    'direction': 1,
+                }
+            ],
+        }
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.publish_mapping(
+                self.cabinet,
+                candidate,
+                self.user,
+                self.cabinet.revision,
+                replacement_allocations=[
+                    {
+                        'drawer': str(self.drawer.pk),
+                        'logical_start': 1,
+                        'logical_end': 200,
+                    }
+                ],
+            )
+
+        self.assertEqual(ctx.exception.code, 'invalid_bounds')
+
     def test_publish_reports_changed_pixels(self):
         """Publishing reports the physical pixels whose address changed."""
         candidate = {
@@ -968,6 +1037,33 @@ class SessionServiceTests(ServiceTestCase):
             self.create(
                 target={'kind': TargetKind.LOCATION, 'id': self.cabinet_location.pk}
             )
+
+    def test_item_target_resolves_bound_drawer(self):
+        """A stock item in the bound drawer locates that drawer."""
+        part = Part.objects.create(name='Widget', description='test part')
+        item = StockItem.objects.create(
+            part=part, location=self.bin_location, quantity=1
+        )
+
+        session, created = self.create(
+            target={'kind': TargetKind.ITEM, 'id': str(item.pk)}
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(session.plan['logical_start'], 1)
+        self.assertEqual(session.plan['logical_end'], 60)
+        self.assertEqual(session.target_kind, TargetKind.ITEM)
+        self.assertEqual(session.target_item_id, str(item.pk))
+
+    def test_item_target_not_in_stock_is_rejected(self):
+        """A stock item with no quantity cannot be located."""
+        part = Part.objects.create(name='Widget', description='test part')
+        item = StockItem.objects.create(
+            part=part, location=self.bin_location, quantity=0
+        )
+
+        with self.assertRaises(services.NotLocatableError):
+            self.create(target={'kind': TargetKind.ITEM, 'id': str(item.pk)})
 
     def test_live_requires_approval(self):
         """Live mode without approve_live is rejected."""
