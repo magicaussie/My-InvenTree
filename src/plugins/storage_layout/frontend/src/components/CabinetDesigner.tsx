@@ -33,7 +33,13 @@ import {
   type DrawerDraft,
   layoutFromDraft
 } from '../state/commands';
-import { findFreeDrawerPosition, type Rect } from '../state/geometry';
+import {
+  findFreeDrawerPosition,
+  moveRects,
+  type Rect,
+  validateMove,
+  validateResize
+} from '../state/geometry';
 import { useDirtyUnloadGuard, useLayoutEditor } from '../state/layoutDraft';
 import { topologyFromDocument } from '../state/mapping';
 import { diagnosticsByEntity, severityForEntity } from '../state/validation';
@@ -180,26 +186,73 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
 
   const onMove = useCallback(
     (ids: string[], dx: number, dy: number) => {
+      // Only active drawers move: missing and archived ids are ignored so an
+      // archived drawer is never silently relocated.
+      const moving: Record<string, Rect> = {};
+      for (const id of ids) {
+        const drawer = editor.draft.drawers[id];
+        if (!drawer || drawer.archived) continue;
+        moving[id] = drawerRect(drawer);
+      }
+      const movingIds = Object.keys(moving);
+      if (movingIds.length === 0 || (dx === 0 && dy === 0)) return;
+
+      const bounds = {
+        width: editor.draft.cabinet.width_units,
+        height: editor.draft.cabinet.height_units
+      };
+      const movingSet = new Set(movingIds);
+      const stationary = activeDrawers
+        .filter((drawer) => !movingSet.has(drawer.id))
+        .map(drawerRect);
+
+      if (
+        !validateMove(moveRects(moving, dx, dy), moving, stationary, bounds)
+      ) {
+        setServerMessage(
+          t`Cannot move drawers: placement overlaps another drawer or exceeds cabinet bounds.`
+        );
+        return;
+      }
+
+      setServerMessage(null);
       const deltas: Record<string, { dx: number; dy: number }> = {};
-      for (const id of ids) deltas[id] = { dx, dy };
+      for (const id of movingIds) deltas[id] = { dx, dy };
       editor.apply({ type: 'move', entity: 'drawer', deltas });
     },
-    [editor]
+    [activeDrawers, editor]
   );
 
   const onResize = useCallback(
     (id: string, rect: Rect) => {
       const drawer = editor.draft.drawers[id];
       if (!drawer) return;
+      const bounds = {
+        width: editor.draft.cabinet.width_units,
+        height: editor.draft.cabinet.height_units
+      };
+      const original = drawerRect(drawer);
+      const others = activeDrawers
+        .filter((other) => other.id !== id)
+        .map(drawerRect);
+
+      if (!validateResize(rect, original, others, bounds)) {
+        setServerMessage(
+          t`Cannot resize drawer: placement overlaps another drawer or exceeds cabinet bounds.`
+        );
+        return;
+      }
+
+      setServerMessage(null);
       editor.apply({
         type: 'resize',
         entity: 'drawer',
         id,
-        from: drawerRect(drawer),
+        from: original,
         to: rect
       });
     },
-    [editor]
+    [activeDrawers, editor]
   );
 
   const addDrawer = useCallback(() => {

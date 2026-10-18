@@ -690,3 +690,380 @@ describe('CabinetDesigner duplicate', () => {
     expect(entityRects(container)).toHaveLength(1);
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Move / resize collisions (Checkpoint 002D)                          */
+/* ------------------------------------------------------------------ */
+
+const MOVE_MESSAGE =
+  'Cannot move drawers: placement overlaps another drawer or exceeds cabinet bounds.';
+const RESIZE_MESSAGE =
+  'Cannot resize drawer: placement overlaps another drawer or exceeds cabinet bounds.';
+
+function canvasOf(): SVGSVGElement {
+  return screen.getByRole('application', {
+    name: 'Cabinet front view'
+  }) as unknown as SVGSVGElement;
+}
+
+function mockCanvas(svg: SVGSVGElement): void {
+  vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+    x: 0,
+    y: 0,
+    left: 0,
+    top: 0,
+    right: 1000,
+    bottom: 600,
+    width: 1000,
+    height: 600,
+    toJSON: () => ({})
+  });
+}
+
+function dragEntity(
+  svg: SVGSVGElement,
+  target: Element,
+  dx: number,
+  dy: number,
+  pointerId = 1
+): void {
+  fireEvent.pointerDown(target, {
+    button: 0,
+    clientX: 0,
+    clientY: 0,
+    pointerId
+  });
+  fireEvent.pointerMove(svg, { clientX: dx, clientY: dy, pointerId });
+  fireEvent.pointerUp(svg, { pointerId });
+}
+
+function resizeHandle(container: HTMLElement): SVGRectElement {
+  const handle = container.querySelector('rect[style*="se-resize"]');
+  expect(handle).not.toBeNull();
+  return handle as SVGRectElement;
+}
+
+describe('CabinetDesigner move and resize collisions', () => {
+  it('commits a valid single drawer move and supports undo/redo', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a] };
+    const { container, context } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    dragEntity(svg, entityRects(container)[0], 10, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 10,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.getByText('Unsaved changes')).toBeVisible();
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    fireEvent.click(screen.getByLabelText('Redo'));
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 10,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(context.api.put).not.toHaveBeenCalled();
+    expect(context.api.post).not.toHaveBeenCalled();
+    expect(context.api.patch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a move into another active drawer and preserves history, selection and geometry', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });
+    const c = drawerFixture({ id: 'c', label: 'C', display_number: 3, x: 200 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b, c] };
+    const { container, context } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    // Establish a redo entry: move C, then undo it.
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer C' }));
+    dragEntity(svg, entityRects(container)[2], 10, 0);
+    expect(rectOf(entityRects(container)[2])).toEqual({
+      x: 210,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(screen.getByLabelText('Redo')).toBeEnabled();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+
+    // A -> right by 10 would overlap B.
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    const before = svg.innerHTML;
+    const dirty = screen.getByText('Unsaved changes').textContent;
+    dragEntity(svg, entityRects(container)[0], 10, 0);
+
+    expect(screen.getByText(MOVE_MESSAGE)).toBeVisible();
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(svg.innerHTML).toBe(before);
+    expect(screen.getByRole('button', { name: 'Drawer A' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    expect(screen.getByText('Unsaved changes').textContent).toBe(dirty);
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(screen.getByLabelText('Redo')).toBeEnabled();
+    expect(context.api.put).not.toHaveBeenCalled();
+    expect(layout.drawers).toEqual([a, b, c]);
+  });
+
+  it('accepts a move that touches an adjacent drawer along an edge', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 120 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    dragEntity(svg, entityRects(container)[0], 60, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('allows a move into an archived drawer footprint without touching the archive', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const ghost = drawerFixture({
+      id: 'ghost',
+      label: 'Ghost',
+      display_number: 2,
+      x: 60,
+      archived: true
+    });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, ghost] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    dragEntity(svg, entityRects(container)[0], 60, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(layout.drawers[1]).toEqual(ghost);
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('translates a multi-selection atomically when each drawer vacates the other destination', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    dragEntity(svg, entityRects(container)[0], 60, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 120,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('rejects a multi-selection move blocked by a stationary drawer without moving anything', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });
+    const c = drawerFixture({ id: 'c', label: 'C', display_number: 3, x: 120 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b, c] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    const before = svg.innerHTML;
+    dragEntity(svg, entityRects(container)[0], 60, 0);
+
+    expect(screen.getByText(MOVE_MESSAGE)).toBeVisible();
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(svg.innerHTML).toBe(before);
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+  });
+
+  it('does not reject a shared translation of a pre-existing overlapping pair', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 50 });
+    const c = drawerFixture({ id: 'c', label: 'C', display_number: 3, x: 300 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b, c] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    dragEntity(svg, entityRects(container)[0], 10, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 10,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 60,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('rejects a resize that grows into another active drawer', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    const before = svg.innerHTML;
+    dragEntity(svg, resizeHandle(container), 10, 0);
+
+    expect(screen.getByText(RESIZE_MESSAGE)).toBeVisible();
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(svg.innerHTML).toBe(before);
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+  });
+
+  it('accepts a shrink and an edge-touching resize', async () => {
+    const a = drawerFixture({
+      id: 'a',
+      label: 'A',
+      display_number: 1,
+      width: 50
+    });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    dragEntity(svg, resizeHandle(container), 10, 0);
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(RESIZE_MESSAGE)).not.toBeInTheDocument();
+
+    dragEntity(svg, resizeHandle(container), -10, 0);
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 40
+    });
+    expect(screen.queryByText(RESIZE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('applies the collision guard to keyboard nudges and clears the message on a valid edit', async () => {
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.keyDown(svg, { key: 'ArrowRight' });
+
+    expect(screen.getByText(MOVE_MESSAGE)).toBeVisible();
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+
+    fireEvent.keyDown(svg, { key: 'ArrowDown' });
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 10,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Undo')).toBeEnabled();
+  });
+});

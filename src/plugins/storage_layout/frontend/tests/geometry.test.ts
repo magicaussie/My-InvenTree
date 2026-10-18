@@ -5,6 +5,7 @@ import {
   findFreeDrawerPosition,
   fitViewport,
   fitZoom,
+  isValidRect,
   MAX_ZOOM,
   MIN_ZOOM,
   moveRect,
@@ -16,6 +17,8 @@ import {
   snapRect,
   snapValue,
   translatedPan,
+  validateMove,
+  validateResize,
   viewportToCanvas,
   zoomAtPoint
 } from '../src/state/geometry';
@@ -227,6 +230,163 @@ describe('findFreeDrawerPosition', () => {
       expect(findFreeDrawerPosition(bounds, size, [], grid)).toBeNull();
     }
   );
+});
+
+describe('isValidRect', () => {
+  it('requires finite coordinates and positive area', () => {
+    expect(isValidRect({ x: 0, y: 0, width: 1, height: 1 })).toBe(true);
+    expect(isValidRect({ x: 0, y: 0, width: 0, height: 1 })).toBe(false);
+    expect(isValidRect({ x: 0, y: 0, width: 1, height: -1 })).toBe(false);
+    expect(isValidRect({ x: Number.NaN, y: 0, width: 1, height: 1 })).toBe(
+      false
+    );
+    expect(
+      isValidRect({ x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 1 })
+    ).toBe(false);
+  });
+});
+
+describe('validateMove', () => {
+  const bounds = { width: 600, height: 800 };
+  const rect = (x: number, y: number, width = 60, height = 40) => ({
+    x,
+    y,
+    width,
+    height
+  });
+
+  it('accepts a move into free space', () => {
+    expect(
+      validateMove({ a: rect(10, 0) }, { a: rect(0, 0) }, [], bounds)
+    ).toBe(true);
+  });
+
+  it('rejects a move that overlaps a stationary drawer', () => {
+    expect(
+      validateMove({ a: rect(10, 0) }, { a: rect(0, 0) }, [rect(60, 0)], bounds)
+    ).toBe(false);
+  });
+
+  it('accepts a move that touches a stationary drawer along an edge', () => {
+    expect(
+      validateMove(
+        { a: rect(60, 0) },
+        { a: rect(0, 0) },
+        [rect(120, 0)],
+        bounds
+      )
+    ).toBe(true);
+  });
+
+  it('rejects a move that leaves the cabinet bounds', () => {
+    expect(
+      validateMove({ a: rect(-10, 0) }, { a: rect(0, 0) }, [], bounds)
+    ).toBe(false);
+    expect(
+      validateMove({ a: rect(550, 0) }, { a: rect(540, 0) }, [], bounds)
+    ).toBe(false);
+  });
+
+  it('treats the moving set as simultaneous, ignoring their original positions', () => {
+    const original = { a: rect(0, 0), b: rect(60, 0) };
+    const proposed = { a: rect(60, 0), b: rect(120, 0) };
+    expect(validateMove(proposed, original, [], bounds)).toBe(true);
+  });
+
+  it('rejects a new overlap between two moving drawers', () => {
+    const original = { a: rect(0, 0), b: rect(200, 0) };
+    const proposed = { a: rect(0, 0), b: rect(30, 0) };
+    expect(validateMove(proposed, original, [], bounds)).toBe(false);
+  });
+
+  it('allows an unchanged pre-existing overlap between moving drawers', () => {
+    const original = { a: rect(0, 0), b: rect(50, 0) };
+    const proposed = { a: rect(10, 0), b: rect(60, 0) };
+    expect(validateMove(proposed, original, [], bounds)).toBe(true);
+  });
+
+  it('rejects a new overlap with a stationary drawer while moving as a set', () => {
+    const original = { a: rect(0, 0), b: rect(60, 0) };
+    const proposed = { a: rect(60, 0), b: rect(120, 0) };
+    expect(validateMove(proposed, original, [rect(120, 0)], bounds)).toBe(
+      false
+    );
+  });
+
+  it('rejects invalid rectangles', () => {
+    expect(
+      validateMove(
+        { a: { x: 0, y: 0, width: 0, height: 40 } },
+        { a: rect(0, 0) },
+        [],
+        bounds
+      )
+    ).toBe(false);
+    expect(
+      validateMove(
+        { a: { x: Number.NaN, y: 0, width: 60, height: 40 } },
+        { a: rect(0, 0) },
+        [],
+        bounds
+      )
+    ).toBe(false);
+  });
+});
+
+describe('validateResize', () => {
+  const bounds = { width: 600, height: 800 };
+  const rect = (x: number, y: number, width = 60, height = 40) => ({
+    x,
+    y,
+    width,
+    height
+  });
+
+  it('accepts a resize that stays inside the cabinet and clear of others', () => {
+    expect(
+      validateResize(rect(0, 0, 70, 40), rect(0, 0), [rect(200, 0)], bounds)
+    ).toBe(true);
+  });
+
+  it('accepts an edge-touching resize', () => {
+    expect(
+      validateResize(
+        rect(0, 0, 60, 40),
+        rect(0, 0, 50, 40),
+        [rect(60, 0)],
+        bounds
+      )
+    ).toBe(true);
+  });
+
+  it('rejects a resize that grows into another drawer', () => {
+    expect(
+      validateResize(rect(0, 0, 70, 40), rect(0, 0), [rect(60, 0)], bounds)
+    ).toBe(false);
+  });
+
+  it('rejects an out-of-bounds or invalid rectangle', () => {
+    expect(validateResize(rect(0, 0, 700, 40), rect(0, 0), [], bounds)).toBe(
+      false
+    );
+    expect(validateResize(rect(0, 0, 0, 40), rect(0, 0), [], bounds)).toBe(
+      false
+    );
+    expect(
+      validateResize(
+        { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 40 },
+        rect(0, 0),
+        [],
+        bounds
+      )
+    ).toBe(false);
+  });
+
+  it('leaves a pre-existing collision untouched', () => {
+    expect(
+      validateResize(rect(0, 0, 60, 50), rect(0, 0), [rect(50, 0)], bounds)
+    ).toBe(true);
+  });
 });
 
 describe('geometry', () => {

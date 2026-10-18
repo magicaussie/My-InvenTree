@@ -59,6 +59,78 @@ export function rectInside(inner: Rect, outer: Rect): boolean {
   );
 }
 
+/** Return true when a rectangle has finite coordinates and positive area. */
+export function isValidRect(rect: Rect): boolean {
+  return (
+    Number.isFinite(rect.x) &&
+    Number.isFinite(rect.y) &&
+    Number.isFinite(rect.width) &&
+    Number.isFinite(rect.height) &&
+    rect.width > 0 &&
+    rect.height > 0
+  );
+}
+
+/**
+ * Validate a proposed multi-selection move.
+ *
+ * `proposed` holds the translated rectangles keyed by id, `original` the same
+ * drawers before the move, and `stationary` every active drawer that is *not*
+ * moving. Every proposed rectangle must be valid, stay inside `bounds` and
+ * avoid the stationary drawers. Overlaps *among* the moving rectangles are
+ * only rejected when they are new: a shared translation preserves relative
+ * offsets, so a pre-existing overlap between two moving drawers is unchanged
+ * and must not block the move (design rule 3).
+ */
+export function validateMove(
+  proposed: Record<string, Rect>,
+  original: Record<string, Rect>,
+  stationary: readonly Rect[],
+  bounds: Bounds
+): boolean {
+  const cabinet = { x: 0, y: 0, ...bounds };
+
+  for (const rect of Object.values(proposed)) {
+    if (!isValidRect(rect) || !rectInside(rect, cabinet)) return false;
+    if (stationary.some((other) => rectsOverlap(rect, other))) return false;
+  }
+
+  const entries = Object.entries(proposed);
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      const [idA, rectA] = entries[i];
+      const [idB, rectB] = entries[j];
+      if (!rectsOverlap(rectA, rectB)) continue;
+      const beforeA = original[idA];
+      const beforeB = original[idB];
+      if (!beforeA || !beforeB || !rectsOverlap(beforeA, beforeB)) return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Validate a proposed resize of a single drawer.
+ *
+ * The proposed rectangle must be valid, stay inside `bounds` and must not
+ * introduce a *new* overlap with another active drawer. A collision that
+ * already existed before the resize is left untouched rather than repaired
+ * (design rule 4).
+ */
+export function validateResize(
+  proposed: Rect,
+  original: Rect,
+  others: readonly Rect[],
+  bounds: Bounds
+): boolean {
+  const cabinet = { x: 0, y: 0, ...bounds };
+  if (!isValidRect(proposed) || !rectInside(proposed, cabinet)) return false;
+  return !others.some(
+    (other) => rectsOverlap(proposed, other) && !rectsOverlap(original, other)
+  );
+}
+
 /** Find the first free grid position, scanning rows from the top-left. */
 export function findFreeDrawerPosition(
   bounds: Bounds,
