@@ -1,7 +1,9 @@
+import type { InvenTreePluginContext } from '@inventreedb/ui';
 import { MantineProvider } from '@mantine/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { CabinetDesigner } from '../src/components/CabinetDesigner';
 import { EditorCanvas } from '../src/components/editor/EditorCanvas';
 import { DrawerInspector } from '../src/components/editor/Inspector';
 import { ValidationPanel } from '../src/components/editor/Panels';
@@ -17,7 +19,10 @@ const entity = {
   rect: { x: 10, y: 10, width: 20, height: 20 }
 };
 
-function canvasFixture(selection = ['e1']) {
+function canvasFixture(
+  selection = ['e1'],
+  initialBounds = { width: 100, height: 100 }
+) {
   const onMove = vi.fn();
   const onResize = vi.fn();
   const onSelect = vi.fn();
@@ -27,9 +32,9 @@ function canvasFixture(selection = ['e1']) {
     label: 'A2',
     rect: { x: 50, y: 50, width: 20, height: 20 }
   };
-  const { container } = wrap(
+  const canvas = (bounds = initialBounds) => (
     <EditorCanvas
-      bounds={{ width: 100, height: 100 }}
+      bounds={bounds}
       entities={[entity, second]}
       selection={selection}
       grid={1}
@@ -42,8 +47,11 @@ function canvasFixture(selection = ['e1']) {
       onResize={onResize}
     />
   );
+  const { container, rerender } = wrap(canvas());
+  const rerenderCanvas = (bounds = initialBounds) =>
+    rerender(<MantineProvider>{canvas(bounds)}</MantineProvider>);
   const svg = screen.getByRole('application', { name: 'regression canvas' });
-  vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+  const measurement = vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
     x: 0,
     y: 0,
     left: 0,
@@ -105,8 +113,49 @@ function canvasFixture(selection = ['e1']) {
     onMove,
     onResize,
     onSelect,
-    onClearSelection
+    onClearSelection,
+    measurement,
+    rerenderCanvas
   };
+}
+
+function readViewport(svg: Element) {
+  const transform = svg
+    .querySelector('g[transform]')
+    ?.getAttribute('transform');
+  expect(transform).toBeDefined();
+  const numbers = transform
+    ?.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)
+    ?.map(Number);
+  expect(numbers).toHaveLength(3);
+  const [offsetX, offsetY, zoom] = numbers as number[];
+  return { offsetX, offsetY, zoom };
+}
+
+type CanvasFixture = ReturnType<typeof canvasFixture>;
+
+function startPan(
+  fixture: CanvasFixture,
+  target: Element = fixture.svg,
+  button = 1
+) {
+  fireEvent.pointerDown(target, {
+    button,
+    clientX: 20,
+    clientY: 20,
+    pointerId: 7
+  });
+}
+
+function expectNoCanvasMutation(fixture: CanvasFixture) {
+  expect(fixture.onMove).not.toHaveBeenCalled();
+  expect(fixture.onResize).not.toHaveBeenCalled();
+  expect(fixture.onSelect).not.toHaveBeenCalled();
+  expect(fixture.onClearSelection).not.toHaveBeenCalled();
+  expect(fixture.rects[0]).toHaveAttribute('x', '10');
+  expect(fixture.rects[0]).toHaveAttribute('y', '10');
+  expect(fixture.rects[0]).toHaveAttribute('width', '20');
+  expect(fixture.rects[0]).toHaveAttribute('height', '20');
 }
 
 describe('EditorCanvas regressions', () => {
@@ -380,6 +429,491 @@ describe('EditorCanvas regressions', () => {
   });
 });
 
+describe('EditorCanvas navigation', () => {
+  it.each([0, -7, 7])('pans by screen pixels at wheel step %i', (steps) => {
+    const f = canvasFixture();
+    f.zoom(steps);
+    const before = readViewport(f.svg);
+    startPan(f);
+    expect(f.capture).toHaveBeenCalledExactlyOnceWith(7);
+    expect(document.activeElement).toBe(f.svg);
+    f.move(31, -17);
+    expect(readViewport(f.svg)).toEqual({
+      ...before,
+      offsetX: before.offsetX + 31,
+      offsetY: before.offsetY - 17
+    });
+    f.up();
+    expect(f.release).toHaveBeenCalledExactlyOnceWith(7);
+    expectNoCanvasMutation(f);
+  });
+
+  it.each(['root', 'entity', 'handle'])(
+    'middle-pans from %s without editing',
+    (target) => {
+      const f = canvasFixture(['e1', 'e2']);
+      startPan(
+        f,
+        target === 'root'
+          ? f.svg
+          : target === 'entity'
+            ? f.rects[1]
+            : f.handle()
+      );
+      f.move();
+      f.up();
+      expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 10, offsetY: 5 });
+      expectNoCanvasMutation(f);
+    }
+  );
+
+  it.each(['root', 'entity', 'handle'])(
+    'Space-primary pans from %s and releases readiness without ending pan',
+    (target) => {
+      const f = canvasFixture();
+      const handle = target === 'handle' ? f.handle() : null;
+      f.svg.focus();
+      expect(fireEvent.keyDown(f.svg, { key: ' ', code: 'Space' })).toBe(false);
+      expect(f.svg).toHaveStyle({ cursor: 'grab' });
+      startPan(
+        f,
+        target === 'root'
+          ? f.svg
+          : target === 'entity'
+            ? f.rects[0]
+            : (handle as SVGRectElement),
+        0
+      );
+      expect(f.svg).toHaveStyle({ cursor: 'grabbing' });
+      f.move(10, 5);
+      fireEvent.keyUp(window, { key: ' ', code: 'Space' });
+      f.move(25, 15);
+      f.up();
+      expect(readViewport(f.svg)).toEqual({
+        zoom: 1,
+        offsetX: 25,
+        offsetY: 15
+      });
+      expect(f.svg).not.toHaveStyle({ cursor: 'grab' });
+      expectNoCanvasMutation(f);
+      f.down();
+      f.move(5, 0);
+      f.up();
+      expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 5, 0, 'end');
+      f.down(f.svg);
+      expect(f.onClearSelection).toHaveBeenCalledExactlyOnceWith();
+    }
+  );
+
+  it.each(['input', 'textarea', 'contenteditable', 'window'])(
+    'does not arm Space pan while typing in %s',
+    (kind) => {
+      const f = canvasFixture();
+      const control = document.createElement(
+        kind === 'textarea' ? 'textarea' : kind === 'input' ? 'input' : 'div'
+      );
+      if (kind === 'contenteditable')
+        control.setAttribute('contenteditable', 'true');
+      document.body.append(control);
+      control.focus();
+      try {
+        expect(
+          fireEvent.keyDown(kind === 'window' ? window : control, {
+            key: ' ',
+            code: 'Space'
+          })
+        ).toBe(true);
+        f.down();
+        f.move();
+        f.up();
+        expect(readViewport(f.svg)).toEqual({
+          zoom: 1,
+          offsetX: 0,
+          offsetY: 0
+        });
+        expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 10, 5, 'end');
+      } finally {
+        control.remove();
+      }
+    }
+  );
+
+  it.each(['keyup', 'SVG blur', 'window blur'])(
+    '%s clears idle Space readiness so primary drag edits again',
+    (reason) => {
+      const f = canvasFixture();
+      f.svg.focus();
+      fireEvent.keyDown(f.svg, { key: ' ', code: 'Space' });
+      expect(f.svg).toHaveStyle({ cursor: 'grab' });
+      if (reason === 'keyup')
+        fireEvent.keyUp(window, { key: ' ', code: 'Space' });
+      else fireEvent.blur(reason === 'SVG blur' ? f.svg : window);
+      expect(f.svg).not.toHaveStyle({ cursor: 'grab' });
+      f.down();
+      f.move();
+      f.up();
+      expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 0, offsetY: 0 });
+      expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 10, 5, 'end');
+      expect(f.onResize).not.toHaveBeenCalled();
+    }
+  );
+
+  it('does not let middle-button pan replace an active entity edit', () => {
+    const f = canvasFixture();
+    f.down();
+    f.move(5, 0);
+    fireEvent.pointerDown(f.svg, {
+      button: 1,
+      pointerId: 99,
+      clientX: 20,
+      clientY: 20
+    });
+    f.move(50, 50, 99);
+    f.up(99);
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 0, offsetY: 0 });
+    expect(f.capture).toHaveBeenCalledExactlyOnceWith(7);
+    f.move(10, 5);
+    f.up();
+    expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 10, 5, 'end');
+    expect(f.onResize).not.toHaveBeenCalled();
+    expect(f.onSelect).not.toHaveBeenCalled();
+    expect(f.onClearSelection).not.toHaveBeenCalled();
+  });
+
+  it('SVG blur clears readiness but does not cancel an active pan', () => {
+    const f = canvasFixture();
+    f.svg.focus();
+    fireEvent.keyDown(f.svg, { key: ' ', code: 'Space' });
+    startPan(f, f.svg, 0);
+    f.move();
+    fireEvent.blur(f.svg);
+    f.move(25, 15);
+    f.up();
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 25, offsetY: 15 });
+    expectNoCanvasMutation(f);
+    f.down();
+    f.move(5, 0);
+    f.up();
+    expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 5, 0, 'end');
+  });
+
+  it('ignores competing pointers and unrelated cancellation during pan', () => {
+    const f = canvasFixture();
+    startPan(f);
+    f.down(f.rects[1], 99);
+    f.move(80, 80, 99);
+    f.up(99);
+    fireEvent.pointerCancel(f.svg, { pointerId: 99 });
+    fireEvent.lostPointerCapture(f.svg, { pointerId: 99 });
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 0, offsetY: 0 });
+    expect(f.capture).toHaveBeenCalledExactlyOnceWith(7);
+    expect(f.release).not.toHaveBeenCalled();
+    f.move(15, 25);
+    f.up();
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 15, offsetY: 25 });
+    expect(f.release).toHaveBeenCalledExactlyOnceWith(7);
+    expectNoCanvasMutation(f);
+  });
+
+  it.each(['Escape', 'pointercancel', 'lostpointercapture', 'blur'])(
+    'restores the pre-pan viewport on %s after prior pan and zoom',
+    (reason) => {
+      const f = canvasFixture();
+      startPan(f);
+      f.move(30, -10);
+      f.up();
+      f.zoom(3);
+      const before = readViewport(f.svg);
+      f.release.mockClear();
+      f.svg.focus();
+      fireEvent.keyDown(f.svg, { key: ' ', code: 'Space' });
+      startPan(f, f.rects[0], 0);
+      f.move(40, 60);
+      expect(readViewport(f.svg)).not.toEqual(before);
+      if (reason === 'Escape') fireEvent.keyDown(window, { key: 'Escape' });
+      else if (reason === 'pointercancel')
+        fireEvent.pointerCancel(f.svg, { pointerId: 7 });
+      else if (reason === 'lostpointercapture')
+        fireEvent.lostPointerCapture(f.svg, { pointerId: 7 });
+      else fireEvent.blur(window);
+      expect(readViewport(f.svg)).toEqual(before);
+      if (reason !== 'lostpointercapture')
+        expect(f.release).toHaveBeenCalledWith(7);
+      f.up();
+      expectNoCanvasMutation(f);
+      fireEvent.keyUp(window, { key: ' ', code: 'Space' });
+      f.down();
+      f.move(5 * before.zoom, 0);
+      f.up();
+      expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 5, 0, 'end');
+    }
+  );
+
+  it('uses current refs for consecutive pan moves/up before rerender and survives a parent rerender', () => {
+    const f = canvasFixture();
+    act(() => {
+      startPan(f);
+      f.move(10, 5);
+      f.move(30, 15);
+      f.up();
+    });
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 30, offsetY: 15 });
+    f.rerenderCanvas();
+    act(() => {
+      startPan(f);
+      f.move(-5, 20);
+      f.up();
+    });
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 25, offsetY: 35 });
+    expect(f.capture).toHaveBeenCalledTimes(2);
+    expect(f.release).toHaveBeenCalledTimes(2);
+    expectNoCanvasMutation(f);
+    act(() => {
+      f.down();
+      f.move(5, 0);
+      f.move(10, 0);
+      f.up();
+    });
+    expect(f.onMove).toHaveBeenCalledExactlyOnceWith(['e1'], 10, 0, 'end');
+  });
+
+  it('prevents middle auxclick without consuming primary click', () => {
+    const f = canvasFixture();
+    const middle = new MouseEvent('auxclick', {
+      bubbles: true,
+      cancelable: true,
+      button: 1
+    });
+    fireEvent(f.svg, middle);
+    expect(middle.defaultPrevented).toBe(true);
+    const primary = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    });
+    fireEvent(f.svg, primary);
+    expect(primary.defaultPrevented).toBe(false);
+    f.down(f.svg);
+    expect(f.onClearSelection).toHaveBeenCalledTimes(1);
+  });
+
+  it('fits measured non-square dimensions with padding and does not refit on rerender', () => {
+    const f = canvasFixture(['e1'], { width: 200, height: 100 });
+    f.measurement.mockReturnValue({
+      ...f.svg.getBoundingClientRect(),
+      left: 80,
+      top: 40,
+      width: 400,
+      height: 200
+    });
+    expect(
+      screen.getByRole('button', { name: 'Reset view' })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    expect(readViewport(f.svg)).toEqual({
+      zoom: 1.52,
+      offsetX: 48,
+      offsetY: 24
+    });
+    f.rerenderCanvas({ width: 300, height: 150 });
+    expect(readViewport(f.svg)).toEqual({
+      zoom: 1.52,
+      offsetX: 48,
+      offsetY: 24
+    });
+    expectNoCanvasMutation(f);
+    fireEvent.click(screen.getByLabelText('Reset view'));
+    expect(readViewport(f.svg)).toEqual({ zoom: 1, offsetX: 0, offsetY: 0 });
+  });
+
+  it('fits the default 100px measurement at .52', () => {
+    const f = canvasFixture();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    expect(readViewport(f.svg)).toEqual({
+      zoom: 0.52,
+      offsetX: 24,
+      offsetY: 24
+    });
+    expectNoCanvasMutation(f);
+  });
+
+  it.each([
+    [10000, 10000, 0.1],
+    [1, 1, 20]
+  ])('clamps fit for bounds %ix%i', (width, height, zoom) => {
+    const f = canvasFixture(['e1'], { width, height });
+    fireEvent.click(screen.getByLabelText('Fit to view'));
+    expect(readViewport(f.svg)).toEqual({
+      zoom,
+      offsetX: (100 - width * zoom) / 2,
+      offsetY: (100 - height * zoom) / 2
+    });
+    expectNoCanvasMutation(f);
+  });
+
+  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+    'ignores invalid fit measurements and bounds: %s',
+    (invalid) => {
+      const f = canvasFixture();
+      startPan(f);
+      f.move(20, 10);
+      f.up();
+      f.zoom(2);
+      const before = readViewport(f.svg);
+      const rect = f.svg.getBoundingClientRect();
+      for (const axis of ['width', 'height'] as const) {
+        f.measurement.mockReturnValue({ ...rect, [axis]: invalid });
+        for (const label of ['Fit to view', 'Zoom in', 'Zoom out']) {
+          fireEvent.click(screen.getByLabelText(label));
+          expect(readViewport(f.svg)).toEqual(before);
+        }
+        f.measurement.mockReturnValue(rect);
+        f.rerenderCanvas({ width: 100, height: 100, [axis]: invalid });
+        fireEvent.click(screen.getByLabelText('Fit to view'));
+        expect(readViewport(f.svg)).toEqual(before);
+        f.rerenderCanvas();
+      }
+      for (const axis of ['width', 'height'] as const) {
+        f.measurement.mockReturnValue({ ...rect, [axis]: invalid });
+        fireEvent.click(screen.getByLabelText('Reset view'));
+        expect(readViewport(f.svg)).toEqual({
+          zoom: 1,
+          offsetX: 0,
+          offsetY: 0
+        });
+      }
+      expectNoCanvasMutation(f);
+    }
+  );
+
+  it.each(['pan', 'fit'])(
+    'anchors toolbar zoom at the measured centre after %s',
+    (setup) => {
+      const f = canvasFixture();
+      f.measurement.mockReturnValue({
+        ...f.svg.getBoundingClientRect(),
+        left: 80,
+        top: 40,
+        width: 320,
+        height: 180
+      });
+      if (setup === 'pan') {
+        startPan(f);
+        f.move(27, -13);
+        f.up();
+      } else fireEvent.click(screen.getByLabelText('Fit to view'));
+      const before = readViewport(f.svg);
+      const centre = {
+        x: (160 - before.offsetX) / before.zoom,
+        y: (90 - before.offsetY) / before.zoom
+      };
+      for (const label of ['Zoom in', 'Zoom out']) {
+        fireEvent.click(screen.getByLabelText(label));
+        const current = readViewport(f.svg);
+        expect((160 - current.offsetX) / current.zoom).toBeCloseTo(centre.x);
+        expect((90 - current.offsetY) / current.zoom).toBeCloseTo(centre.y);
+        if (label === 'Zoom in')
+          expect(current.zoom).toBeGreaterThan(before.zoom);
+      }
+      expectNoCanvasMutation(f);
+    }
+  );
+
+  it.each([
+    ['Zoom in', 20],
+    ['Zoom out', 0.1]
+  ] as const)('does not drift at the %s limit', (label, limit) => {
+    const f = canvasFixture();
+    startPan(f);
+    f.move(27, -13);
+    f.up();
+    for (let i = 0; i < 100; i++) fireEvent.click(screen.getByLabelText(label));
+    const before = readViewport(f.svg);
+    expect(before.zoom).toBe(limit);
+    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByLabelText(label));
+    expect(readViewport(f.svg)).toEqual(before);
+    expectNoCanvasMutation(f);
+  });
+
+  it.each(['ctrlKey', 'metaKey'])(
+    'preserves %s wheel anchoring after pan',
+    (modifier) => {
+      const f = canvasFixture();
+      f.measurement.mockReturnValue({
+        ...f.svg.getBoundingClientRect(),
+        left: 30,
+        top: 40
+      });
+      startPan(f);
+      f.move(25, -10);
+      f.up();
+      const before = readViewport(f.svg);
+      const wheel = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        [modifier]: true,
+        deltaY: -100,
+        clientX: 80,
+        clientY: 110
+      });
+      fireEvent(f.svg, wheel);
+      expect(wheel.defaultPrevented).toBe(true);
+      const after = readViewport(f.svg);
+      expect(after.zoom).toBeCloseTo(before.zoom * 1.1);
+      expect((50 - after.offsetX) / after.zoom).toBeCloseTo(
+        (50 - before.offsetX) / before.zoom
+      );
+      expect((70 - after.offsetY) / after.zoom).toBeCloseTo(
+        (70 - before.offsetY) / before.zoom
+      );
+      const plain = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: 100
+      });
+      fireEvent(f.svg, plain);
+      expect(plain.defaultPrevented).toBe(false);
+      expect(readViewport(f.svg)).toEqual(after);
+      expectNoCanvasMutation(f);
+    }
+  );
+
+  it.each(['pan', 'move', 'resize'])(
+    'keeps all navigation controls inert during %s, including before rerender',
+    (kind) => {
+      const f = canvasFixture();
+      f.zoom(1);
+      const before = readViewport(f.svg);
+      act(() => {
+        if (kind === 'pan') startPan(f);
+        else f.down(kind === 'resize' ? f.handle() : f.rects[0]);
+        for (const label of [
+          'Zoom in',
+          'Zoom out',
+          'Fit to view',
+          'Reset view'
+        ])
+          fireEvent.click(screen.getByLabelText(label));
+        const wheel = new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          ctrlKey: true,
+          deltaY: -100
+        });
+        fireEvent(f.svg, wheel);
+        expect(wheel.defaultPrevented).toBe(true);
+      });
+      expect(readViewport(f.svg)).toEqual(before);
+      // Once React has rendered the active gesture, the guards must still hold.
+      for (const label of ['Zoom in', 'Zoom out', 'Fit to view', 'Reset view'])
+        fireEvent.click(screen.getByLabelText(label));
+      expect(readViewport(f.svg)).toEqual(before);
+      f.up();
+      expectNoCanvasMutation(f);
+    }
+  );
+});
+
 describe('EditorCanvas', () => {
   it('commits a pointer drag as a single move command', () => {
     const onMove = vi.fn();
@@ -457,7 +991,117 @@ describe('EditorCanvas', () => {
     );
     expect(screen.getByLabelText('Zoom in')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Fit to view' })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Reset view')).toBeInTheDocument();
+  });
+});
+
+describe('canvas navigation and designer state', () => {
+  it('preserves geometry, selection, dirty state and undo/redo history', async () => {
+    const cabinet = {
+      id: 'navigation-cabinet',
+      name: 'Navigation cabinet',
+      slug: 'navigation',
+      location: 41,
+      width_units: 600,
+      height_units: 800,
+      revision: 3,
+      archived: false,
+      active_mapping: null
+    };
+    const drawer = {
+      id: 'navigation-drawer',
+      label: 'D1',
+      display_number: 1,
+      location: 42,
+      x: 10,
+      y: 10,
+      width: 60,
+      height: 40,
+      interior_width: 60,
+      interior_height: 40,
+      archived: false,
+      allocation: null
+    };
+    const layout = { schema_version: 1, cabinet, drawers: [drawer], bins: [] };
+    const api = {
+      get: vi.fn(async (url: string) => ({
+        data: url.includes('/electrical/')
+          ? { cabinet, controllers: [] }
+          : layout,
+        headers: { etag: '"3"' }
+      })),
+      post: vi.fn(),
+      put: vi.fn(),
+      patch: vi.fn()
+    };
+    wrap(
+      <CabinetDesigner
+        context={
+          { api, navigate: vi.fn() } as unknown as InvenTreePluginContext
+        }
+        cabinetId={cabinet.id}
+      />
+    );
+    await screen.findByTestId('cabinet-designer');
+    const svg = screen.getByRole('application', { name: 'Cabinet front view' });
+    vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      x: 0,
+      y: 0,
+      width: 1000,
+      height: 600,
+      right: 1000,
+      bottom: 600,
+      toJSON: () => ({})
+    });
+    const selected = screen.getByRole('button', { name: 'Drawer D1' });
+    fireEvent.click(selected);
+    const rect = svg.querySelector('rect[style*="move"]');
+    const navigate = () => {
+      for (const label of [
+        'Zoom in',
+        'Zoom out',
+        'Fit to view',
+        'Reset view'
+      ]) {
+        fireEvent.click(screen.getByLabelText(label));
+        expect(selected).toHaveAttribute('aria-selected', 'true');
+        expect(rect).toHaveAttribute('width', '60');
+        expect(rect).toHaveAttribute('height', '40');
+        expect(rect).toHaveAttribute('y', '10');
+      }
+    };
+    navigate();
+    expect(rect).toHaveAttribute('x', '10');
+    expect(screen.getByText('Saved', { exact: true })).toBeVisible();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(screen.getByLabelText('Redo')).toBeDisabled();
+
+    fireEvent.keyDown(svg, { key: 'ArrowRight' });
+    navigate();
+    expect(rect).toHaveAttribute('x', '20');
+    expect(screen.getByText('Unsaved changes')).toBeVisible();
+    expect(screen.getByLabelText('Undo')).toBeEnabled();
+    expect(screen.getByLabelText('Redo')).toBeDisabled();
+
+    fireEvent.click(screen.getByLabelText('Undo'));
+    // Existing editor semantics keep the draft dirty after undo until save/revert.
+    expect(screen.getByText('Unsaved changes')).toBeVisible();
+    navigate();
+    expect(rect).toHaveAttribute('x', '10');
+    expect(screen.getByText('Unsaved changes')).toBeVisible();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(screen.getByLabelText('Redo')).toBeEnabled();
+    fireEvent.click(screen.getByLabelText('Redo'));
+    expect(rect).toHaveAttribute('x', '20');
+    expect(api.put).not.toHaveBeenCalled();
+    expect(api.post).not.toHaveBeenCalled();
+    expect(api.patch).not.toHaveBeenCalled();
+    expect(layout.drawers).toEqual([drawer]);
   });
 });
 

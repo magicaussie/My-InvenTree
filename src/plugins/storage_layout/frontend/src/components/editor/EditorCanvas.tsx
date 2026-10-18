@@ -30,12 +30,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type Bounds,
   clampRect,
+  fitViewport,
+  MAX_ZOOM,
+  MIN_ZOOM,
   moveRects,
   RESIZE_HANDLES,
   type Rect,
   type ResizeHandle,
   resizeRect,
   snapRect,
+  translatedPan,
   type Viewport,
   viewportToCanvas,
   zoomAtPoint
@@ -85,8 +89,11 @@ interface DragState {
   moved: boolean;
 }
 
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 20;
+interface PanState {
+  kind: 'pan';
+  start: { x: number; y: number };
+  origin: Viewport;
+}
 
 function severityColor(
   severity: EditorCanvasProps['entities'][number]['severity']
@@ -120,8 +127,34 @@ export function EditorCanvas(props: EditorCanvasProps) {
     offsetX: 0,
     offsetY: 0
   });
+  const viewportRef = useRef(viewport);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const [pan, setPan] = useState<PanState | null>(null);
+  const panRef = useRef<PanState | null>(null);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const spaceHeldRef = useRef(false);
   const pointerIdRef = useRef<number | null>(null);
+
+  // Event refs mirror the rendered state synchronously, so capture/move/up
+  // sequences do not depend on React having rendered between pointer events.
+  const updateViewport = useCallback(
+    (next: Viewport | ((current: Viewport) => Viewport)) => {
+      const value =
+        typeof next === 'function' ? next(viewportRef.current) : next;
+      viewportRef.current = value;
+      setViewport(value);
+    },
+    []
+  );
+  const updateDrag = useCallback((next: DragState | null) => {
+    dragRef.current = next;
+    setDrag(next);
+  }, []);
+  const updateSpace = useCallback((held: boolean) => {
+    spaceHeldRef.current = held;
+    setSpaceHeld(held);
+  }, []);
 
   const entityMap = useMemo(() => {
     const map: Record<string, CanvasEntity> = {};
@@ -131,18 +164,15 @@ export function EditorCanvas(props: EditorCanvasProps) {
 
   const snapEnabled = snap;
 
-  const toCanvas = useCallback(
-    (clientX: number, clientY: number) => {
-      const svg = svgRef.current;
-      if (!svg) return { x: 0, y: 0 };
-      const rect = svg.getBoundingClientRect();
-      return viewportToCanvas(
-        { x: clientX - rect.left, y: clientY - rect.top },
-        viewport
-      );
-    },
-    [viewport]
-  );
+  const toCanvas = useCallback((clientX: number, clientY: number) => {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
+    return viewportToCanvas(
+      { x: clientX - rect.left, y: clientY - rect.top },
+      viewportRef.current
+    );
+  }, []);
 
   const commitDrag = useCallback(
     (state: DragState, cancelled: boolean) => {
@@ -174,6 +204,28 @@ export function EditorCanvas(props: EditorCanvasProps) {
       }
     },
     [onMove, onResize]
+  );
+
+  const handlePanStart = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (pointerIdRef.current !== null) return;
+      if (event.button !== 1 && !(event.button === 0 && spaceHeldRef.current))
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      const svg = svgRef.current;
+      svg?.focus();
+      const next: PanState = {
+        kind: 'pan',
+        start: { x: event.clientX, y: event.clientY },
+        origin: viewportRef.current
+      };
+      panRef.current = next;
+      setPan(next);
+      pointerIdRef.current = event.pointerId;
+      svg?.setPointerCapture?.(event.pointerId);
+    },
+    []
   );
 
   const handlePointerDown = useCallback(
@@ -217,7 +269,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
       // Capture on the stable SVG, never on a resize handle that may rerender.
       svgRef.current?.setPointerCapture?.(event.pointerId);
 
-      setDrag({
+      updateDrag({
         kind: handle ? 'resize' : 'move',
         ids,
         handle,
@@ -229,12 +281,24 @@ export function EditorCanvas(props: EditorCanvasProps) {
         moved: false
       });
     },
-    [entityMap, onSelect, selection, toCanvas]
+    [entityMap, onSelect, selection, toCanvas, updateDrag]
   );
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<SVGElement>) => {
-      if (!drag || pointerIdRef.current !== event.pointerId) return;
+      if (pointerIdRef.current !== event.pointerId) return;
+      const pan = panRef.current;
+      if (pan) {
+        updateViewport(
+          translatedPan(pan.origin, pan.start, {
+            x: event.clientX,
+            y: event.clientY
+          })
+        );
+        return;
+      }
+      const drag = dragRef.current;
+      if (!drag) return;
       const current = toCanvas(event.clientX, event.clientY);
       const rawDx = current.x - drag.startX;
       const rawDy = current.y - drag.startY;
@@ -263,7 +327,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
         dy = Math.min(Math.max(dy, minDy), maxDy);
 
         const preview = moveRects(drag.originRects, dx, dy);
-        setDrag({
+        updateDrag({
           ...drag,
           preview,
           moved: dx !== 0 || dy !== 0,
@@ -285,42 +349,53 @@ export function EditorCanvas(props: EditorCanvasProps) {
       const clamped = outOfBounds ? candidate : clampRect(candidate, bounds);
       candidate = snappedIfNeeded(clamped, snapEnabled ? grid : 1);
 
-      setDrag({
+      updateDrag({
         ...drag,
         preview: { [id]: candidate },
         moved: true,
         outOfBounds
       });
     },
-    [drag, grid, snapEnabled, bounds, toCanvas]
+    [grid, snapEnabled, bounds, toCanvas, updateDrag, updateViewport]
   );
 
   const finishPointer = useCallback(
     (cancelled: boolean) => {
-      if (!drag) return;
       const pointerId = pointerIdRef.current;
+      if (pointerId === null) return;
+      const drag = dragRef.current;
+      const pan = panRef.current;
       pointerIdRef.current = null;
-      setDrag(null);
+      panRef.current = null;
+      setPan(null);
+      updateDrag(null);
+      if (pan && cancelled) updateViewport(pan.origin);
       const svg = svgRef.current;
-      if (pointerId !== null && svg?.hasPointerCapture?.(pointerId)) {
+      if (svg?.hasPointerCapture?.(pointerId)) {
         svg.releasePointerCapture(pointerId);
       }
-      commitDrag(drag, cancelled);
+      if (drag) commitDrag(drag, cancelled);
     },
-    [commitDrag, drag]
+    [commitDrag, updateDrag, updateViewport]
   );
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<SVGElement>) => {
-      if (!drag || pointerIdRef.current !== event.pointerId) return;
+      if (pointerIdRef.current !== event.pointerId) return;
       finishPointer(false);
     },
-    [drag, finishPointer]
+    [finishPointer]
   );
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<SVGSVGElement>) => {
-      if (drag) {
+      if (isTextInput(event.target)) return;
+      if (event.key === ' ' || event.code === 'Space') {
+        event.preventDefault();
+        updateSpace(true);
+        return;
+      }
+      if (pointerIdRef.current !== null) {
         if (event.key === 'Escape') {
           event.preventDefault();
           finishPointer(true);
@@ -355,28 +430,39 @@ export function EditorCanvas(props: EditorCanvasProps) {
         onClearSelection?.();
       }
     },
-    [drag, finishPointer, grid, onActivate, onClearSelection, onMove, selection]
+    [
+      finishPointer,
+      grid,
+      onActivate,
+      onClearSelection,
+      onMove,
+      selection,
+      updateSpace
+    ]
   );
 
-  const handleWheel = useCallback((event: WheelEvent) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    if (pointerIdRef.current !== null) return;
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const pointerX = event.clientX - rect.left;
-    const pointerY = event.clientY - rect.top;
+  const handleWheel = useCallback(
+    (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      if (pointerIdRef.current !== null) return;
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
 
-    setViewport((current) => {
-      const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-      const zoom = Math.min(
-        MAX_ZOOM,
-        Math.max(MIN_ZOOM, current.zoom * factor)
-      );
-      return zoomAtPoint(current, { x: pointerX, y: pointerY }, zoom);
-    });
-  }, []);
+      updateViewport((current) => {
+        const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+        const zoom = Math.min(
+          MAX_ZOOM,
+          Math.max(MIN_ZOOM, current.zoom * factor)
+        );
+        return zoomAtPoint(current, { x: pointerX, y: pointerY }, zoom);
+      });
+    },
+    [updateViewport]
+  );
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -386,33 +472,76 @@ export function EditorCanvas(props: EditorCanvasProps) {
     return () => svg?.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
 
-  const zoomBy = useCallback((factor: number) => {
-    if (pointerIdRef.current !== null) return;
-    setViewport((current) => ({
-      ...current,
-      zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current.zoom * factor))
-    }));
-  }, []);
+  const zoomBy = useCallback(
+    (factor: number) => {
+      if (pointerIdRef.current !== null) return;
+      const screen = svgRef.current?.getBoundingClientRect();
+      if (
+        !screen ||
+        ![screen.width, screen.height].every((n) => Number.isFinite(n) && n > 0)
+      )
+        return;
+      updateViewport((current) =>
+        zoomAtPoint(
+          current,
+          { x: screen.width / 2, y: screen.height / 2 },
+          Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current.zoom * factor))
+        )
+      );
+    },
+    [updateViewport]
+  );
 
   const resetView = useCallback(() => {
     if (pointerIdRef.current !== null) return;
-    setViewport({ zoom: 1, offsetX: 0, offsetY: 0 });
-  }, []);
+    updateViewport({ zoom: 1, offsetX: 0, offsetY: 0 });
+  }, [updateViewport]);
 
-  // Escape cancels an in-progress drag even if focus left the svg.
+  const fitView = useCallback(() => {
+    if (pointerIdRef.current !== null) return;
+    const screen = svgRef.current?.getBoundingClientRect();
+    if (!screen) return;
+    const next = fitViewport(bounds, screen);
+    if (next) updateViewport(next);
+  }, [bounds, updateViewport]);
+
+  // Escape/blur cancels either interaction even if focus left the SVG.
   useEffect(() => {
-    if (!drag) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') finishPointer(true);
+      if (event.key === 'Escape' && pointerIdRef.current !== null) {
+        event.preventDefault();
+        finishPointer(true);
+      }
     };
-    const onBlur = () => finishPointer(true);
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === ' ' || event.code === 'Space') updateSpace(false);
+    };
+    const onBlur = () => {
+      updateSpace(false);
+      finishPointer(true);
+    };
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
     return () => {
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
     };
-  }, [drag, finishPointer]);
+  }, [finishPointer, updateSpace]);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    return () => {
+      const pointerId = pointerIdRef.current;
+      pointerIdRef.current = null;
+      if (pointerId !== null && svg?.hasPointerCapture?.(pointerId)) {
+        svg.releasePointerCapture(pointerId);
+      }
+    };
+  }, []);
+
+  const panCursor = pan ? 'grabbing' : spaceHeld ? 'grab' : undefined;
 
   const handleSize = 8 / viewport.zoom;
   const transform = `translate(${viewport.offsetX} ${viewport.offsetY}) scale(${viewport.zoom})`;
@@ -437,6 +566,15 @@ export function EditorCanvas(props: EditorCanvasProps) {
               onClick={() => zoomBy(1 / 1.2)}
             >
               -
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label={t`Fit to view`}>
+            <ActionIcon
+              variant='default'
+              aria-label={t`Fit to view`}
+              onClick={fitView}
+            >
+              ⤢
             </ActionIcon>
           </Tooltip>
           <Tooltip label={t`Reset view`}>
@@ -471,8 +609,18 @@ export function EditorCanvas(props: EditorCanvasProps) {
           tabIndex={0}
           width='100%'
           height='100%'
-          style={{ display: 'block', touchAction: 'none', outline: 'none' }}
+          style={{
+            display: 'block',
+            touchAction: 'none',
+            outline: 'none',
+            cursor: panCursor
+          }}
           onKeyDown={handleKeyDown}
+          onBlur={() => updateSpace(false)}
+          onPointerDownCapture={handlePanStart}
+          onAuxClick={(event) => {
+            if (event.button === 1) event.preventDefault();
+          }}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={(event) => {
@@ -538,9 +686,16 @@ export function EditorCanvas(props: EditorCanvasProps) {
                         ? `${4 / viewport.zoom} ${2 / viewport.zoom}`
                         : undefined
                     }
-                    style={{ cursor: 'move' }}
+                    style={{ cursor: panCursor ?? 'move' }}
                     onPointerDown={(event) => handlePointerDown(event, entity)}
-                    onDoubleClick={() => onActivate?.(entity.id)}
+                    onDoubleClick={(event) => {
+                      if (
+                        event.button === 0 &&
+                        !spaceHeldRef.current &&
+                        !panRef.current
+                      )
+                        onActivate?.(entity.id);
+                    }}
                   />
                   <text
                     x={rect.x + 4}
@@ -583,7 +738,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
                           fill='var(--mantine-color-blue-6)'
                           aria-hidden
                           style={{
-                            cursor: `${handle}-resize`
+                            cursor: panCursor ?? `${handle}-resize`
                           }}
                           onPointerDown={(event) =>
                             handlePointerDown(event, entity, handle)
@@ -604,6 +759,17 @@ export function EditorCanvas(props: EditorCanvasProps) {
         </Text>
       ) : null}
     </Stack>
+  );
+}
+
+function isTextInput(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
+      )
+    )
   );
 }
 

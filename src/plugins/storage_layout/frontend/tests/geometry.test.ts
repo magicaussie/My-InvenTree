@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   clampRect,
   findFreeDrawerPosition,
+  fitViewport,
   fitZoom,
+  MAX_ZOOM,
+  MIN_ZOOM,
   moveRect,
   moveRects,
   rectInside,
@@ -12,6 +15,7 @@ import {
   resizeRect,
   snapRect,
   snapValue,
+  translatedPan,
   viewportToCanvas,
   zoomAtPoint
 } from '../src/state/geometry';
@@ -54,6 +58,89 @@ describe('viewport coordinates', () => {
       expect(after.x).toBeCloseTo(before.x);
       expect(after.y).toBeCloseTo(before.y);
       expect(viewport).toEqual({ zoom: 1.3, offsetX: -72, offsetY: 43 });
+    }
+  );
+});
+
+describe('viewport navigation', () => {
+  it.each([1, 0.5, 2])(
+    'pans by exact screen pixels at zoom %s without mutating the origin',
+    (zoom) => {
+      const origin = Object.freeze({ zoom, offsetX: 13, offsetY: -29 });
+      const start = Object.freeze({ x: 100, y: 50 });
+      const moved = translatedPan(origin, start, { x: 137, y: 32 });
+      expect(moved).toEqual({ zoom, offsetX: 50, offsetY: -47 });
+      expect(translatedPan(origin, start, start)).toEqual(origin);
+      expect(origin).toEqual({ zoom, offsetX: 13, offsetY: -29 });
+    }
+  );
+
+  it('fits non-square model bounds in a non-square screen with centred padding', () => {
+    const bounds = Object.freeze({ width: 600, height: 800 });
+    const screen = Object.freeze({ width: 1000, height: 600 });
+    const fitted = fitViewport(bounds, screen);
+    expect(fitted).toEqual({ zoom: 0.69, offsetX: 293, offsetY: 24 });
+    if (!fitted) throw new Error('Expected a fitted viewport');
+    const centre = viewportToCanvas(
+      { x: screen.width / 2, y: screen.height / 2 },
+      fitted
+    );
+    expect(centre.x).toBeCloseTo(300);
+    expect(centre.y).toBeCloseTo(400);
+    expect(bounds).toEqual({ width: 600, height: 800 });
+    expect(screen).toEqual({ width: 1000, height: 600 });
+  });
+
+  it('accounts for padding when width is the limiting dimension', () => {
+    const fitted = fitViewport(
+      { width: 800, height: 200 },
+      { width: 1000, height: 600 }
+    );
+    expect(fitted?.zoom).toBeCloseTo(1.19);
+    expect(fitted?.offsetX).toBeCloseTo(24);
+    expect(fitted?.offsetY).toBeCloseTo(181);
+    expect(
+      fitViewport({ width: 800, height: 200 }, { width: 1000, height: 600 }, 0)
+    ).toEqual({ zoom: 1.25, offsetX: 0, offsetY: 175 });
+  });
+
+  it.each([
+    [{ width: 100000, height: 200000 }, MIN_ZOOM],
+    [{ width: 1, height: 2 }, MAX_ZOOM]
+  ] as const)('uses the same fit/zoom limits for %o', (bounds, zoom) => {
+    const screen = { width: 800, height: 600 };
+    expect(fitZoom(bounds, screen)).toBe(zoom);
+    expect(fitViewport(bounds, screen)).toEqual({
+      zoom,
+      offsetX: (screen.width - bounds.width * zoom) / 2,
+      offsetY: (screen.height - bounds.height * zoom) / 2
+    });
+  });
+
+  it.each([
+    0,
+    -1,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY
+  ])('ignores each invalid model/screen dimension: %s', (invalid) => {
+    const valid = { width: 600, height: 400 };
+    for (const key of ['width', 'height'] as const) {
+      expect(fitViewport({ ...valid, [key]: invalid }, valid)).toBeNull();
+      expect(fitViewport(valid, { ...valid, [key]: invalid })).toBeNull();
+    }
+  });
+
+  it.each([MIN_ZOOM, MAX_ZOOM])(
+    'does not drift when zoom is already at limit %s',
+    (zoom) => {
+      const original = Object.freeze({
+        zoom,
+        offsetX: 0.12345,
+        offsetY: -987.654
+      });
+      const point = { x: 378.4, y: 281.5 };
+      expect(zoomAtPoint(original, point, zoom)).toBe(original);
     }
   );
 });

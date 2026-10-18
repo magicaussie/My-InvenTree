@@ -268,10 +268,47 @@ export function clampTranslation(
   };
 }
 
+export const MIN_ZOOM = 0.1;
+export const MAX_ZOOM = 20;
+
 export interface Viewport {
   zoom: number;
   offsetX: number;
   offsetY: number;
+}
+
+/** Translate a viewport by screen pixels, independently of its zoom. */
+export function translatedPan(
+  origin: Viewport,
+  start: { x: number; y: number },
+  current: { x: number; y: number }
+): Viewport {
+  return {
+    ...origin,
+    offsetX: origin.offsetX + current.x - start.x,
+    offsetY: origin.offsetY + current.y - start.y
+  };
+}
+
+/** Centre model bounds in a measured SVG without updating invalid viewports. */
+export function fitViewport(
+  bounds: Bounds,
+  screen: Bounds,
+  padding = 24
+): Viewport | null {
+  if (
+    ![bounds.width, bounds.height, screen.width, screen.height].every(
+      (value) => Number.isFinite(value) && value > 0
+    )
+  ) {
+    return null;
+  }
+  const zoom = fitZoom(bounds, screen, padding);
+  return {
+    zoom,
+    offsetX: (screen.width - bounds.width * zoom) / 2,
+    offsetY: (screen.height - bounds.height * zoom) / 2
+  };
 }
 
 /** Invert the SVG viewport transform for a point relative to the SVG origin. */
@@ -291,6 +328,7 @@ export function zoomAtPoint(
   point: { x: number; y: number },
   zoom: number
 ): Viewport {
+  if (zoom === viewport.zoom) return viewport;
   const canvas = viewportToCanvas(point, viewport);
   return {
     zoom,
@@ -321,5 +359,5 @@ export function fitZoom(
     availableWidth / Math.max(1, bounds.width),
     availableHeight / Math.max(1, bounds.height)
   );
-  return Math.max(0.05, Math.min(20, zoom));
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
 }
