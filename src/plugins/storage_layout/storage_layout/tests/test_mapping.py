@@ -310,3 +310,266 @@ class SampleTranslationTests(SimpleTestCase):
     def test_empty_mapping(self):
         """An empty mapping produces no samples."""
         self.assertEqual(mapping.sample_translation([], 0), [])
+
+    def test_sample_translation_detects_overlap(self):
+        """A sampled pixel covered twice fails the preview sample."""
+        spans = [
+            make_span(1, 60, controller='A', output='A-0', string='FWD', wled_start=0),
+            make_span(41, 60, controller='A', output='A-0', string='FWD', wled_start=0),
+        ]
+
+        with self.assertRaises(ValidationError):
+            mapping.sample_translation(spans, 100)
+
+    def test_sample_translation_reversed_endpoints(self):
+        """A reversed mapping still resolves its sampled endpoints."""
+        spans = [
+            make_span(
+                1,
+                50,
+                controller='A',
+                output='A-200',
+                string='REV',
+                wled_start=200,
+                direction=-1,
+            )
+        ]
+
+        samples = mapping.sample_translation(spans, 50)
+
+        self.assertEqual([s['logical'] for s in samples], [1, 25, 50])
+
+        first = samples[0]['runs'][0]
+        self.assertEqual((first['wled_start'], first['wled_stop']), (249, 250))
+
+        last = samples[-1]['runs'][0]
+        self.assertEqual((last['wled_start'], last['wled_stop']), (200, 201))
+
+
+class TranslationIntegrityTests(SimpleTestCase):
+    """Regression tests for coverage validation and reversed run merging.
+
+    These mirror the frontend 002H tests in ``frontend/tests/mapping.test.ts``
+    so the backend translator - the authoritative one used by the API, preview
+    and simulation - enforces the same invariants.
+    """
+
+    # Shared topology: FWD and FWD2 are distinct strings on controller A's
+    # output 'A-0'; REV is a second output on controller A; ALT is on B.
+    TOPOLOGY = {
+        'FWD': ('A', 'A-0', 0),
+        'FWD2': ('A', 'A-0', 0),
+        'REV': ('A', 'A-200', 200),
+        'ALT': ('B', 'B-50', 50),
+    }
+
+    def span(self, logical_start, length, *, string, string_offset=0, direction=1):
+        """Build a span on the shared integrity topology."""
+        controller, output, wled_start = self.TOPOLOGY[string]
+
+        return make_span(
+            logical_start,
+            length,
+            controller=controller,
+            output=output,
+            string=string,
+            wled_start=wled_start,
+            string_offset=string_offset,
+            direction=direction,
+        )
+
+    def test_rejects_overlap_cancelled_by_equal_gap(self):
+        """An overlap offset by an equal gap is rejected despite equal totals.
+
+        Aggregate length is 60 + 40 = 100, exactly the requested range, so a
+        length-sum check would pass. Pixels 41-60 are covered twice while
+        81-100 are never covered.
+        """
+        spans = [self.span(1, 60, string='FWD'), self.span(41, 40, string='FWD')]
+
+        with self.assertRaises(ValidationError) as ctx:
+            mapping.translate(spans, 1, 100, 100)
+
+        self.assertIn('overlapping', str(ctx.exception))
+
+    def test_rejects_direct_overlap(self):
+        """Two spans covering the same logical pixels are rejected."""
+        spans = [
+            self.span(1, 50, string='FWD'),
+            self.span(30, 41, string='FWD', string_offset=50),
+        ]
+
+        with self.assertRaises(ValidationError) as ctx:
+            mapping.translate(spans, 1, 70, 100)
+
+        self.assertIn('overlapping', str(ctx.exception))
+
+    def test_rejects_gap(self):
+        """A gap between two spans is rejected."""
+        spans = [
+            self.span(1, 40, string='FWD'),
+            self.span(51, 50, string='FWD', string_offset=40),
+        ]
+
+        with self.assertRaises(ValidationError) as ctx:
+            mapping.translate(spans, 1, 100, 100)
+
+        self.assertIn('not fully covered', str(ctx.exception))
+
+    def test_merges_forward_contiguous_spans(self):
+        """Logically and physically contiguous forward spans merge."""
+        spans = [
+            self.span(1, 50, string='FWD'),
+            self.span(51, 50, string='FWD', string_offset=50),
+        ]
+
+        runs = mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(len(runs), 1)
+        self.assertEqual(runs[0]['logical_start'], 1)
+        self.assertEqual(runs[0]['logical_end'], 100)
+        self.assertEqual(runs[0]['controller'], 'A')
+        self.assertEqual(runs[0]['string'], 'FWD')
+        self.assertEqual(runs[0]['direction'], 1)
+        self.assertEqual(runs[0]['wled_start'], 0)
+        self.assertEqual(runs[0]['wled_stop'], 100)
+
+    def test_merges_reversed_physically_contiguous_spans(self):
+        """Logically adjacent reversed spans merge when physically contiguous.
+
+        The first span covers physical ``[250, 300)`` and the second
+        ``[200, 250)``: the reversed traversal continues downward, so the runs
+        are physically contiguous and must merge into ``[200, 300)``.
+        """
+        spans = [
+            self.span(1, 50, string='REV', string_offset=50, direction=-1),
+            self.span(51, 50, string='REV', string_offset=0, direction=-1),
+        ]
+
+        runs = mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(len(runs), 1)
+        self.assertEqual(runs[0]['logical_start'], 1)
+        self.assertEqual(runs[0]['logical_end'], 100)
+        self.assertEqual(runs[0]['direction'], -1)
+        self.assertEqual(runs[0]['wled_start'], 200)
+        self.assertEqual(runs[0]['wled_stop'], 300)
+
+    def test_keeps_reversed_physically_discontiguous_spans_separate(self):
+        """Reversed spans adjacent only in the forward sense must not merge.
+
+        The first span covers physical ``[200, 250)`` and the second
+        ``[250, 300)``. They are adjacent in the forward sense, but a reversed
+        traversal jumps from pixel 200 up to pixel 299, so they must not merge.
+        """
+        spans = [
+            self.span(1, 50, string='REV', string_offset=0, direction=-1),
+            self.span(51, 50, string='REV', string_offset=50, direction=-1),
+        ]
+
+        runs = mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[0]['logical_start'], 1)
+        self.assertEqual(runs[0]['logical_end'], 50)
+        self.assertEqual(runs[0]['wled_start'], 200)
+        self.assertEqual(runs[0]['wled_stop'], 250)
+        self.assertEqual(runs[1]['logical_start'], 51)
+        self.assertEqual(runs[1]['logical_end'], 100)
+        self.assertEqual(runs[1]['wled_start'], 250)
+        self.assertEqual(runs[1]['wled_stop'], 300)
+
+    def test_does_not_merge_across_string_boundary(self):
+        """Physically contiguous spans on different strings stay separate."""
+        spans = [
+            self.span(1, 50, string='FWD'),
+            self.span(51, 50, string='FWD2', string_offset=50),
+        ]
+
+        runs = mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[0]['string'], 'FWD')
+        self.assertEqual(runs[1]['string'], 'FWD2')
+
+    def test_does_not_merge_across_direction_boundary(self):
+        """Physically contiguous spans with different directions stay separate."""
+        spans = [
+            self.span(1, 50, string='FWD'),
+            self.span(51, 50, string='FWD', string_offset=50, direction=-1),
+        ]
+
+        runs = mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[0]['direction'], 1)
+        self.assertEqual(runs[1]['direction'], -1)
+
+    def test_does_not_merge_across_controller_boundary(self):
+        """Physically contiguous spans on different controllers stay separate."""
+        spans = [self.span(1, 50, string='FWD'), self.span(51, 50, string='ALT')]
+
+        runs = mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[0]['controller'], 'A')
+        self.assertEqual(runs[1]['controller'], 'B')
+
+    def test_partial_request_inside_two_spans(self):
+        """A request starting and ending inside spans is accepted."""
+        spans = [
+            self.span(1, 50, string='FWD'),
+            self.span(51, 50, string='FWD2', string_offset=50),
+        ]
+
+        runs = mapping.translate(spans, 45, 60, 100)
+
+        self.assertEqual(len(runs), 2)
+        self.assertEqual(runs[0]['logical_start'], 45)
+        self.assertEqual(runs[0]['logical_end'], 50)
+        self.assertEqual(runs[0]['wled_start'], 44)
+        self.assertEqual(runs[0]['wled_stop'], 50)
+        self.assertEqual(runs[1]['logical_start'], 51)
+        self.assertEqual(runs[1]['logical_end'], 60)
+        self.assertEqual(runs[1]['wled_start'], 50)
+        self.assertEqual(runs[1]['wled_stop'], 60)
+
+    def test_unrelated_spans_outside_request_are_ignored(self):
+        """A disjoint span outside the request does not affect it."""
+        spans = [
+            self.span(1, 50, string='FWD'),
+            self.span(51, 50, string='FWD', string_offset=50),
+            self.span(101, 50, string='ALT'),
+        ]
+
+        runs = mapping.translate(spans, 1, 100, 150)
+
+        self.assertEqual(len(runs), 1)
+        self.assertEqual(runs[0]['logical_start'], 1)
+        self.assertEqual(runs[0]['logical_end'], 100)
+
+    def test_does_not_mutate_input_spans(self):
+        """Translation neither mutates the spans nor their order."""
+        spans = [
+            self.span(51, 50, string='FWD', string_offset=50),
+            self.span(1, 50, string='FWD'),
+        ]
+        snapshot = [dict(span) for span in spans]
+
+        mapping.translate(spans, 1, 100, 100)
+
+        self.assertEqual(spans, snapshot)
+        self.assertEqual([span['logical_start'] for span in spans], [51, 1])
+
+    def test_rejects_fractional_span_geometry(self):
+        """Fractional span geometry is rejected instead of silently truncated."""
+        for field, value in (
+            ('logical_start', 1.5),
+            ('length', 50.5),
+            ('string_offset', 0.5),
+        ):
+            span = self.span(1, 50, string='FWD')
+            span[field] = value
+
+            with self.assertRaises(ValidationError):
+                mapping.translate([span], 1, 50, 100)

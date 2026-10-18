@@ -146,6 +146,50 @@ class SpanView:
         return self.wled_start + output_local
 
 
+def _span_int(value: Any, field: str) -> int:
+    """Coerce span geometry to an integer, rejecting fractional input.
+
+    Model fields are integers, so this only guards against malformed plain
+    mappings. The previous ``int(value or 0)`` coercion silently truncated
+    fractional geometry, which could change the physical address of a span
+    without any error. ``None`` and empty values still default to ``0`` for
+    backwards compatibility.
+
+    Args:
+        value: The raw value read from the span-like object.
+        field: The field name, used in the error message.
+
+    Returns:
+        The value as an integer.
+
+    Raises:
+        ValidationError: If the value is not an integer.
+    """
+    if value is None or value == '':
+        return 0
+
+    if isinstance(value, bool):
+        raise ValidationError(_('Span %(field)s must be an integer') % {'field': field})
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValidationError(
+                _('Span %(field)s must be an integer') % {'field': field}
+            )
+
+        return int(value)
+
+    text = str(value).strip()
+
+    if not text.lstrip('-').isdigit():
+        raise ValidationError(_('Span %(field)s must be an integer') % {'field': field})
+
+    return int(text)
+
+
 def span_view(span: Any) -> SpanView:
     """Build a :class:`SpanView` from a model object or plain mapping.
 
@@ -171,18 +215,26 @@ def span_view(span: Any) -> SpanView:
         raise ValidationError(_('Span direction must be +1 or -1'))
 
     return SpanView(
-        logical_start=int(_value(span, 'logical_start', 0) or 0),
-        length=int(_value(span, 'length', 0) or 0),
-        string_offset=int(_value(span, 'string_offset', 0) or 0),
+        logical_start=_span_int(_value(span, 'logical_start', 0), 'logical_start'),
+        length=_span_int(_value(span, 'length', 0), 'length'),
+        string_offset=_span_int(_value(span, 'string_offset', 0), 'string_offset'),
         direction=direction,
         string_id=str(_resolve(span, 'string.id', '') or ''),
         string_label=str(_resolve(span, 'string.label', '') or ''),
-        output_offset=int(_resolve(span, 'string.output_offset', 0) or 0),
-        string_pixel_count=int(_resolve(span, 'string.pixel_count', 0) or 0),
+        output_offset=_span_int(
+            _resolve(span, 'string.output_offset', 0), 'output_offset'
+        ),
+        string_pixel_count=_span_int(
+            _resolve(span, 'string.pixel_count', 0), 'string_pixel_count'
+        ),
         output_id=str(_resolve(span, 'string.output.id', '') or ''),
-        bus_index=int(_resolve(span, 'string.output.bus_index', 0) or 0),
-        wled_start=int(_resolve(span, 'string.output.wled_start', 0) or 0),
-        output_pixel_count=int(_resolve(span, 'string.output.pixel_count', 0) or 0),
+        bus_index=_span_int(_resolve(span, 'string.output.bus_index', 0), 'bus_index'),
+        wled_start=_span_int(
+            _resolve(span, 'string.output.wled_start', 0), 'wled_start'
+        ),
+        output_pixel_count=_span_int(
+            _resolve(span, 'string.output.pixel_count', 0), 'output_pixel_count'
+        ),
         controller_id=str(_resolve(span, 'string.output.controller.id', '') or ''),
         controller_name=str(_resolve(span, 'string.output.controller.name', '') or ''),
     )
@@ -272,12 +324,30 @@ def mapping_hash(spans: Iterable[Any], total_pixels: int) -> str:
 # region translation
 
 
+def _physically_adjacent(previous: Mapping[str, Any], run: Mapping[str, Any]) -> bool:
+    """Return whether two logically adjacent runs are contiguous in WLED space.
+
+    A forward run traverses its physical half-open interval from low to high, so
+    the next run must begin exactly where the previous one stopped
+    (``previous['wled_stop'] == run['wled_start']``). A reversed run traverses
+    from high to low, so the next run must begin exactly one pixel below the
+    previous run's lowest pixel (``run['wled_stop'] == previous['wled_start']``).
+    Using the forward test for reversed runs would merge physically
+    discontiguous spans.
+    """
+    if run['direction'] == DIRECTION_REVERSE:
+        return run['wled_stop'] == previous['wled_start']
+
+    return previous['wled_stop'] == run['wled_start']
+
+
 def _merge_runs(runs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """Merge adjacent, contiguous, same-controller runs.
 
     Runs are merged only when they are adjacent in logical order, contiguous in
     controller-global WLED space and share controller, output, string and
-    direction. Runs are never merged across controllers.
+    direction. Runs are never merged across controllers, outputs, strings,
+    directions or physical discontinuities.
     """
     merged: list[dict[str, Any]] = []
 
@@ -291,14 +361,16 @@ def _merge_runs(runs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                 and previous['string'] == run['string']
                 and previous['direction'] == run['direction']
             )
-            contiguous = (
-                previous['logical_end'] + 1 == run['logical_start']
-                and previous['wled_stop'] == run['wled_start']
-            )
+            logically_adjacent = previous['logical_end'] + 1 == run['logical_start']
+            contiguous = logically_adjacent and _physically_adjacent(previous, run)
 
             if same_identity and contiguous:
                 previous['logical_end'] = run['logical_end']
-                previous['wled_stop'] = run['wled_stop']
+                # The merged run must span the full physical half-open interval.
+                # A forward run extends upward and a reversed run downward, so
+                # taking the min/max of both bounds covers either case.
+                previous['wled_start'] = min(previous['wled_start'], run['wled_start'])
+                previous['wled_stop'] = max(previous['wled_stop'], run['wled_stop'])
                 continue
 
         merged.append(dict(run))
@@ -366,12 +438,44 @@ def translate(
     if total_pixels is not None and end > int(total_pixels):
         raise ValidationError(_('Logical range must not exceed the mapping size'))
 
+    intersecting = [
+        view
+        for view in views
+        if view.logical_end >= start and view.logical_start <= end
+    ]
+
+    # Establish exact, gap-free, non-overlapping coverage of the requested
+    # interval. Aggregate covered length is not sufficient: overlapping spans can
+    # duplicate coverage while a gap elsewhere keeps the totals equal. Walking
+    # the spans in logical order and requiring each to start exactly at the next
+    # uncovered pixel rejects both gaps and overlaps. Only intersecting spans are
+    # considered, so unrelated rows outside the request cannot fail it.
+    cursor = start
+
+    for index, view in enumerate(intersecting):
+        if view.logical_start > cursor:
+            raise ValidationError(
+                _('Logical range %(start)s-%(end)s is not fully covered by the mapping')
+                % {'start': start, 'end': end}
+            )
+
+        if index > 0 and view.logical_start < cursor:
+            raise ValidationError(
+                _('Logical range %(start)s-%(end)s has overlapping spans')
+                % {'start': start, 'end': end}
+            )
+
+        cursor = view.logical_end + 1
+
+    if cursor <= end:
+        raise ValidationError(
+            _('Logical range %(start)s-%(end)s is not fully covered by the mapping')
+            % {'start': start, 'end': end}
+        )
+
     runs: list[dict[str, Any]] = []
 
-    for view in views:
-        if view.logical_end < start or view.logical_start > end:
-            continue
-
+    for view in intersecting:
         a = max(start, view.logical_start)
         z = min(end, view.logical_end)
 
@@ -389,17 +493,7 @@ def translate(
             'direction': view.direction,
         })
 
-    runs = _merge_runs(runs)
-
-    covered = sum(run['logical_end'] - run['logical_start'] + 1 for run in runs)
-
-    if covered != end - start + 1:
-        raise ValidationError(
-            _('Logical range %(start)s-%(end)s is not fully covered by the mapping')
-            % {'start': start, 'end': end}
-        )
-
-    return runs
+    return _merge_runs(runs)
 
 
 def sample_translation(
