@@ -17,7 +17,7 @@ helpers for use from model ``clean()`` methods.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
@@ -382,26 +382,34 @@ def validate_drawer_geometry(
     drawers: Iterable[Any],
     report: ValidationReport | None = None,
     include_archived: bool = False,
+    retained: Iterable[Any] | None = None,
 ) -> ValidationReport:
-    """Validate drawer front-face rectangles against the cabinet and peers.
+    """Validate drawer front-face rectangles and identities.
 
     Checks positive dimensions, containment within the cabinet and
-    non-overlap between peers. Archived drawers are excluded by default.
+    non-overlap between peers. Archived drawers are excluded from the geometry
+    checks by default, but always participate in the identity checks: the
+    cabinet-scoped unique constraints on ``label`` and ``display_number`` apply
+    to archived rows too. ``retained`` rows are persisted drawers which are not
+    part of the proposal but still occupy those constraints (for example rows
+    omitted from a partial document).
 
     Args:
         cabinet_width: Cabinet width in grid units.
         cabinet_height: Cabinet height in grid units.
         drawers: Drawer-like rows (mapping or object).
         report: Optional report to append to.
-        include_archived: Include archived drawers in the checks.
+        include_archived: Include archived drawers in the geometry checks.
+        retained: Persisted drawers which are not part of the proposal.
 
     Returns:
         The populated validation report.
     """
     report = report or ValidationReport()
     cabinet = (0, 0, int(cabinet_width), int(cabinet_height))
+    rows = list(drawers)
 
-    active = [d for d in drawers if include_archived or not _is_archived(d)]
+    active = [d for d in rows if include_archived or not _is_archived(d)]
 
     for drawer in active:
         rect = _rect(drawer)
@@ -434,35 +442,96 @@ def validate_drawer_geometry(
                     related_ids=[_identity(first), _identity(second)],
                 )
 
-    _validate_unique_display_numbers(active, report)
+    _validate_unique_display_numbers(rows, report, retained=retained)
+    _validate_unique_drawer_labels(rows, report, retained=retained)
 
     return report
 
 
-def _validate_unique_display_numbers(
-    drawers: Sequence[Any], report: ValidationReport
+def _validate_unique_values(
+    rows: Sequence[Any],
+    report: ValidationReport,
+    *,
+    field: str,
+    code: str,
+    message: str,
+    path_prefix: str,
+    retained: Iterable[Any] | None = None,
+    coerce: Callable[[Any], Any] | None = None,
 ) -> None:
-    """Report duplicate drawer display numbers within a cabinet."""
-    seen: dict[int, str] = {}
+    """Report duplicate values of ``field`` across proposed and retained rows.
 
-    for drawer in drawers:
-        number = _value(drawer, 'display_number', None)
+    ``retained`` rows are persisted rows which are not part of the proposal but
+    still occupy the same unique constraint (archived rows, or rows omitted from
+    a partial document). They seed the seen-set so a proposal cannot silently
+    collide with them.
+    """
+    seen: dict[Any, str] = {}
 
-        if number is None:
+    def key(value: Any) -> Any:
+        return coerce(value) if coerce is not None else value
+
+    for row in retained or []:
+        value = _value(row, field, None)
+
+        if value is None:
             continue
 
-        number = int(number)
-        identity = _identity(drawer)
+        seen.setdefault(key(value), _identity(row))
 
-        if number in seen:
+    for row in rows:
+        value = _value(row, field, None)
+
+        if value is None:
+            continue
+
+        value = key(value)
+        identity = _identity(row)
+
+        if value in seen:
             report.add_error(
-                CODE_DUPLICATE_IDENTITY,
-                _('Drawer display numbers must be unique within a cabinet'),
-                path=f'drawers[{identity}]',
-                related_ids=[seen[number], identity],
+                code,
+                message,
+                path=f'{path_prefix}[{identity}]',
+                related_ids=[seen[value], identity],
             )
         else:
-            seen[number] = identity
+            seen[value] = identity
+
+
+def _validate_unique_display_numbers(
+    drawers: Sequence[Any],
+    report: ValidationReport,
+    retained: Iterable[Any] | None = None,
+) -> None:
+    """Report duplicate drawer display numbers within a cabinet."""
+    _validate_unique_values(
+        drawers,
+        report,
+        field='display_number',
+        code=CODE_DUPLICATE_IDENTITY,
+        message=_('Drawer display numbers must be unique within a cabinet'),
+        path_prefix='drawers',
+        retained=retained,
+        coerce=int,
+    )
+
+
+def _validate_unique_drawer_labels(
+    drawers: Sequence[Any],
+    report: ValidationReport,
+    retained: Iterable[Any] | None = None,
+) -> None:
+    """Report duplicate drawer labels within a cabinet."""
+    _validate_unique_values(
+        drawers,
+        report,
+        field='label',
+        code=CODE_DUPLICATE_IDENTITY,
+        message=_('Drawer labels must be unique within a cabinet'),
+        path_prefix='drawers',
+        retained=retained,
+    )
 
 
 def validate_bin_geometry(
@@ -471,23 +540,32 @@ def validate_bin_geometry(
     bins: Iterable[Any],
     report: ValidationReport | None = None,
     include_archived: bool = False,
+    retained: Iterable[Any] | None = None,
 ) -> ValidationReport:
-    """Validate bin rectangles against the drawer interior plane and peers.
+    """Validate bin rectangles and labels against the drawer interior plane.
+
+    Archived bins are excluded from the geometry checks by default, but always
+    participate in the label check: the drawer-scoped unique constraint on
+    ``label`` applies to archived rows too. ``retained`` rows are persisted bins
+    in the same drawer which are not part of the proposal but still occupy that
+    constraint.
 
     Args:
         interior_width: Drawer interior width in grid units.
         interior_height: Drawer interior height (depth) in grid units.
         bins: Bin-like rows (mapping or object).
         report: Optional report to append to.
-        include_archived: Include archived bins in the checks.
+        include_archived: Include archived bins in the geometry checks.
+        retained: Persisted bins in the same drawer which are not proposed.
 
     Returns:
         The populated validation report.
     """
     report = report or ValidationReport()
     interior = (0, 0, int(interior_width), int(interior_height))
+    rows = list(bins)
 
-    active = [b for b in bins if include_archived or not _is_archived(b)]
+    active = [b for b in rows if include_archived or not _is_archived(b)]
 
     for bin_row in active:
         rect = _rect(bin_row)
@@ -520,7 +598,24 @@ def validate_bin_geometry(
                     related_ids=[_identity(first), _identity(second)],
                 )
 
+    _validate_unique_bin_labels(rows, report, retained=retained)
+
     return report
+
+
+def _validate_unique_bin_labels(
+    bins: Sequence[Any], report: ValidationReport, retained: Iterable[Any] | None = None
+) -> None:
+    """Report duplicate bin labels within a drawer."""
+    _validate_unique_values(
+        bins,
+        report,
+        field='label',
+        code=CODE_DUPLICATE_IDENTITY,
+        message=_('Bin labels must be unique within a drawer'),
+        path_prefix='bins',
+        retained=retained,
+    )
 
 
 # endregion

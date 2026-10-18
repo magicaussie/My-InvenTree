@@ -1,0 +1,814 @@
+{
+  "api": {
+    "base_url": "http://127.0.0.1:18761",
+    "bugs": [],
+    "checks": [
+      {
+        "detail": "InvenTree version endpoint (401 is the expected anonymous response in this deployment)",
+        "evidence": "{\"detail\": \"Authentication credentials were not provided.\"}",
+        "expected": "HTTP 200 or 401",
+        "name": "server_reachable",
+        "observed": "HTTP 401",
+        "status": "pass"
+      },
+      {
+        "detail": "token acquisition for the admin account",
+        "evidence": "{\"expiry\": \"2027-10-17\", \"name\": \"\", \"token\": \"<redacted>\"}",
+        "expected": "HTTP 200 with a token",
+        "name": "login_admin",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "token acquisition for the readonly account",
+        "evidence": "{\"expiry\": \"2027-10-17\", \"name\": \"\", \"token\": \"<redacted>\"}",
+        "expected": "HTTP 200 with a token",
+        "name": "login_readonly",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "the version document is readable once a token is presented",
+        "evidence": "{\"dev\": true, \"links\": {\"app\": \"https://docs.inventree.org/en/latest/app/\", \"bug\": \"https://github.com/InvenTree/InvenTree/issues\", \"code\": \"https://github.com/InvenTree/InvenTree/\", \"doc\": \"https://docs.inventree.org\"}, \"up_to_date\": true, \"version\": {\"api\": 559, \"commit_branch\": null, \"commit_date...",
+        "expected": "HTTP 200 with a JSON version document",
+        "name": "version_after_auth",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "plugin OpenAPI schema is served with token auth (a 401 here means the token did not reach the plugin; a non-JSON body means the URL gate is off or the plugin is inactive)",
+        "evidence": "{\"components\": {\"schemas\": {\"AllocationInput\": {\"description\": \"Inclusive logical allocation for a drawer.\", \"properties\": {\"logical_end\": {\"minimum\": 1, \"type\": \"integer\"}, \"logical_start\": {\"minimum\": 1, \"type\": \"integer\"}}, \"required\": [\"logical_end\", \"logical_start\"], \"type\": \"object\"}, \"Approve...",
+        "expected": "HTTP 200 with a JSON schema document",
+        "name": "plugin_api_mounted",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "create a cabinet aggregate",
+        "evidence": "{\"active_mapping\": null, \"archived\": false, \"created_at\": \"2026-10-17 18:20\", \"default_profile\": null, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"name\": \"SL Integration Cabinet\", \"revision\": 1, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"updated_at\": \"2026-10-17 18:20\", \"width_units\": 600}",
+        "expected": "HTTP [201]",
+        "name": "create_cabinet",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "cabinet detail carries the revision ETag",
+        "evidence": "{\"active_mapping\": null, \"archived\": false, \"created_at\": \"2026-10-17 18:20\", \"default_profile\": null, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"name\": \"SL Integration Cabinet\", \"revision\": 1, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"updated_at\": \"2026-10-17 18:20\", \"width_units\": 600}",
+        "expected": "HTTP [200]",
+        "name": "cabinet_detail_etag",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "the cabinet detail revision matches the creation revision",
+        "evidence": "{\"active_mapping\": null, \"archived\": false, \"created_at\": \"2026-10-17 18:20\", \"default_profile\": null, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"name\": \"SL Integration Cabinet\", \"revision\": 1, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"updated_at\": \"2026-10-17 18:20\", \"width_units\": 600}",
+        "expected": "1",
+        "name": "cabinet_revision_increments",
+        "observed": "\"1\"",
+        "status": "pass"
+      },
+      {
+        "detail": "anonymous cabinet list",
+        "evidence": "\"Unauthorized\"",
+        "expected": "HTTP [401, 403]",
+        "name": "anonymous_denied",
+        "observed": "HTTP 401",
+        "status": "pass"
+      },
+      {
+        "detail": "read-only cabinet list",
+        "evidence": "{\"count\": 17, \"next\": null, \"previous\": null, \"results\": [{\"active_mapping\": \"d4d3f520-f239-4d02-9f12-c267c49da0ea\", \"archived\": false, \"created_at\": \"2026-10-17 17:41\", \"default_profile\": null, \"height_units\": 800, \"id\": \"0ca9b808-62b9-4c42-a679-bcf84bb99841\", \"location\": 107, \"name\": \"SL Cabinet r0\", \"revision\": 15, \"slug\": \"sl-cabinet-20261017t174115z-9fa776\", \"updated_at\": \"2026-10-17 17:41\", \"width_units\": 600}, {\"active_mapping\": \"588208ea-26d3-485d-9917-6525f659507d\", \"archived\": false, \"created_at\": \"2026-10-17 16:39\", \"default_profile\": null, \"height_units\": 800, \"id\": \"c0af8303-9c1e-4bc7-b691-b200f1c0c0a2\", \"location\": 37, \"name\": \"SL Cabinet r0\", \"revision\": 7, \"slug\": \"sl-cabinet...",
+        "expected": "HTTP [200]",
+        "name": "readonly_can_list",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "read-only user is refused the change permission",
+        "evidence": "{\"detail\": \"You do not have permission to perform this action.\"}",
+        "expected": "HTTP [403]",
+        "name": "readonly_cannot_create_cabinet",
+        "observed": "HTTP 403",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"detail\": \"You do not have permission to perform this action.\"}",
+        "expected": "HTTP [403]",
+        "name": "readonly_cannot_write_layout",
+        "observed": "HTTP 403",
+        "status": "pass"
+      },
+      {
+        "detail": "read-only user is refused the operate permission",
+        "evidence": "{\"detail\": \"You do not have permission to perform this action.\"}",
+        "expected": "HTTP [403]",
+        "name": "readonly_cannot_operate",
+        "observed": "HTTP 403",
+        "status": "pass"
+      },
+      {
+        "detail": "create three drawers in one aggregate write",
+        "evidence": "{\"archive_ids\": [], \"bins\": [], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 2, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"total_pixels\": 0, \"width_units\": 600}, \"drawers\": [{\"allocation\": null, \"archived\": false, \"display_number\": 1, \"height\": 200, \"id\": \"e288a4ad-9724-41bd-8847-4a45d0ac222c\", \"interior_height\": 160, \"interior_width\": 560, \"label\": \"D1\", \"location\": 122, \"width\": 600, \"x\": 0, \"y\": 0}, {\"allocation\": null, \"archived\": false, \"display_number\": 2, \"height\": 200, \"id\": \"7a4a9f80-c393-40f1-a8c5-08...",
+        "expected": "HTTP [200]",
+        "name": "layout_write_drawers",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"archive_ids\": [], \"bins\": [], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 2, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"total_pixels\": 0, \"width_units\": 600}, \"diagnostics\": {\"errors\": [], \"mapping_hash\": \"\", \"numbering_base\": 1, \"total_pixels\": 0, \"unused_ranges\": [], \"valid\": true, \"warnings\": []}, \"drawers\": [{\"allocation\": null, \"archived\": false, \"display_number\": 1, \"height\": 200, \"id\": \"e288a4ad-9724-41bd-8847-4a45d0ac222c\", \"interior_height\": 160, \"interior_width\": 560, \"label\": \"D1\", \"location\": 12...",
+        "expected": "HTTP [200]",
+        "name": "layout_read_back",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "the saved layout contains three drawers",
+        "evidence": "{\"archive_ids\": [], \"bins\": [], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 2, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"total_pixels\": 0, \"width_units\": 600}, \"diagnostics\": {\"errors\": [], \"mapping_hash\": \"\", \"numbering_base\": 1, \"total_pixels\": 0, \"unused_ranges\": [], \"valid\": true, \"warnings\": []}, \"drawers\": [{\"allocation\": null, \"archived\": false, \"display_number\": 1, \"height\": 200, \"id\": \"e288a4ad-9724-41bd-8847-4a45d0ac222c\", \"interior_height\": 160, \"interior_width\": 560, \"label\": \"D1\", \"location\": 12...",
+        "expected": "3",
+        "name": "layout_has_three_drawers",
+        "observed": "3",
+        "status": "pass"
+      },
+      {
+        "detail": "add two bins to drawer D2",
+        "evidence": "{\"archive_ids\": [], \"bins\": [{\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"label\": \"B1\", \"location\": 125, \"width\": 200, \"x\": 0, \"y\": 0}, {\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"f0bc7a49-5d3b-438d-b544-181385f5ad42\", \"label\": \"B2\", \"location\": 126, \"width\": 200, \"x\": 200, \"y\": 0}], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 3, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"tota...",
+        "expected": "HTTP [200]",
+        "name": "layout_write_bins",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"archive_ids\": [], \"bins\": [{\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"label\": \"B1\", \"location\": 125, \"width\": 200, \"x\": 0, \"y\": 0}, {\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"f0bc7a49-5d3b-438d-b544-181385f5ad42\", \"label\": \"B2\", \"location\": 126, \"width\": 200, \"x\": 200, \"y\": 0}], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 3, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"tota...",
+        "expected": "2",
+        "name": "layout_has_two_bins",
+        "observed": "2",
+        "status": "pass"
+      },
+      {
+        "detail": "saved layout diagnostics report no errors",
+        "evidence": "{\"errors\": [], \"mapping_hash\": \"\", \"numbering_base\": 1, \"total_pixels\": 0, \"unused_ranges\": [], \"valid\": true, \"warnings\": []}",
+        "expected": null,
+        "name": "layout_diagnostics_valid",
+        "observed": null,
+        "status": "pass"
+      },
+      {
+        "detail": "overlapping drawers are reported as invalid without persisting",
+        "evidence": "{\"errors\": [{\"code\": \"geometry_overlap\", \"message\": \"Drawer rectangles must not overlap\", \"path\": \"drawers[e288a4ad-9724-41bd-8847-4a45d0ac222c]\", \"related_ids\": [\"e288a4ad-9724-41bd-8847-4a45d0ac222c\", \"7a4a9f80-c393-40f1-a8c5-083e41db6990\"]}], \"unused_ranges\": [], \"valid\": false, \"warnings\": []}",
+        "expected": "valid=false",
+        "name": "validate_layout_reports_overlap",
+        "observed": "False",
+        "status": "pass"
+      },
+      {
+        "detail": "an aggregate write without If-Match is refused",
+        "evidence": "{\"code\": \"precondition_required\", \"correlation_id\": \"a046ddc19f8e4925b78ff3e0d01a0b71\", \"errors\": [], \"message\": \"This operation requires an If-Match revision header\", \"warnings\": []}",
+        "expected": "HTTP [428]",
+        "name": "layout_write_requires_if_match",
+        "observed": "HTTP 428",
+        "status": "pass"
+      },
+      {
+        "detail": "an aggregate write with a stale If-Match is refused",
+        "evidence": "{\"code\": \"stale\", \"correlation_id\": \"49cbd7d4e50a4177a82da2f80af0541f\", \"errors\": [], \"message\": \"The cabinet has changed since it was loaded; reload and retry\", \"warnings\": []}",
+        "expected": "HTTP [412]",
+        "name": "layout_write_stale_revision",
+        "observed": "HTTP 412",
+        "status": "pass"
+      },
+      {
+        "detail": "two drawers in one cabinet may not share a label",
+        "evidence": "{\"code\": \"duplicate_identity\", \"correlation_id\": \"6548c1072a9b4b729f69f1ceb9dd8cbc\", \"errors\": [{\"code\": \"duplicate_identity\", \"message\": \"Drawer labels must be unique within a cabinet\", \"path\": \"drawers[7a4a9f80-c393-40f1-a8c5-083e41db6990]\", \"related_ids\": [\"e288a4ad-9724-41bd-8847-4a45d0ac222c\", \"7a4a9f80-c393-40f1-a8c5-083e41db6990\"]}], \"message\": \"The layout is invalid\", \"warnings\": []}",
+        "expected": "HTTP 400 with the documented {code, message, ...} shape",
+        "name": "duplicate_drawer_label_rejected",
+        "observed": "HTTP 400",
+        "status": "pass"
+      },
+      {
+        "detail": "two bins in one drawer may not share a label",
+        "evidence": "{\"code\": \"duplicate_identity\", \"correlation_id\": \"4b8e12fa261e4da493e2b954c5aa4597\", \"errors\": [{\"code\": \"duplicate_identity\", \"message\": \"Bin labels must be unique within a drawer\", \"path\": \"bins[f0bc7a49-5d3b-438d-b544-181385f5ad42]\", \"related_ids\": [\"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"f0bc7a49-5d3b-438d-b544-181385f5ad42\"]}], \"message\": \"The layout is invalid\", \"warnings\": []}",
+        "expected": "HTTP 400 with the documented {code, message, ...} shape",
+        "name": "duplicate_bin_label_rejected",
+        "observed": "HTTP 400",
+        "status": "pass"
+      },
+      {
+        "detail": "two controllers may not share an origin",
+        "evidence": "{\"code\": \"duplicate_identity\", \"correlation_id\": \"354087e2b6a446f7937b41646253d0ed\", \"errors\": [{\"code\": \"duplicate_identity\", \"message\": \"Controller origins must be unique\", \"path\": \"controllers[new:C2].origin\", \"related_ids\": [\"new:C1\", \"new:C2\"]}], \"message\": \"The electrical configuration is invalid\", \"warnings\": []}",
+        "expected": "HTTP 400 with the documented {code, message, ...} shape",
+        "name": "duplicate_controller_origin_rejected",
+        "observed": "HTTP 400",
+        "status": "pass"
+      },
+      {
+        "detail": "two controllers may not share an expected MAC address",
+        "evidence": "{\"code\": \"duplicate_identity\", \"correlation_id\": \"45f71cb6cc3147b1a6e386f45706b190\", \"errors\": [{\"code\": \"duplicate_identity\", \"message\": \"Expected MAC addresses must be unique\", \"path\": \"controllers[new:C2].expected_mac\", \"related_ids\": [\"new:C1\", \"new:C2\"]}], \"message\": \"The electrical configuration is invalid\", \"warnings\": []}",
+        "expected": "HTTP 400 with the documented {code, message, ...} shape",
+        "name": "duplicate_controller_mac_rejected",
+        "observed": "HTTP 400",
+        "status": "pass"
+      },
+      {
+        "detail": "a rejected aggregate write must not advance the cabinet revision",
+        "evidence": "{\"active_mapping\": null, \"archived\": false, \"created_at\": \"2026-10-17 18:20\", \"default_profile\": null, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"name\": \"SL Integration Cabinet\", \"revision\": 3, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"updated_at\": \"2026-10-17 18:20\", \"width_units\": 600}",
+        "expected": "3",
+        "name": "duplicate_rejects_leave_revision_unchanged",
+        "observed": "3",
+        "status": "pass"
+      },
+      {
+        "detail": "exchanging two drawers' labels and display numbers is valid",
+        "evidence": "{\"archive_ids\": [], \"bins\": [{\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"label\": \"B1\", \"location\": 125, \"width\": 200, \"x\": 0, \"y\": 0}, {\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"f0bc7a49-5d3b-438d-b544-181385f5ad42\", \"label\": \"B2\", \"location\": 126, \"width\": 200, \"x\": 200, \"y\": 0}], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 4, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"tota...",
+        "expected": "HTTP [200]",
+        "name": "label_number_swap_allowed",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "the D1/D2 labels are exchanged after the accepted write",
+        "evidence": null,
+        "expected": "D1 label=D2, D2 label=D1",
+        "name": "label_number_swap_applied",
+        "observed": "{\"43dc2169-d8f1-4c69-aa3c-738a934c785c\": \"D3\", \"7a4a9f80-c393-40f1-a8c5-083e41db6990\": \"D1\", \"e288a4ad-9724-41bd-8847-4a45d0ac222c\": \"D2\"}",
+        "status": "pass"
+      },
+      {
+        "detail": "restoring the original labels and numbers is allowed",
+        "evidence": "{\"archive_ids\": [], \"bins\": [{\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"label\": \"B1\", \"location\": 125, \"width\": 200, \"x\": 0, \"y\": 0}, {\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"f0bc7a49-5d3b-438d-b544-181385f5ad42\", \"label\": \"B2\", \"location\": 126, \"width\": 200, \"x\": 200, \"y\": 0}], \"cabinet\": {\"active_mapping\": null, \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"\", \"name\": \"SL Integration Cabinet\", \"numbering_base\": 1, \"revision\": 5, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"tota...",
+        "expected": "HTTP [200]",
+        "name": "original_layout_restore_allowed",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "the original drawer labels are restored",
+        "evidence": null,
+        "expected": "D1 label=D1, D2 label=D2",
+        "name": "layout_restored",
+        "observed": "{\"43dc2169-d8f1-4c69-aa3c-738a934c785c\": \"D3\", \"7a4a9f80-c393-40f1-a8c5-083e41db6990\": \"D2\", \"e288a4ad-9724-41bd-8847-4a45d0ac222c\": \"D1\"}",
+        "status": "pass"
+      },
+      {
+        "detail": "two controllers, two outputs and three strings",
+        "evidence": "{\"archive_ids\": [], \"cabinet\": {\"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"revision\": 6}, \"controllers\": [{\"commissioning_policy\": {}, \"enabled\": true, \"expected_mac\": null, \"firmware_adapter\": \"wled-v16.0.1-1d\", \"id\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"name\": \"C1\", \"origin\": \"http://wled-20261017t182057z-00af0c-c1.invalid\", \"outputs\": [{\"auto_white_mode\": 0, \"bus_index\": 0, \"bus_reverse\": false, \"colour_order\": \"GRB\", \"id\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"led_type\": \"22\", \"max_current_ma\": null, \"pins\": [16], \"pixel_count\": 120, \"skip\": 0, \"strings\": [{\"archived\": false, \"id\": \"e458460d-9e33-4761-93e5-30075c50fea3\", \"label\": \"S1\", \"notes\": \"\", \"output_offset\": 0, \"pixel_c...",
+        "expected": "HTTP [200]",
+        "name": "electrical_write",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"archive_ids\": [], \"cabinet\": {\"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"revision\": 6}, \"controllers\": [{\"commissioning_policy\": {}, \"enabled\": true, \"expected_mac\": null, \"firmware_adapter\": \"wled-v16.0.1-1d\", \"id\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"name\": \"C1\", \"origin\": \"http://wled-20261017t182057z-00af0c-c1.invalid\", \"outputs\": [{\"auto_white_mode\": 0, \"bus_index\": 0, \"bus_reverse\": false, \"colour_order\": \"GRB\", \"id\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"led_type\": \"22\", \"max_current_ma\": null, \"pins\": [16], \"pixel_count\": 120, \"skip\": 0, \"strings\": [{\"archived\": false, \"id\": \"e458460d-9e33-4761-93e5-30075c50fea3\", \"label\": \"S1\", \"notes\": \"\", \"output_offset\": 0, \"pixel_c...",
+        "expected": "2 controllers",
+        "name": "electrical_read_back",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "a reversed cross-boundary candidate previews as valid",
+        "evidence": "{\"drawer_impacts\": [], \"errors\": [], \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"samples\": [{\"logical\": 1, \"runs\": [{\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": 1, \"logical_end\": 1, \"logical_start\": 1, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"e458460d-9e33-4761-93e5-30075c50fea3\", \"wled_start\": 0, \"wled_stop\": 1}]}, {\"logical\": 90, \"runs\": [{\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": -1, \"logical_end\": 90, \"logical_start\": 90, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"d40c4de0-d7ec-4abe-94e6-88462e4c2701\", \"wled_start\": 90, \"wled_stop\": 91}]}, {\"logical\": 180, \"runs\"...",
+        "expected": "valid=true with a mapping hash",
+        "name": "mapping_preview_valid",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "publish an immutable mapping revision with allocations",
+        "evidence": "{\"changed_count\": 180, \"changed_pixels\": [{\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 0], \"before\": null, \"logical\": 1}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 1], \"before\": null, \"logical\": 2}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 2], \"before\": null, \"logical\": 3}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 3], \"before\": null, \"logical\": 4}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 4], \"before\": null, \"logical\": 5}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 5], \"before\": null, \"logical\": 6}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 6], \"before\": null, \"logical\": 7}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 7], \"...",
+        "expected": "HTTP [201]",
+        "name": "mapping_publish",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "first publish reports the full changed pixel count",
+        "evidence": "{\"changed_count\": 180, \"changed_pixels\": [{\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 0], \"before\": null, \"logical\": 1}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 1], \"before\": null, \"logical\": 2}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 2], \"before\": null, \"logical\": 3}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 3], \"before\": null, \"logical\": 4}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 4], \"before\": null, \"logical\": 5}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 5], \"before\": null, \"logical\": 6}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 6], \"before\": null, \"logical\": 7}, {\"after\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", 7], \"...",
+        "expected": "total_pixels=180, number=1, changed_count=180",
+        "name": "mapping_publish_shape",
+        "observed": "{\"changed_count\": 180, \"number\": 1, \"total_pixels\": 180}",
+        "status": "pass"
+      },
+      {
+        "detail": "publish applied the replacement drawer allocations",
+        "evidence": "{\"archive_ids\": [], \"bins\": [{\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"label\": \"B1\", \"location\": 125, \"width\": 200, \"x\": 0, \"y\": 0}, {\"archived\": false, \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"height\": 100, \"id\": \"f0bc7a49-5d3b-438d-b544-181385f5ad42\", \"label\": \"B2\", \"location\": 126, \"width\": 200, \"x\": 200, \"y\": 0}], \"cabinet\": {\"active_mapping\": \"f45c56d2-8d62-4caf-92a0-b07ede9ad142\", \"archived\": false, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"name\": \"SL Integration...",
+        "expected": "D2=61-140, D3=141-180",
+        "name": "allocations_applied",
+        "observed": "{\"D1\": {\"id\": \"3de7b7fb-eb35-40bd-b4ba-908338afb0a6\", \"logical_end\": 60, \"logical_start\": 1, \"pixel_count\": 60}, \"D2\": {\"id\": \"6d22a6cc-8a10-4521-9f02-b72ee80a7a05\", \"logical_end\": 140, \"logical_start\": 61, \"pixel_count\": 80}, \"D3\": {\"id\": \"42157872-0c59-4ffe-abca-66318cbffc2a\", \"logical_end\": 180, \"logical_start\": 141, \"pixel_count\": 40}}",
+        "status": "pass"
+      },
+      {
+        "detail": "40-140 crosses the string and controller boundary and covers 101 pixels",
+        "evidence": "{\"logical_end\": 140, \"logical_start\": 40, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"pixel_count\": 101, \"runs\": [{\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": 1, \"logical_end\": 60, \"logical_start\": 40, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"e458460d-9e33-4761-93e5-30075c50fea3\", \"wled_start\": 39, \"wled_stop\": 60}, {\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": -1, \"logical_end\": 120, \"logical_start\": 61, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"d40c4de0-d7ec-4abe-94e6-88462e4c2701\", \"wled_start\": 60, \"wled_stop\": 120}, {\"controller\": \"58c842c5-3616-440f-8dbe-128fc358...",
+        "expected": "pixel_count=101 across both controllers",
+        "name": "translate_cross_boundary",
+        "observed": "{\"controllers\": 2, \"pixel_count\": 101}",
+        "status": "pass"
+      },
+      {
+        "detail": "the reversed S2 span is reported with direction -1",
+        "evidence": "{\"logical_end\": 140, \"logical_start\": 40, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"pixel_count\": 101, \"runs\": [{\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": 1, \"logical_end\": 60, \"logical_start\": 40, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"e458460d-9e33-4761-93e5-30075c50fea3\", \"wled_start\": 39, \"wled_stop\": 60}, {\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": -1, \"logical_end\": 120, \"logical_start\": 61, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"d40c4de0-d7ec-4abe-94e6-88462e4c2701\", \"wled_start\": 60, \"wled_stop\": 120}, {\"controller\": \"58c842c5-3616-440f-8dbe-128fc358...",
+        "expected": "1 reversed run",
+        "name": "translate_preserves_reverse_direction",
+        "observed": "1",
+        "status": "pass"
+      },
+      {
+        "detail": "reversed logical 61 maps to descending WLED addresses 60-120",
+        "evidence": null,
+        "expected": "wled_start=60, wled_stop=120",
+        "name": "translate_reverse_wled_address",
+        "observed": "{\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"direction\": -1, \"logical_end\": 120, \"logical_start\": 61, \"output\": \"76305644-1172-4428-bbe1-2fd6cb151530\", \"string\": \"d40c4de0-d7ec-4abe-94e6-88462e4c2701\", \"wled_start\": 60, \"wled_stop\": 120}",
+        "status": "pass"
+      },
+      {
+        "detail": "a stale mapping hash is refused",
+        "evidence": "{\"code\": \"stale\", \"correlation_id\": \"d2d35907412249d583d61c27df7fea03\", \"errors\": [], \"message\": \"The supplied mapping hash is stale\", \"warnings\": []}",
+        "expected": "HTTP [412]",
+        "name": "translate_stale_hash",
+        "observed": "HTTP 412",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"bin\": null, \"bound\": true, \"cabinet\": {\"active_mapping\": \"f45c56d2-8d62-4caf-92a0-b07ede9ad142\", \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"name\": \"SL Integration Cabinet\", \"revision\": 7, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"total_pixels\": 180}, \"drawer\": null, \"locatable\": false, \"location\": 121, \"reason\": \"cabinet_root\", \"role\": \"cabinet\"}",
+        "expected": "role=cabinet, bound=true",
+        "name": "binding_cabinet_root",
+        "observed": "{\"bound\": true, \"role\": \"cabinet\"}",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"bin\": null, \"bound\": true, \"cabinet\": {\"active_mapping\": \"f45c56d2-8d62-4caf-92a0-b07ede9ad142\", \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"name\": \"SL Integration Cabinet\", \"revision\": 7, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"total_pixels\": 180}, \"drawer\": {\"allocation\": {\"id\": \"6d22a6cc-8a10-4521-9f02-b72ee80a7a05\", \"logical_end\": 140, \"logical_start\": 61, \"pixel_count\": 80}, \"display_number\": 2, \"id\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"label\": \"D2\"}, \"locatable\": true, \"location\": 123, \"reason\": \"\", \"role\": \"drawer\"}",
+        "expected": "role=drawer, locatable=true",
+        "name": "binding_drawer_locatable",
+        "observed": "{\"locatable\": true, \"role\": \"drawer\"}",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"bin\": {\"id\": \"b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc\", \"label\": \"B1\"}, \"bound\": true, \"cabinet\": {\"active_mapping\": \"f45c56d2-8d62-4caf-92a0-b07ede9ad142\", \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"name\": \"SL Integration Cabinet\", \"revision\": 7, \"slug\": \"sl-cabinet-20261017t182057z-00af0c\", \"total_pixels\": 180...",
+        "expected": "role=bin, locatable=true",
+        "name": "binding_bin_locatable",
+        "observed": "{\"locatable\": true, \"role\": \"bin\"}",
+        "status": "pass"
+      },
+      {
+        "detail": "create via /api/part/category/ with schema-derived fields ['name']",
+        "evidence": "{\"default_keywords\": null, \"default_location\": null, \"description\": \"\", \"icon\": \"\", \"level\": 0, \"name\": \"SL Integration 20261017T182057Z-00af0c Category\", \"parameters\": [], \"parent\": null, \"parent_default_location\": null, \"part_count\": null, \"path\": [{\"name\": \"SL Integration 20261017T182057Z-00af0c Category\", \"pk\": 6}], \"pathstring\": \"SL Integration 20261017T182057Z-00af0c Category\", \"pk\": 6, \"sta...",
+        "expected": "HTTP 201 with a pk",
+        "name": "native_part_category_created",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "create via /api/part/ with schema-derived fields ['active', 'category', 'name']",
+        "evidence": "{\"IPN\": \"\", \"active\": true, \"allocated_to_build_orders\": null, \"allocated_to_sales_orders\": null, \"assembly\": false, \"barcode_hash\": \"\", \"building\": null, \"category\": 6, \"category_default_location\": null, \"category_detail\": {\"default_keywords\": null, \"default_location\": null, \"description\": \"\", \"icon\": \"\", \"level\": 0, \"name\": \"SL Integration 20261017T182057Z-00af0c Category\", \"parent\": null, \"pare...",
+        "expected": "HTTP 201 with a pk",
+        "name": "native_part_created",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "create via /api/stock/ with schema-derived fields ['location', 'part', 'quantity']",
+        "evidence": "[{\"MPN\": null, \"SKU\": null, \"allocated\": null, \"barcode_hash\": \"\", \"batch\": \"\", \"belongs_to\": null, \"build\": null, \"child_items\": null, \"consumed_by\": null, \"creation_date\": \"2026-10-17 18:20\", \"customer\": null, \"delete_on_deplete\": true, \"expired\": null, \"expiry_date\": null, \"in_stock\": true, \"installed_items\": null, \"is_building\": false, \"link\": \"\", \"location\": 125, \"location_detail\": {\"name\": \"...",
+        "expected": "HTTP 201 with a pk",
+        "name": "native_stock_item_created",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "a locate session targeting the stock item is accepted",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.226530Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:22:59.226357Z\", \"failure\": {}, \"id\": \"777a4ef2-04f5-4938-9e3e-0b89f19bdbe1\", \"layout_revision\": 7, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"58c842c5-3616-440f-8dbe-128fc358e98a\"], \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"drawer_label\": \"D2\", \"duration_seconds\": 120, \"logical_end\": 140, \"logical_start\": 61, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"prof...",
+        "expected": "HTTP [202]",
+        "name": "stock_item_locate_accepted",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "the stock item's bin resolves to its drawer D2",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.226530Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:22:59.226357Z\", \"failure\": {}, \"id\": \"777a4ef2-04f5-4938-9e3e-0b89f19bdbe1\", \"layout_revision\": 7, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21...",
+        "expected": "7a4a9f80-c393-40f1-a8c5-083e41db6990",
+        "name": "stock_item_resolves_to_drawer",
+        "observed": "7a4a9f80-c393-40f1-a8c5-083e41db6990",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"brightness\": 64, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"duration_seconds\": 120, \"id\": \"78759a79-3b43-4f3d-82b5-a2456d3e6aa3\", \"name\": \"Integration Locate\", \"purpose\": \"locate\", \"rgb\": [0, 255, 0], \"white\": 0}",
+        "expected": "HTTP [201]",
+        "name": "profile_create_locate",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"brightness\": 64, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"duration_seconds\": 5, \"id\": \"fbab5f74-b0a9-45a8-a8d2-7e1368aa3190\", \"name\": \"Integration Test\", \"purpose\": \"test\", \"rgb\": [255, 0, 0], \"white\": 0}",
+        "expected": "HTTP [201]",
+        "name": "profile_create_test",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "a test profile cannot exceed the ten second cap",
+        "evidence": "{\"code\": \"invalid\", \"correlation_id\": \"08dc6edb7d31451094ab30e22e4ed83e\", \"errors\": [{\"code\": \"invalid\", \"message\": \"Duration must not exceed 10 seconds for this purpose\", \"path\": \"duration_seconds\", \"related_ids\": []}], \"message\": \"Validation failed\", \"warnings\": []}",
+        "expected": "HTTP [400]",
+        "name": "profile_test_duration_cap",
+        "observed": "HTTP 400",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"count\": 2, \"next\": null, \"previous\": null, \"results\": [{\"brightness\": 64, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"duration_seconds\": 120, \"id\": \"78759a79-3b43-4f3d-82b5-a2456d3e6aa3\", \"name\": \"Integration Locate\", \"purpose\": \"locate\", \"rgb\": [0, 255, 0], \"white\": 0}, {\"brightness\": 64, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"duration_seconds\": 5, \"id\": \"fbab5f74-b0a9-45a8-a8d2-7e1368aa3190\", \"name\": \"Integration Test\", \"purpose\": \"test\", \"rgb\": [255, 0, 0], \"white\": 0}]}",
+        "expected": "count=2",
+        "name": "profile_list_filtered",
+        "observed": "2",
+        "status": "pass"
+      },
+      {
+        "detail": "two concurrent If-Match writes must produce exactly one winner; any other outcome (including a database lock error) is reported here",
+        "evidence": [
+          "{\"code\": \"stale\", \"correlation_id\": \"f7dbb7c0d6f74830a72924804bd8ab20\", \"errors\": [], \"message\": \"The cabinet has changed since it was loaded; reload and retry\", \"warnings\": []}",
+          "{\"active_mapping\": \"f45c56d2-8d62-4caf-92a0-b07ede9ad142\", \"archived\": false, \"created_at\": \"2026-10-17 18:20\", \"default_profile\": null, \"height_units\": 800, \"id\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"location\": 121, \"name\": \"SL Cabinet r1\", \"revision\": 8, \"slug\": \"sl-cabinet-20261017t182057z-00..."
+        ],
+        "expected": "[200, 412]",
+        "name": "concurrent_cas_single_winner",
+        "observed": "[200, 412]",
+        "status": "pass"
+      },
+      {
+        "detail": "a simulated locate session is accepted for durable dispatch",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.370407Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:22:59.370264Z\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"58c842c5-3616-440f-8dbe-128fc358e98a\"], \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"drawer_label\": \"D2\", \"duration_seconds\": 120, \"logical_end\": 140, \"logical_start\": 61, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"prof...",
+        "expected": "HTTP [202]",
+        "name": "session_create",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.370407Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:22:59.370264Z\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"58c842c5-3616-440f-8dbe-128fc358e98a\"], \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"drawer_label\": \"D2\", \"duration_seconds\": 120, \"logical_end\": 140, \"logical_start\": 61, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"prof...",
+        "expected": "queued",
+        "name": "session_queued",
+        "observed": "queued",
+        "status": "pass"
+      },
+      {
+        "detail": "the same key and body returns the same session with HTTP 200",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.370407Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:22:59.370264Z\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"58c842c5-3616-440f-8dbe-128fc358e98a\"], \"drawer\": \"7a4a9f80-c393-40f1-a8c5-083e41db6990\", \"drawer_label\": \"D2\", \"duration_seconds\": 120, \"logical_end\": 140, \"logical_start\": 61, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"prof...",
+        "expected": "HTTP 200 with id=5766464e-156d-4860-af7e-115f42405113",
+        "name": "session_idempotent_replay",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"code\": \"idempotency_conflict\", \"correlation_id\": \"289efa4b1a564369b0042cd79290a2fa\", \"errors\": [], \"message\": \"This idempotency key was used with a different request\", \"warnings\": []}",
+        "expected": "HTTP 409 idempotency_conflict",
+        "name": "session_idempotency_conflict",
+        "observed": "HTTP 409",
+        "status": "pass"
+      },
+      {
+        "detail": "replaying the create request added exactly one row (the original session) and no extra row for the replay",
+        "evidence": "{\"count\": 2, \"next\": null, \"previous\": null, \"results\": [{\"actor\": 1, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17 18:20\", \"executions\": [], \"expires_at\": \"2026-10-17 18:22\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"idempotency_key\": \"sl-20261017T182057Z-00af0c-locate-1\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295c...",
+        "expected": "count 1 -> 2",
+        "name": "session_replay_adds_no_row",
+        "observed": "1 -> 2",
+        "status": "pass"
+      },
+      {
+        "detail": "replay only: the durable row records a task id at enqueue time. This is NOT evidence of exactly-once worker delivery.",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.370407Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:22:59.370264Z\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21...",
+        "expected": "a non-empty plan.q_task_id at enqueue time",
+        "name": "session_replay_task_id_recorded",
+        "observed": "{\"q_task_id\": \"34f4e45c45eb4907b18951ccc54c065d\"}",
+        "status": "pass"
+      },
+      {
+        "detail": "replay only: the recorded task id is unchanged after the replay, so the replay did not re-dispatch. This is not a delivery-once proof; that is covered by an in-container Django test.",
+        "evidence": null,
+        "expected": "34f4e45c45eb4907b18951ccc54c065d",
+        "name": "session_replay_task_id_stable",
+        "observed": "34f4e45c45eb4907b18951ccc54c065d",
+        "status": "pass"
+      },
+      {
+        "detail": "the background worker executed the simulated session within the hard timeout; a failure here means no worker is draining the queue",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.370407Z\", \"executions\": [{\"acknowledged_at\": \"2026-10-17T18:21:00.080590Z\", \"clear_status\": \"not-required\", \"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"error\": {}, \"last_step\": \"simulated\", \"state\": \"active\"}, {\"acknowledged_at\": \"2026-10-17T18:21:00.085352Z\", \"clear_status\": \"not-required\", \"controller\": \"58c842c5-3616-440f-8dbe-128fc358e98a\", \"error\": {}, \"last_step\": \"simulated\", \"state\": \"active\"}], \"expires_at\": \"2026-10-17T18:23:00.077004Z\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e",
+        "expected": "active within 120s",
+        "name": "async_session_became_active",
+        "observed": "active after 1.0s",
+        "status": "pass"
+      },
+      {
+        "detail": "measured durable-dispatch latency (locate-session create -> active) is within the 30s budget expected after the shared-cache and four-worker compose fix",
+        "evidence": "hard_timeout=120s",
+        "expected": "<= 30.0s",
+        "name": "worker_queue_latency_within_30s",
+        "observed": "1.0s (state=active)",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:20:59.370407Z\", \"executions\": [{\"acknowledged_at\": \"2026-10-17T18:21:00.080590Z\", \"clear_status\": \"not-required\", \"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"error\": {}, \"last_step\": \"simulated\", \"state\": \"cleared\"}, {\"acknowledged_at\": \"2026-10-17T18:21:00.085352Z\", \"clear_status\": \"not-required\", \"controller\": \"58c842c5-3616-440f-8dbe-128fc358e98a\", \"error\": {}, \"last_step\": \"simulated\", \"state\": \"cleared\"}], \"expires_at\": \"2026-10-17T18:23:00.077004Z\", \"failure\": {}, \"id\": \"5766464e-156d-4860-af7e-115f42405113\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce7208...",
+        "expected": "HTTP 202 stopped",
+        "name": "session_stop",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:21:00.524420Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:21:05.524287Z\", \"failure\": {}, \"id\": \"87032196-205a-41c3-9e55-4e9f2532d2cd\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\"], \"duration_seconds\": 5, \"frames\": [], \"kind\": \"pixel-test\", \"logical_end\": 5, \"logical_start\": 1, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"pattern\": \"range\", \"profile\": {\"brightness\": 64, \"duration_seconds\": 5, \"id\": \"fbab5f...",
+        "expected": "HTTP [202]",
+        "name": "pixel_test_create",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:21:00.524420Z\", \"executions\": [], \"expires_at\": \"2026-10-17T18:21:05.524287Z\", \"failure\": {}, \"id\": \"87032196-205a-41c3-9e55-4e9f2532d2cd\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\"], \"duration_seconds\": 5, \"frames\": [], \"kind\": \"pixel-test\", \"logical_end\": 5, \"logical_start\": 1, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"pattern\": \"range\", \"profile\": {\"brightness\": 64, \"duration_seconds\": 5, \"id\": \"fbab5f...",
+        "expected": "plan.kind=pixel-test, logical_start=1",
+        "name": "pixel_test_plan",
+        "observed": "{\"kind\": \"pixel-test\", \"logical_start\": 1}",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"created_at\": \"2026-10-17T18:21:00.524420Z\", \"executions\": [{\"acknowledged_at\": \"2026-10-17T18:21:01.576604Z\", \"clear_status\": \"not-required\", \"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"error\": {}, \"last_step\": \"simulated\", \"state\": \"cleared\"}], \"expires_at\": \"2026-10-17T18:21:06.573666Z\", \"failure\": {}, \"id\": \"87032196-205a-41c3-9e55-4e9f2532d2cd\", \"layout_revision\": 8, \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"mode\": \"simulate\", \"plan\": {\"controllers\": [\"534934b9-765c-4f54-ba76-a21ed7fa1dbd\"], \"duration_seconds\": 5, \"frames\": [], \"kind\": \"pixel-test\", \"logical_end\": 5, \"logical_start\"...",
+        "expected": "HTTP [202]",
+        "name": "pixel_test_stop",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"stopped_session\": \"b778cd2c-cb1b-4b4a-bf6d-d031d92cead7\"}",
+        "expected": "HTTP 202 with stopped_session",
+        "name": "cabinet_stop_stops_session",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "durable simulated observe job",
+        "evidence": "{\"actor\": 1, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"created_at\": \"2026-10-17 18:21\", \"error\": {}, \"expires_at\": \"2026-10-17 18:26\", \"id\": \"d56b5a64-31c9-4ad7-bb4e-6494073d3caf\", \"kind\": \"observe\", \"mode\": \"simulate\", \"q_task_id\": \"\", \"result\": {}, \"scope_snapshot\": {\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\"}, \"state\": \"pending\"}",
+        "expected": "HTTP [202]",
+        "name": "observe_job_created",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "the worker completed the observe job within the timeout",
+        "evidence": "{\"actor\": 1, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"created_at\": \"2026-10-17 18:21\", \"error\": {}, \"expires_at\": \"2026-10-17 18:26\", \"id\": \"d56b5a64-31c9-4ad7-bb4e-6494073d3caf\", \"kind\": \"observe\", \"mode\": \"simulate\", \"q_task_id\": \"e489f7f5a6dc4fe2923f8355413e00da\", \"result\": {\"capability_status\": \"supported\", \"fingerprint\": \"88874c998ee1c19333fcca7caaac33154a8955246446561136919e26ac55ddbf\", \"observation\": \"f56848af-a062-4498-bc92-56d64038380f\"}, \"scope_snapshot\": {\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\"}, \"state\": \"complete\"}",
+        "expected": "complete",
+        "name": "observe_job_completes",
+        "observed": "complete",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"added\": [], \"capability_status\": \"supported\", \"changed\": [], \"diff_hash\": \"4ddf799a685fa12b294e2c099c52d3b1d9f31b615b2be3e8d93de5b44a45ae8f\", \"fingerprint\": \"88874c998ee1c19333fcca7caaac33154a8955246446561136919e26ac55ddbf\", \"observation\": \"f56848af-a062-4498-bc92-56d64038380f\", \"removed\": []}",
+        "expected": "HTTP 200 with a diff_hash",
+        "name": "import_preview_diff_hash",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "approve a supported simulated observation",
+        "evidence": "{\"controller\": \"534934b9-765c-4f54-ba76-a21ed7fa1dbd\", \"fingerprint\": \"88874c998ee1c19333fcca7caaac33154a8955246446561136919e26ac55ddbf\", \"observation\": \"f56848af-a062-4498-bc92-56d64038380f\"}",
+        "expected": "HTTP [200]",
+        "name": "approve_configuration",
+        "observed": "HTTP 200",
+        "status": "pass"
+      },
+      {
+        "detail": "a drifted expected fingerprint blocks the publish (fail closed)",
+        "evidence": "{\"code\": \"config_drift\", \"correlation_id\": \"a44698ae5c96412299c7805a4667ad60\", \"errors\": [], \"message\": \"Controller C1 configuration has drifted\", \"warnings\": []}",
+        "expected": "HTTP 409 config_drift",
+        "name": "config_drift_detected",
+        "observed": "HTTP 409",
+        "status": "pass"
+      },
+      {
+        "detail": "re-publishing the identical mapping is allowed with the approved fingerprint",
+        "evidence": "{\"changed_count\": 0, \"changed_pixels\": [], \"changed_truncated\": false, \"id\": \"3f71560f-5052-429b-a5a4-a40f601de951\", \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"number\": 2, \"revision\": 9, \"state\": \"published\", \"total_pixels\": 180}",
+        "expected": "HTTP [201]",
+        "name": "mapping_republish_same_content",
+        "observed": "HTTP 201",
+        "status": "pass"
+      },
+      {
+        "detail": "an identical re-publish changes no physical addresses",
+        "evidence": "{\"changed_count\": 0, \"changed_pixels\": [], \"changed_truncated\": false, \"id\": \"3f71560f-5052-429b-a5a4-a40f601de951\", \"mapping_hash\": \"b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96\", \"number\": 2, \"revision\": 9, \"state\": \"published\", \"total_pixels\": 180}",
+        "expected": "changed_count=0",
+        "name": "mapping_republish_no_address_change",
+        "observed": "0",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"code\": \"live_unavailable\", \"correlation_id\": \"019a3aa2b5694e288ffecfa302873f80\", \"errors\": [], \"message\": \"Live hardware access is disabled; enable it explicitly first\", \"warnings\": []}",
+        "expected": "HTTP 503 live_unavailable",
+        "name": "arm_fails_closed",
+        "observed": "HTTP 503",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"code\": \"live_unavailable\", \"correlation_id\": \"c3c8fa3e20294c168bd5ebe105dc45f7\", \"errors\": [], \"message\": \"Live hardware access is disabled; enable it explicitly first\", \"warnings\": []}",
+        "expected": "HTTP 503 live_unavailable",
+        "name": "live_locate_fails_closed",
+        "observed": "HTTP 503",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"code\": \"live_unavailable\", \"correlation_id\": \"6d179e7982664b25b2ce3fd26586e4c7\", \"errors\": [], \"message\": \"Live hardware access is disabled; enable it explicitly first\", \"warnings\": []}",
+        "expected": "HTTP 503 live_unavailable",
+        "name": "live_observe_fails_closed",
+        "observed": "HTTP 503",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"actor\": 1, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"controller\": null, \"created_at\": \"2026-10-17 18:21\", \"error\": {}, \"expires_at\": \"2026-10-17 18:26\", \"id\": \"14c2a262-8c0f-466a-a07e-81b25b2126ff\", \"kind\": \"discovery\", \"mode\": \"simulate\", \"q_task_id\": \"\", \"result\": {}, \"scope_snapshot\": {}, \"state\": \"pending\"}",
+        "expected": "HTTP [202]",
+        "name": "discovery_job_created",
+        "observed": "HTTP 202",
+        "status": "pass"
+      },
+      {
+        "detail": "",
+        "evidence": "{\"actor\": 1, \"cabinet\": \"ae7aee6c-0872-45ec-83cc-70aab44cfe4d\", \"controller\": null, \"created_at\": \"2026-10-17 18:21\", \"error\": {}, \"expires_at\": \"2026-10-17 18:26\", \"id\": \"14c2a262-8c0f-466a-a07e-81b25b2126ff\", \"kind\": \"discovery\", \"mode\": \"simulate\", \"q_task_id\": \"f622ca79604d4c22b1ffc9e18b86e953\", \"result\": {\"candidates\": [{\"capability_status\": \"supported\", \"controller\": \"58c842c5-3616-440f-8dbe-128fc358e98a\", \"fingerprint\": \"66caf91de2fe90b223dd0e0e3dfb6799aee1e48d06c211392d633d78601abb6f\", \"info\": {\"leds\": {\"count\": 60}, \"name\": \"C2\"}, \"origin\": \"http://wled-20261017t182057z-00af0c-c2.invalid\", \"simulated\": true}, {\"capability_status\": \"supported\", \"controller\": \"534934b9-765c-4f54-ba76-",
+        "expected": "complete",
+        "name": "discovery_job_completes",
+        "observed": "complete",
+        "status": "pass"
+      }
+    ],
+    "environment": {
+      "admin_user": "sl_admin",
+      "async_timeout_s": 120.0,
+      "http_timeout_s": 30.0,
+      "readonly_user": "sl_readonly",
+      "verify_tls": true
+    },
+    "fixtures": {
+      "bins": {
+        "B1": "b3c5eeef-393d-4b79-bd9b-e5d1c38c7bbc",
+        "B2": "f0bc7a49-5d3b-438d-b544-181385f5ad42"
+      },
+      "cabinet": "ae7aee6c-0872-45ec-83cc-70aab44cfe4d",
+      "controllers": {
+        "C1": "534934b9-765c-4f54-ba76-a21ed7fa1dbd",
+        "C2": "58c842c5-3616-440f-8dbe-128fc358e98a"
+      },
+      "drawers": {
+        "D1": "e288a4ad-9724-41bd-8847-4a45d0ac222c",
+        "D2": "7a4a9f80-c393-40f1-a8c5-083e41db6990",
+        "D3": "43dc2169-d8f1-4c69-aa3c-738a934c785c"
+      },
+      "mapping_hash": "b18e0ef79f00af877b0dc63ca51bba2295cc4b3336ce72089e629c1074373d96",
+      "profiles": {
+        "locate": "78759a79-3b43-4f3d-82b5-a2456d3e6aa3",
+        "test": "fbab5f74-b0a9-45a8-a8d2-7e1368aa3190"
+      },
+      "session": "5766464e-156d-4860-af7e-115f42405113",
+      "stock_item": {
+        "location": 125,
+        "part": 6,
+        "pk": 6
+      },
+      "strings": {
+        "S1": "e458460d-9e33-4761-93e5-30075c50fea3",
+        "S2": "d40c4de0-d7ec-4abe-94e6-88462e4c2701",
+        "S3": "63aeb4f2-bed6-45a3-b4aa-e26594c2631c"
+      }
+    },
+    "generated_at": "2026-10-17T18:21:04.958702+00:00",
+    "notes": [
+      "This run used real HTTP against the deployed backend; no plugin code was imported and no mocked API or hardware was used.",
+      "Credentials and tokens are never written to this file."
+    ],
+    "plugin_api": "/plugin/storage-layout/api/v1/",
+    "run_id": "20261017T182057Z-00af0c",
+    "summary": {
+      "fail": 0,
+      "pass": 80,
+      "skip": 0,
+      "total": 80
+    },
+    "tool": "contrib/storage-layout-integration/api_checks.py"
+  },
+  "basis": "Source-built Docker services, real PostgreSQL/Redis/Q worker and real host browser; no intercepted API.",
+  "cleanup": {
+    "docker_wide_cleanup": false,
+    "images_and_build_cache_retained": true,
+    "project": "sl001_e267ab7d9d83",
+    "project_containers_removed": true,
+    "project_named_volumes_removed": true,
+    "project_networks_removed": true
+  },
+  "isolation": {
+    "containers": [
+      {
+        "image": "sha256:c827f0faddc7c30f1b44a5945034a82b0dbcd79605138c400a9a4f8c47b46546",
+        "mounts_are_project_owned": true,
+        "published_ports": {},
+        "service": "worker"
+      },
+      {
+        "image": "sha256:6104b27d644a1593267827de5013916577392c661c93c0ccf44feed07f8b7678",
+        "mounts_are_project_owned": true,
+        "published_ports": {
+          "80/tcp": [
+            {
+              "HostIp": "127.0.0.1",
+              "HostPort": "18761"
+            }
+          ]
+        },
+        "service": "frontend"
+      },
+      {
+        "image": "sha256:c827f0faddc7c30f1b44a5945034a82b0dbcd79605138c400a9a4f8c47b46546",
+        "mounts_are_project_owned": true,
+        "published_ports": {},
+        "service": "backend"
+      },
+      {
+        "image": "sha256:c827f0faddc7c30f1b44a5945034a82b0dbcd79605138c400a9a4f8c47b46546",
+        "mounts_are_project_owned": true,
+        "published_ports": {},
+        "service": "bootstrap"
+      },
+      {
+        "image": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+        "mounts_are_project_owned": true,
+        "published_ports": {},
+        "service": "db"
+      },
+      {
+        "image": "sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+        "mounts_are_project_owned": true,
+        "published_ports": {},
+        "service": "redis"
+      }
+    ],
+    "existing_applications_inspected": false,
+    "internal_application_network": true,
+    "project": "sl001_e267ab7d9d83"
+  },
+  "postgres_migration_tests": 6,
+  "postgres_tests": 487,
+  "real_browser_tests": {
+    "engine": "Chromium",
+    "failed": 0,
+    "passed": 7,
+    "skipped": 0
+  },
+  "recorded_at": "2026-10-18T00:24:31.085488+00:00",
+  "restart_persistence": {
+    "application_and_worker_restarted": true,
+    "cabinet": "ae7aee6c-0872-45ec-83cc-70aab44cfe4d",
+    "database_and_cache_restarted": true,
+    "layout_and_electrical_unchanged": true,
+    "result": "passed"
+  },
+  "untested": [
+    "Physical WLED hardware and optical/electrical behaviour (prohibited)",
+    "Live hardware dispatch and recovery (disabled)",
+    "Firefox/WebKit",
+    "MariaDB (not part of this PostgreSQL task)",
+    "Full unrelated InvenTree core suite",
+    "Host power-loss, kernel/network-partition and production load qualification"
+  ],
+  "worker": {
+    "app_registered": true,
+    "cabinet_reservation_released": true,
+    "database": "postgresql",
+    "duplicate_delivery_preserved_acknowledgements": true,
+    "elapsed_seconds": 12.062,
+    "global_cache": true,
+    "hardware_enabled": false,
+    "hot_reload_preserved_model_and_service_identity": true,
+    "live_dispatch_enabled": false,
+    "migrations": [
+      "0001_storage_and_electrical",
+      "0002_mapping_and_constraints",
+      "0003_operations_audit_permissions"
+    ],
+    "plugin_distribution": "0.1.0",
+    "real_duplicate_tasks_completed": 2,
+    "result": "passed",
+    "scheduled_watchdog_expired_session": true,
+    "tested_source_sha256": {
+      "src/backend/InvenTree/plugin/base/integration/AppMixin.py": "282cf88a02c55892c4f0a74cb9dd9d7c393aba9f56a9289808a67673fef34c51",
+      "src/plugins/storage_layout/frontend/src/components/DrawerDesigner.tsx": "07e65676f9864f14f9616590f44e068c229fa9b29568a4b6ac0dcda5c93a38e4",
+      "src/plugins/storage_layout/storage_layout/services.py": "7be708231426e40dd7e664fd3e7331e6e8c1e2534e25aac9c77cdf775f553784",
+      "src/plugins/storage_layout/storage_layout/validation.py": "191920f0c57a99964c7947e5030f25cdd60e77fd867d191e81c27e9b8e2d8d0a"
+    },
+    "workers": 4
+  }
+}

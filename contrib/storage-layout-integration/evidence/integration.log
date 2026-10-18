@@ -1,0 +1,186 @@
+=== api.log ===
+
+Storage Layout integration checks
+  base URL : http://127.0.0.1:18761
+  run id   : 20261017T182057Z-00af0c
+  checks   : 80 passed, 0 failed, 0 skipped (of 80)
+  results  : /home/spetchal/Code/My-InvenTree/contrib/storage-layout-integration/.runtime/api_checks_20261017T182057Z-00af0c.json
+
+=== browser.log ===
+
+Running 7 tests using 1 worker
+
+  ✓  1 [chromium] › browser.spec.ts:446:7 › Storage Layout real-stack browser integration › the host mounts the plugin route under its slug and lists real cabinets (586ms)
+  ✓  2 [chromium] › browser.spec.ts:487:7 › Storage Layout real-stack browser integration › cabinet designer resizes then drags a drawer and persists it across a reload (1.3s)
+  ✓  3 [chromium] › browser.spec.ts:551:7 › Storage Layout real-stack browser integration › cabinet designer numeric drawer edit persists across a reload (1.0s)
+  ✓  4 [chromium] › browser.spec.ts:598:7 › Storage Layout real-stack browser integration › drawer (bin) designer numeric bin edit persists across a reload (946ms)
+  ✓  5 [chromium] › browser.spec.ts:655:7 › Storage Layout real-stack browser integration › native stock location panel resolves the drawer binding and locates with polling (2.6s)
+  ✓  6 [chromium] › browser.spec.ts:720:7 › Storage Layout real-stack browser integration › simulated observe dispatches to the worker and is polled to completion (3.0s)
+  ✓  7 [chromium] › browser.spec.ts:763:7 › Storage Layout real-stack browser integration › native stock item panel locates the item through the plugin session API (2.5s)
+
+  7 passed (13.7s)
+
+=== worker.log ===
+132 objects imported automatically (use -v 2 for details).
+
+SL_WORKER_EVIDENCE={"app_registered": true, "cabinet_reservation_released": true, "database": "postgresql", "duplicate_delivery_preserved_acknowledgements": true, "elapsed_seconds": 12.062, "global_cache": true, "hardware_enabled": false, "hot_reload_preserved_model_and_service_identity": true, "live_dispatch_enabled": false, "migrations": ["0001_storage_and_electrical", "0002_mapping_and_constraints", "0003_operations_audit_permissions"], "plugin_distribution": "0.1.0", "real_duplicate_tasks_completed": 2, "result": "passed", "scheduled_watchdog_expired_session": true, "tested_source_sha256": {"src/backend/InvenTree/plugin/base/integration/AppMixin.py": "282cf88a02c55892c4f0a74cb9dd9d7c393aba9f56a9289808a67673fef34c51", "src/plugins/storage_layout/frontend/src/components/DrawerDesigner.tsx": "07e65676f9864f14f9616590f44e068c229fa9b29568a4b6ac0dcda5c93a38e4", "src/plugins/storage_layout/storage_layout/services.py": "7be708231426e40dd7e664fd3e7331e6e8c1e2534e25aac9c77cdf775f553784", "src/plugins/storage_layout/storage_layout/validation.py": "191920f0c57a99964c7947e5030f25cdd60e77fd867d191e81c27e9b8e2d8d0a"}, "workers": 4}
+INVE-W3: Could not detect git information.
+INVE-W10 - Config for 'INVENTREE_CONFIG_FILE' not in recommended directory '/app/config'.
+2026-10-17 13:22:02,916 WARNING INVE-W10 - Config for 'INVENTREE_SECRET_KEY_FILE' not in recommended directory '/app/config'.
+2026-10-17 13:22:02,917 WARNING INVE-W10 - Config for 'INVENTREE_PLUGIN_FILE' not in recommended directory '/app/config'.
+
+=== postgres-tests.log ===
+b-8386-b633dd4b70cd[0m [36muser_id[0m=[35m63[0m
+2026-10-17 18:12:18,349 WARNING {'code': 409, 'request': 'POST /plugin/storage-layout/api/v1/locate-sessions/', 'event': 'request_finished', 'user_id': 63, 'request_id': 'e5020d7e-60d5-42db-8386-b633dd4b70cd', 'ip': '127.0.0.1', 'timestamp': '2026-10-17T18:12:18.349948Z', 'logger': 'django_structlog.middlewares.request', 'level': 'warning'}
+2026-10-17 18:12:18,350 WARNING Conflict: /plugin/storage-layout/api/v1/locate-sessions/
+[2m2026-10-17T18:12:18.353440Z[0m [[33m[1mwarning  [0m] [1mrequest_finished              [0m [[0m[1m[34mdjango_structlog.middlewares.request[0m][0m [36mcode[0m=[35m429[0m [36mip[0m=[35m127.0.0.1[0m [36mrequest[0m=[35m'POST /plugin/storage-layout/api/v1/locate-sessions/'[0m [36mrequest_id[0m=[35m1c3081d7-79c3-477a-80b2-6b95a4c8f7ea[0m [36muser_id[0m=[35m63[0m
+2026-10-17 18:12:18,353 WARNING {'code': 429, 'request': 'POST /plugin/storage-layout/api/v1/locate-sessions/', 'event': 'request_finished', 'user_id': 63, 'request_id': '1c3081d7-79c3-477a-80b2-6b95a4c8f7ea', 'ip': '127.0.0.1', 'timestamp': '2026-10-17T18:12:18.353440Z', 'logger': 'django_structlog.middlewares.request', 'level': 'warning'}
+2026-10-17 18:12:18,353 WARNING Too Many Requests: /plugin/storage-layout/api/v1/locate-sessions/
+........................................................................./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+........................................................................................................./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+./app/src/backend/InvenTree/plugin/registry.py:336: UserWarning: A plugin registry reload was triggered for plugin storage-layout
+  cfg.save()
+................................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 487 tests in 61.908s
+
+OK
+Preserving test database for alias 'default'...
+
+=== postgres-migrations.log ===
+Found 6 test(s).
+System check identified no issues (0 silenced).
+
+6 slowest tests:
+12.1659s test_migrations_are_reversible (storage_layout.tests.test_migrations.MigrationLifecycleTests.test_migrations_are_reversible)
+7.4662s test_operation_rows_removed_on_reverse (storage_layout.tests.test_migrations.MigrationLifecycleTests.test_operation_rows_removed_on_reverse)
+6.5620s test_partial_migration_boundaries (storage_layout.tests.test_migrations.MigrationLifecycleTests.test_partial_migration_boundaries)
+4.1102s test_operation_rows_created_for_existing_cabinets (storage_layout.tests.test_migrations.MigrationLifecycleTests.test_operation_rows_created_for_existing_cabinets)
+0.7016s test_migrations_apply_forward (storage_layout.tests.test_migrations.MigrationLifecycleTests.test_migrations_apply_forward)
+0.1611s test_initial_migration_dependencies (storage_layout.tests.test_migrations.MigrationDependencyTests.test_initial_migration_dependencies)
+INVE-W3: Could not detect git information.
+INVE-W10 - Config for 'INVENTREE_CONFIG_FILE' not in recommended directory '/app/config'.
+2026-10-17 13:13:11,938 WARNING INVE-W10 - Config for 'INVENTREE_SECRET_KEY_FILE' not in recommended directory '/app/config'.
+2026-10-17 13:13:11,939 WARNING INVE-W10 - Config for 'INVENTREE_PLUGIN_FILE' not in recommended directory '/app/config'.
+Creating test database for alias 'default'...
+Got an error creating the test database: database "test_sl001" already exists
+Destroying old test database for alias 'default'...
+......
+----------------------------------------------------------------------
+Ran 6 tests in 31.168s
+
+OK
+Destroying test database for alias 'default'...
+
+=== persistence-after.log ===
+{
+  "result": "passed",
+  "database_and_cache_restarted": true,
+  "application_and_worker_restarted": true,
+  "layout_and_electrical_unchanged": true,
+  "cabinet": "ae7aee6c-0872-45ec-83cc-70aab44cfe4d"
+}
+
+=== cleanup.log ===
+ Container sl001_e267ab7d9d83-frontend-1 Stopping
+ Container sl001_e267ab7d9d83-worker-1 Stopping
+ Container sl001_e267ab7d9d83-frontend-1 Stopped
+ Container sl001_e267ab7d9d83-frontend-1 Removing
+ Container sl001_e267ab7d9d83-frontend-1 Removed
+ Container sl001_e267ab7d9d83-worker-1 Stopped
+ Container sl001_e267ab7d9d83-worker-1 Removing
+ Container sl001_e267ab7d9d83-worker-1 Removed
+ Container sl001_e267ab7d9d83-backend-1 Stopping
+ Container sl001_e267ab7d9d83-backend-1 Stopped
+ Container sl001_e267ab7d9d83-backend-1 Removing
+ Container sl001_e267ab7d9d83-backend-1 Removed
+ Container sl001_e267ab7d9d83-bootstrap-1 Stopping
+ Container sl001_e267ab7d9d83-bootstrap-1 Stopped
+ Container sl001_e267ab7d9d83-bootstrap-1 Removing
+ Container sl001_e267ab7d9d83-bootstrap-1 Removed
+ Container sl001_e267ab7d9d83-db-1 Stopping
+ Container sl001_e267ab7d9d83-redis-1 Stopping
+ Container sl001_e267ab7d9d83-redis-1 Stopped
+ Container sl001_e267ab7d9d83-redis-1 Removing
+ Container sl001_e267ab7d9d83-redis-1 Removed
+ Container sl001_e267ab7d9d83-db-1 Stopped
+ Container sl001_e267ab7d9d83-db-1 Removing
+ Container sl001_e267ab7d9d83-db-1 Removed
+ Volume sl001_e267ab7d9d83_app-data Removing
+ Volume sl001_e267ab7d9d83_pg-data Removing
+ Network sl001_e267ab7d9d83_isolated Removing
+ Volume sl001_e267ab7d9d83_redis-data Removing
+ Network sl001_e267ab7d9d83_ingress Removing
+ Volume sl001_e267ab7d9d83_pg-data Removed
+ Volume sl001_e267ab7d9d83_app-data Removed
+ Volume sl001_e267ab7d9d83_redis-data Removed
+ Network sl001_e267ab7d9d83_ingress Removed
+ Network sl001_e267ab7d9d83_isolated Removed

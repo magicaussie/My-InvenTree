@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { CabinetDesigner } from '../src/components/CabinetDesigner';
 import { CabinetList } from '../src/components/CabinetList';
+import { DrawerDesigner } from '../src/components/DrawerDesigner';
 
 const CABINET = {
   id: 'cabinet-1',
@@ -71,6 +72,51 @@ function fakeContext(overrides: Record<string, unknown> = {}) {
     ...overrides
   } as unknown as InvenTreePluginContext;
 }
+
+describe('DrawerDesigner', () => {
+  it('validates a drawer front rectangle against cabinet dimensions, not its interior', async () => {
+    const context = fakeContext();
+    const originalGet = context.api.get.bind(context.api);
+    context.api.get = vi.fn(async (url: string) => {
+      if (url.includes('/drawers/drawer-2/layout/'))
+        return {
+          data: {
+            schema_version: 1,
+            cabinet: { ...CABINET, total_pixels: 0 },
+            drawer: {
+              id: 'drawer-2',
+              label: 'D2',
+              display_number: 2,
+              location: 42,
+              x: 0,
+              y: 200,
+              width: 600,
+              height: 200,
+              interior_width: 560,
+              interior_height: 160,
+              archived: false,
+              allocation: null
+            },
+            bins: []
+          },
+          headers: { etag: '"3"' }
+        };
+      return originalGet(url);
+    }) as typeof context.api.get;
+    render(
+      <MantineProvider>
+        <DrawerDesigner context={context} drawerId='drawer-2' />
+      </MantineProvider>
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('drawer-designer')).toBeInTheDocument()
+    );
+    expect(
+      screen.queryByText(/extends outside the cabinet/)
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Layout is valid')).toBeInTheDocument();
+  });
+});
 
 describe('CabinetList', () => {
   it('lists cabinets returned by the API', async () => {

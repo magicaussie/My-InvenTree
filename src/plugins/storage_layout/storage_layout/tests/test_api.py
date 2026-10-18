@@ -356,6 +356,114 @@ class LayoutApiTests(ApiTestCase):
 
         self.assertEqual(response.data['drawer']['label'], 'A1')
 
+    def layout_document(self):
+        """Return the current layout document without diagnostics."""
+        document = self.get(self.cabinet_url('layout/'), expected_code=200).data
+        document.pop('diagnostics', None)
+
+        return document
+
+    def make_second_drawer(self, label='A2', display_number=2, y=100):
+        """Create a second drawer with its own structural location."""
+        location = StockLocation.objects.create(
+            name=f'Drawer {label}', parent=self.cabinet_location, structural=True
+        )
+
+        return Drawer.objects.create(
+            cabinet=self.cabinet,
+            label=label,
+            display_number=display_number,
+            location=location,
+            x=0,
+            y=y,
+            width=300,
+            height=100,
+            interior_width=280,
+            interior_height=400,
+        )
+
+    def test_put_layout_duplicate_label_returns_400(self):
+        """A duplicate drawer label is a 400 and leaves the revision unchanged."""
+        before = self.cabinet.revision
+        second_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document = self.layout_document()
+        document['drawers'].append({
+            'id': None,
+            'label': 'A1',
+            'display_number': 2,
+            'location': second_location.pk,
+            'x': 0,
+            'y': 100,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+        })
+
+        response = self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'duplicate_identity')
+        self.cabinet.refresh_from_db()
+        self.assertEqual(self.cabinet.revision, before)
+
+    def test_put_layout_duplicate_bin_label_returns_400(self):
+        """A duplicate bin label is a 400 and leaves the revision unchanged."""
+        before = self.cabinet.revision
+        document = self.layout_document()
+
+        for x in (0, 70):
+            document['bins'].append({
+                'id': None,
+                'drawer': str(self.drawer.pk),
+                'label': 'B1',
+                'location': None,
+                'x': x,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+            })
+
+        response = self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'duplicate_identity')
+        self.cabinet.refresh_from_db()
+        self.assertEqual(self.cabinet.revision, before)
+
+    def test_put_layout_swaps_display_numbers(self):
+        """A valid display-number swap is applied atomically."""
+        second = self.make_second_drawer(label='A2', display_number=2)
+        document = self.layout_document()
+
+        for entry in document['drawers']:
+            if entry['id'] == str(self.drawer.pk):
+                entry['display_number'] = 2
+            elif entry['id'] == str(second.pk):
+                entry['display_number'] = 1
+
+        self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.drawer.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(self.drawer.display_number, 2)
+        self.assertEqual(second.display_number, 1)
+
 
 class ElectricalApiTests(ApiTestCase):
     """Tests for the electrical endpoints."""
@@ -401,6 +509,86 @@ class ElectricalApiTests(ApiTestCase):
         self.assertEqual(
             response.data['cabinet']['revision'], self.cabinet.revision + 1
         )
+
+    def new_controller(self, name='Controller B', origin=None, expected_mac=None):
+        """Build an electrical controller entry for a document."""
+        return {
+            'id': None,
+            'name': name,
+            'origin': origin or 'http://wled-b.local',
+            'expected_mac': expected_mac,
+            'firmware_adapter': 'wled-v16.0.1-1d',
+            'enabled': False,
+            'commissioning_policy': {},
+            'outputs': [],
+        }
+
+    def test_put_electrical_duplicate_origin_returns_400(self):
+        """A duplicate controller origin is a 400, not a 500."""
+        before = self.cabinet.revision
+        document = self.get(self.cabinet_url('electrical/'), expected_code=200).data
+        document['controllers'].append(
+            self.new_controller(origin='http://wled-a.local')
+        )
+
+        response = self.put(
+            self.cabinet_url('electrical/'),
+            document,
+            expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'duplicate_identity')
+        self.cabinet.refresh_from_db()
+        self.assertEqual(self.cabinet.revision, before)
+
+    def test_put_electrical_duplicate_mac_returns_400(self):
+        """A duplicate normalised MAC address is a 400, not a 500."""
+        document = self.get(self.cabinet_url('electrical/'), expected_code=200).data
+        document['controllers'][0]['expected_mac'] = 'AA:BB:CC:DD:EE:FF'
+        document['controllers'].append(
+            self.new_controller(expected_mac='aa:bb:cc:dd:ee:ff')
+        )
+
+        response = self.put(
+            self.cabinet_url('electrical/'),
+            document,
+            expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'duplicate_identity')
+
+    def test_put_electrical_cross_cabinet_origin_returns_400(self):
+        """An origin owned by another cabinet is a 400 and is not disclosed."""
+        other_location = StockLocation.objects.create(
+            name='Secret', parent=self.root, structural=True
+        )
+        other = Cabinet.objects.create(
+            name='Secret',
+            slug='secret',
+            location=other_location,
+            width_units=100,
+            height_units=100,
+        )
+        Controller.objects.create(
+            cabinet=other, name='Secret', origin='http://wled-secret.local'
+        )
+
+        document = self.get(self.cabinet_url('electrical/'), expected_code=200).data
+        document['controllers'].append(
+            self.new_controller(origin='http://wled-secret.local')
+        )
+
+        response = self.put(
+            self.cabinet_url('electrical/'),
+            document,
+            expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'duplicate_identity')
+        self.assertNotIn('secret', str(response.data).lower())
 
 
 class MappingApiTests(ApiTestCase):

@@ -1,0 +1,17 @@
+.git
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.runtime
+**/test-results
+**/playwright-report
+src/plugins/storage_layout/build
+src/plugins/storage_layout/dist
+src/frontend/dist
+src/plugins/storage_layout/storage_layout/static
+src/plugins/storage_layout/*.egg-info
+dev
+config
+.env
+**/.env
+**/stack.env

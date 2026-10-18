@@ -1,5 +1,6 @@
 """Plugin mixin class for AppMixin."""
 
+import sys
 from importlib import reload
 from pathlib import Path
 from typing import Optional
@@ -7,6 +8,7 @@ from typing import Optional
 from django.apps import apps
 from django.conf import settings
 from django.contrib import admin
+from django.db import models
 
 import structlog
 
@@ -160,7 +162,13 @@ class AppMixin:
             # models_module gets set if models were defined - even after multiple loads
             # on a reload the models registry is empty but models_module is not
             if app_config.models_module and len(app_config.models) == 0:
-                reload(app_config.models_module)
+                # Re-register the already-imported classes rather than reloading
+                # the module: reloading would create a second set of model
+                # classes while retained modules (services, serializers, ...)
+                # still reference the first. Only fall back to a reload when the
+                # module exposes no concrete model classes.
+                if not self._register_existing_models(app_config):
+                    reload(app_config.models_module)
 
             # check for all models if they are registered with the site admin
             model_not_reg = False
@@ -173,6 +181,45 @@ class AppMixin:
             # if the app_config has an admin module before trying to load it
             if model_not_reg and hasattr(app_config.module, 'admin'):
                 reload(app_config.module.admin)
+
+    @staticmethod
+    def _register_existing_models(app_config) -> bool:
+        """Re-register the already-imported model classes for an app.
+
+        On a reload the app's model registry is emptied, but the models module
+        remains in ``sys.modules`` (``PluginsRegistry._purge_plugin_modules``
+        deliberately retains model packages so that class identity is stable).
+        Re-importing that module is a no-op, and reloading it would create a
+        second set of model classes while retained modules (services,
+        serializers, ...) still reference the first. Instead, re-register the
+        existing concrete classes so ``apps.get_model`` keeps returning the same
+        identity.
+
+        Args:
+            app_config: The app config whose models should be re-registered.
+
+        Returns:
+            bool: True if at least one concrete model class was re-registered.
+        """
+        module = app_config.models_module
+
+        if module is None or sys.modules.get(module.__name__) is not module:
+            return False
+
+        registered = False
+
+        for obj in vars(module).values():
+            if (
+                isinstance(obj, type)
+                and issubclass(obj, models.Model)
+                and obj is not models.Model
+                and not obj._meta.abstract
+                and obj._meta.app_label == app_config.label
+            ):
+                apps.register_model(app_config.label, obj)
+                registered = True
+
+        return registered
 
     @classmethod
     def _get_plugin_path(cls, plugin):

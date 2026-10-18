@@ -1,0 +1,3 @@
+# Runtime integration output (never committed)
+.runtime/
+*.result.json

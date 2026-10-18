@@ -33,7 +33,7 @@ from typing import Any
 
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Max, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -859,6 +859,8 @@ def drawer_layout_document(drawer: Drawer) -> dict[str, Any]:
         'cabinet': {
             'id': str(cabinet.pk),
             'revision': cabinet.revision,
+            'width_units': cabinet.width_units,
+            'height_units': cabinet.height_units,
             'active_mapping': str(cabinet.active_mapping_id)
             if cabinet.active_mapping_id
             else None,
@@ -901,6 +903,7 @@ class DrawerSpec:
         """Return a geometry mapping for the validation module."""
         return {
             'id': self.doc_id,
+            'label': self.label,
             'x': self.x,
             'y': self.y,
             'width': self.width,
@@ -929,6 +932,7 @@ class BinSpec:
         """Return a geometry mapping for the validation module."""
         return {
             'id': self.doc_id,
+            'label': self.label,
             'x': self.x,
             'y': self.y,
             'width': self.width,
@@ -1197,19 +1201,45 @@ def prepare_layout(cabinet: Cabinet, document: dict[str, Any]) -> LayoutPlan:
                 related_ids=[spec.drawer_doc_id],
             )
 
-    v.validate_drawer_geometry(
-        width, height, [spec.geometry() for spec in drawers], report=report
+    # Rows omitted from a partial document are retained in the database and
+    # still occupy the cabinet/drawer-scoped unique constraints, so they must
+    # seed the identity checks.
+    represented_drawers = {
+        spec.instance.pk for spec in drawers if spec.instance is not None
+    }
+    retained_drawers = list(
+        Drawer.objects.filter(cabinet=cabinet).exclude(pk__in=represented_drawers)
     )
+
+    v.validate_drawer_geometry(
+        width,
+        height,
+        [spec.geometry() for spec in drawers],
+        report=report,
+        retained=retained_drawers,
+    )
+
+    represented_bins = {spec.instance.pk for spec in bins if spec.instance is not None}
 
     for drawer_spec in drawers:
         drawer_bins = [
             spec.geometry() for spec in bins if spec.drawer_doc_id == drawer_spec.doc_id
         ]
+        retained_bins = []
+
+        if drawer_spec.instance is not None:
+            retained_bins = list(
+                Bin.objects.filter(drawer=drawer_spec.instance).exclude(
+                    pk__in=represented_bins
+                )
+            )
+
         v.validate_bin_geometry(
             drawer_spec.interior_width,
             drawer_spec.interior_height,
             drawer_bins,
             report=report,
+            retained=retained_bins,
         )
 
     mapping = cabinet.active_mapping
@@ -1278,7 +1308,11 @@ def apply_layout(
             _('The cabinet contains locations you do not own'), code='forbidden'
         )
     plan = prepare_layout(cabinet, document)
-    _report_error(plan.report, _('The layout is invalid'), 'geometry_overlap')
+    _report_error(
+        plan.report,
+        _('The layout is invalid'),
+        plan.report.errors[0].code if plan.report.errors else 'geometry_overlap',
+    )
     for spec in [*plan.drawers, *plan.bins]:
         if spec.location_id and not user_owns_location(
             actor, StockLocation.objects.get(pk=spec.location_id)
@@ -1301,6 +1335,11 @@ def apply_layout(
         )
 
         drawer_map: dict[str, Drawer] = {}
+
+        # Park changing rows on temporary unique values first: a single write may
+        # legitimately swap two drawers' labels or display numbers, which would
+        # otherwise transiently violate the cabinet-scoped unique constraints.
+        _park_drawers(cabinet, plan.drawers)
 
         for spec in plan.drawers:
             if spec.instance is None:
@@ -1345,6 +1384,8 @@ def apply_layout(
                         },
                     )
 
+        _park_bins(plan.bins, drawer_map)
+
         for spec in plan.bins:
             drawer = drawer_map[spec.drawer_doc_id]
 
@@ -1383,6 +1424,90 @@ def apply_layout(
     )
 
     return layout_document(cabinet)
+
+
+def _park_drawers(cabinet: Cabinet, specs: list[DrawerSpec]) -> None:
+    """Move changing drawers onto temporary unique labels and numbers.
+
+    A layout write may legitimately swap two drawers' labels or display
+    numbers. Saving them one at a time would transiently violate the
+    cabinet-scoped unique constraints, so every row whose identity changes is
+    first parked on a value which cannot collide with any final or current
+    value. Rows whose identity is unchanged are left alone: a collision with
+    such a row is a genuine duplicate and is rejected by validation.
+    """
+    changing = [
+        spec
+        for spec in specs
+        if spec.instance is not None
+        and (
+            spec.instance.label != spec.label
+            or spec.instance.display_number != spec.display_number
+        )
+    ]
+
+    if not changing:
+        return
+
+    final_numbers = {spec.display_number for spec in specs}
+    final_labels = {spec.label for spec in specs}
+    current_numbers = set(
+        Drawer.objects.filter(cabinet=cabinet).values_list('display_number', flat=True)
+    )
+    current_labels = set(
+        Drawer.objects.filter(cabinet=cabinet).values_list('label', flat=True)
+    )
+    base = max(final_numbers | current_numbers | {0})
+
+    for offset, spec in enumerate(changing):
+        drawer = spec.instance
+        label = f'__tmp__{drawer.pk}'
+
+        while label in final_labels or label in current_labels:
+            label += '_'
+
+        drawer.display_number = base + offset + 1
+        drawer.label = label
+        drawer.save(update_fields=['display_number', 'label'])
+
+
+def _park_bins(specs: list[BinSpec], drawer_map: dict[str, Drawer]) -> None:
+    """Move changing bins onto temporary unique labels within their drawer.
+
+    As for drawers, a bin label swap would otherwise transiently violate the
+    drawer-scoped unique constraint. Bins which are neither relabelled nor
+    reparented are left alone; a collision with such a bin is a genuine
+    duplicate and is rejected by validation.
+    """
+    changing = [
+        spec
+        for spec in specs
+        if spec.instance is not None
+        and (
+            spec.instance.label != spec.label
+            or spec.instance.drawer_id != drawer_map[spec.drawer_doc_id].pk
+        )
+    ]
+
+    if not changing:
+        return
+
+    final_labels = {spec.label for spec in specs}
+
+    for spec in changing:
+        bin_row = spec.instance
+        drawer = drawer_map[spec.drawer_doc_id]
+        label = f'__tmp__{bin_row.pk}'
+        current_labels = set(
+            Bin.objects.filter(drawer=drawer).values_list('label', flat=True)
+        )
+
+        while label in final_labels or label in current_labels:
+            label += '_'
+
+        bin_row.drawer = drawer
+        bin_row.label = label
+        bin_row.save(update_fields=['drawer', 'label'])
 
 
 def _apply_archive_ids(cabinet: Cabinet, archive_ids: list[str]) -> None:
@@ -1734,11 +1859,78 @@ def prepare_electrical(cabinet: Cabinet, document: dict[str, Any]) -> Electrical
                 report=report,
             )
 
+    _validate_controller_identities(parsed, report)
+
     return ElectricalPlan(
         controllers=parsed,
         archive_ids=[str(value) for value in (document.get('archive_ids') or [])],
         report=report,
     )
+
+
+def _validate_controller_identities(
+    controllers: list[dict[str, Any]], report: v.ValidationReport
+) -> None:
+    """Validate global controller origin and expected-MAC uniqueness.
+
+    Origins and populated MAC addresses are globally unique across every
+    cabinet. A conflict with a controller which is not part of the proposal is
+    reported generically, without naming the owning cabinet, so the endpoint
+    cannot be used to enumerate another operator's controllers.
+    """
+    seen_origins: dict[str, str] = {}
+    seen_macs: dict[str, str] = {}
+
+    for entry in controllers:
+        identity = entry['id'] or f'new:{entry["name"]}'
+        origin = entry['origin']
+
+        if origin:
+            if origin in seen_origins:
+                report.add_error(
+                    v.CODE_DUPLICATE_IDENTITY,
+                    _('Controller origins must be unique'),
+                    path=f'controllers[{identity}].origin',
+                    related_ids=[seen_origins[origin], identity],
+                )
+            else:
+                seen_origins[origin] = identity
+
+        mac = entry['expected_mac']
+        normalised = str(mac).strip().upper() if mac else ''
+
+        if normalised:
+            if normalised in seen_macs:
+                report.add_error(
+                    v.CODE_DUPLICATE_IDENTITY,
+                    _('Expected MAC addresses must be unique'),
+                    path=f'controllers[{identity}].expected_mac',
+                    related_ids=[seen_macs[normalised], identity],
+                )
+            else:
+                seen_macs[normalised] = identity
+
+    represented = {
+        entry['instance'].pk for entry in controllers if entry['instance'] is not None
+    }
+
+    for controller in Controller.objects.exclude(pk__in=represented):
+        if controller.origin and controller.origin in seen_origins:
+            report.add_error(
+                v.CODE_DUPLICATE_IDENTITY,
+                _('This controller origin is already in use'),
+                path=f'controllers[{seen_origins[controller.origin]}].origin',
+            )
+
+        if controller.expected_mac and controller.expected_mac.upper() in seen_macs:
+            report.add_error(
+                v.CODE_DUPLICATE_IDENTITY,
+                _('This expected MAC address is already in use'),
+                path=(
+                    f'controllers[{seen_macs[controller.expected_mac.upper()]}]'
+                    '.expected_mac'
+                ),
+            )
 
 
 def apply_electrical(
@@ -1756,7 +1948,9 @@ def apply_electrical(
     _report_error(
         plan.report,
         _('The electrical configuration is invalid'),
-        'unsupported_configuration',
+        plan.report.errors[0].code
+        if plan.report.errors
+        else 'unsupported_configuration',
     )
 
     before = cabinet.revision
@@ -1771,29 +1965,20 @@ def apply_electrical(
         )
 
         for entry in plan.controllers:
-            controller = entry['instance']
+            try:
+                controller = _persist_controller(cabinet, entry, actor)
+            except IntegrityError as exc:
+                # Origins and MAC addresses are globally unique, so a concurrent
+                # write to another cabinet can still race the pre-flight check.
+                # Convert only that expected unique violation; anything else is a
+                # genuine fault and must not be swallowed.
+                if not _is_controller_identity_conflict(exc):
+                    raise
 
-            if controller is None:
-                controller = Controller.objects.create(
-                    cabinet=cabinet,
-                    name=entry['name'],
-                    origin=entry['origin'],
-                    expected_mac=entry['expected_mac'],
-                    firmware_adapter=entry['firmware_adapter'],
-                    enabled=entry['enabled'],
-                    commissioning_policy=entry['commissioning_policy'],
-                    created_by=actor
-                    if getattr(actor, 'is_authenticated', False)
-                    else None,
-                )
-            else:
-                controller.name = entry['name']
-                controller.origin = entry['origin']
-                controller.expected_mac = entry['expected_mac']
-                controller.firmware_adapter = entry['firmware_adapter']
-                controller.enabled = entry['enabled']
-                controller.commissioning_policy = entry['commissioning_policy']
-                controller.save()
+                raise StorageLayoutError(
+                    _('This controller origin or MAC address is already in use'),
+                    code=v.CODE_DUPLICATE_IDENTITY,
+                ) from exc
 
             for output_entry in entry['outputs']:
                 output = output_entry['instance']
@@ -1857,6 +2042,42 @@ def apply_electrical(
     )
 
     return electrical_document(cabinet)
+
+
+def _persist_controller(
+    cabinet: Cabinet, entry: dict[str, Any], actor: Any
+) -> Controller:
+    """Create or update a controller row from a parsed electrical entry."""
+    controller = entry['instance']
+
+    if controller is None:
+        return Controller.objects.create(
+            cabinet=cabinet,
+            name=entry['name'],
+            origin=entry['origin'],
+            expected_mac=entry['expected_mac'],
+            firmware_adapter=entry['firmware_adapter'],
+            enabled=entry['enabled'],
+            commissioning_policy=entry['commissioning_policy'],
+            created_by=actor if getattr(actor, 'is_authenticated', False) else None,
+        )
+
+    controller.name = entry['name']
+    controller.origin = entry['origin']
+    controller.expected_mac = entry['expected_mac']
+    controller.firmware_adapter = entry['firmware_adapter']
+    controller.enabled = entry['enabled']
+    controller.commissioning_policy = entry['commissioning_policy']
+    controller.save()
+
+    return controller
+
+
+def _is_controller_identity_conflict(exc: IntegrityError) -> bool:
+    """Return True when ``exc`` is a controller origin/MAC unique violation."""
+    text = str(exc).lower()
+
+    return 'origin' in text or 'expected_mac' in text
 
 
 def _apply_electrical_archive_ids(cabinet: Cabinet, archive_ids: list[str]) -> None:
@@ -2085,7 +2306,11 @@ def publish_mapping(
 
     rows, total = _candidate_span_rows(cabinet, candidate)
     report = v.validate_mapping_spans(rows, total)
-    _report_error(report, _('The mapping is invalid'), 'mapping_gap')
+    _report_error(
+        report,
+        _('The mapping is invalid'),
+        report.errors[0].code if report.errors else 'mapping_gap',
+    )
 
     if expected_fingerprints:
         _check_fingerprints(cabinet, expected_fingerprints)

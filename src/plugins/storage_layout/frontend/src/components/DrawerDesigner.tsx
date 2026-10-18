@@ -104,8 +104,14 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
       const result = await client.getDrawerLayout(drawerId);
       const response: DrawerLayoutResponse = result.data;
       const draft = emptyDraft({
-        width_units: response.drawer.interior_width,
-        height_units: response.drawer.interior_height
+        // The front rectangle remains in cabinet coordinates. The canvas uses
+        // interior dimensions separately; they are not the cabinet's bounds.
+        width_units:
+          response.cabinet.width_units ??
+          response.drawer.x + response.drawer.width,
+        height_units:
+          response.cabinet.height_units ??
+          response.drawer.y + response.drawer.height
       });
       draft.drawers[response.drawer.id ?? drawerId] = {
         ...response.drawer,

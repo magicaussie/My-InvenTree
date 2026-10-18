@@ -1,6 +1,6 @@
 # 001 — Storage Layout & WLED
 
-**Status:** IMPLEMENTED FOR LOCAL DEVELOPMENT AND SIMULATION — stages 1–4 implemented; integrated local QA recorded in §17. Production/cross-database qualification and human hardware commissioning are not complete. No physical hardware acceptance is claimed.
+**Status:** IMPLEMENTED AND DOCKER/POSTGRESQL INTEGRATION VERIFIED — stages 1–4 implemented; initial local QA in §17 and real deployed-host/worker/browser verification in §19. Production qualification and human hardware commissioning remain out of scope. No physical hardware acceptance is claimed.
 
 **Implementation authorised:** Yes — the owner's CONTINUE PROJECT 001 instruction authorises implementation and safely defaultable development/simulation decisions. It explicitly forbids physical controller access and production deployment. §16 recommendations are development defaults, not permission for live operation.
 
@@ -453,12 +453,12 @@ These are genuine product/deployment decisions, **not missing technical investig
 - Repository pre-commit hooks passed (format/lint, whitespace, YAML, template lint, spelling, secret scan and test assertion checks). Frontend Biome is run independently because the host hook targets only `src/frontend/`.
 - Added bounded walking calibration (range/walk selector, ordered per-pixel frames, per-step confirmed clear, deadline enforcement), tested with an injected WLED emulator and a browser request-contract test. No physical hardware was used.
 - Additional hardening: OAuth tokens must satisfy scope restrictions **and** Django plugin permissions; read-only tokens cannot operate hardware. Cabinet aggregates are hidden when child locations override ownership for another operator. Configurable audit retention runs daily and preserves evidence for unresolved cabinets.
-- No PostgreSQL/MariaDB server or container runtime is installed in this environment; cross-database qualification cannot be asserted. No physical controller, existing WLEDger data, live database or production deployment was accessed.
+- At the initial implementation review, no PostgreSQL/MariaDB server or container runtime was available. That environment limitation is superseded for Docker/PostgreSQL by §19. No physical controller, existing WLEDger data, live database or production deployment was accessed.
 
 ### Remaining release qualification and owner defaults
 
 - Physical commissioning is intentionally blocked by the owner's explicit safety boundary. No simulator acknowledgement is evidence of emitted light or electrical safety.
-- Cross-database/process-crash acceptance and a real deployed-host browser acceptance pass remain release work. Current browser tests load the real compiled bundle against an in-memory API fixture; DRF and public host declaration/manifest contracts are tested separately.
+- Initial browser tests used an in-memory API fixture. §19 adds an actual source-built Docker host, PostgreSQL/Redis, worker execution and real browser acceptance without API interception. MariaDB, host power-loss/network-partition and production-load qualification remain untested.
 - Automatic subnet/mDNS discovery is not implemented; only explicit bounded registered-origin discovery is supported. Single-pixel/range and bounded walking tests are implemented. Walking is capped at 32 logical pixels within the test-profile duration (maximum ten seconds), clears and confirms each physical step, and exposes explicit simulation frame/timing previews. It cannot run as an unbounded animation. Historical sessions are retained rather than automatically purged; audit records have configurable retention. Non-English catalogs remain untranslated. These limitations mean this is **not a claim that every sentence of the original specification has passed release acceptance**.
 
 ### Owner defaults still required for hardware deployment (unchanged from §16)
@@ -474,3 +474,47 @@ P1–P7 remain open; P2 (colour/brightness/duration), P3 (black/off takeover), P
 - 2026-10-18: Independent implementation review. Recorded stage 1–4 completion (simulation-only), stage 5 partial and stage 6 not started; added the verification evidence and limitations above; fixed the `validate_mapping_spans` string-bound coordinate bug and added regression tests. Design approval and hardware authorisation remain outstanding.
 - 2026-10-18: Backend API/services hardening. Durable asynchronous dispatch for locate/test sessions and read jobs via on-commit Django-Q2 (enqueue failure persisted; unavailable queue returns 503); per-user/per-cabinet rate limiting (10/min) for locate/test and observe/discovery; actor-scoped read jobs; native `StockLocation` ownership filtering for cabinets/drawers/bins/controllers/sessions; `mapping-publish/` enumerates changed physical pixels; bounded five-second reconciliation watchdog with live cleanup gated on `DISPATCHER_ENABLED`. Plugin suite: 425 tests pass; migration suite: 6 tests pass.
 - 2026-10-18: Frontend completion pass. Added the plugin navigation item; rewrote the stock location panel to resolve **drawers and bins** (via an additive, ownership-filtered `locations/<pk>/binding/` lookup) and added a stock item locate panel using the actor-safe session API (never `LocateMixin`); implemented the async polling contract (sessions `queued -> active`, read jobs `pending -> complete`); surfaced `changed_pixels`/`changed_count` on mapping publish; wrapped every user-visible string in Lingui `t` with extractable/compilable catalogs and a host-compatible `PluginLocale` wrapper; and corrected the stock-item context assumption (`part_detail`, not `part_name`). Verified: 63 frontend unit tests, 18 Playwright browser tests in Chromium (socket-free fixture API), `tsc`/Biome clean, `npm run build` clean; measured 500 drawers 276–302 ms and 2,000 bins 346–359 ms. No commits.
+
+## 19. Isolated Docker integration verification
+
+The owner authorised an isolated temporary Docker development installation. Docker Engine 29.1.3 and Compose 5.0.0 were available; port 18761 was free. Existing application containers, PostgreSQL port 5432, credentials, volumes and networks were not reused or modified. The generated project was `sl001_e267ab7d9d83`; application access was only `http://127.0.0.1:18761`.
+
+### Reproduction and safety
+
+See [`contrib/storage-layout-integration/README.md`](../../contrib/storage-layout-integration/README.md) and its `stack.py` driver. Dockerfiles build the actual repository backend, host frontend and plugin assets. Base images are digest-pinned. Dedicated PostgreSQL 17, Redis, bootstrap, backend, worker and nginx services use project-owned named volumes. The app/database/worker network is internal; only nginx additionally joins a fresh ingress network to publish its loopback port. No Docker socket is mounted. Runtime credentials/session state are private and gitignored. Hardware and live-dispatch settings are explicitly false, verified both through HTTP refusal and running-app inspection.
+
+### Final test matrix
+
+| Requirement | Status and evidence |
+|---|---|
+| Plugin installation/discovery/application registration | PASS — installed package, active UI/API, three plugin migrations and registered app inspected in the running container. |
+| PostgreSQL schema and regressions | PASS — 487 plugin/affected-core tests on PostgreSQL; six fresh-database migration lifecycle tests. These are backend tests, not a substitute for the separate HTTP/browser runs. |
+| Activation, hot reload and canonical model identity | PASS — actual production registry unload/reload preserves both `models.Cabinet` and `services.Cabinet` identity and row counts; deployed source SHA-256 values match this checkout. |
+| API/authentication/permissions | PASS — 80 real-HTTP checks, zero failures/skips; anonymous/read-only refusals, admin setup, CAS 428/412, concurrent writes, duplicate identity validation and idempotency replay. |
+| Cabinet/drawer/bin/native inventory | PASS — real StockLocation hierarchy and stock item created via native APIs, layouts edited and bindings resolved. |
+| Multiple controllers/outputs/strings, numbering and mapping | PASS — 1-based, cross-string/output/controller and reversed-span translation, publication and allocation assertions over HTTP. |
+| Actual graphical designers and persistence | PASS — seven Chromium tests, zero failures/skips, using the real host login/navigation and backend, with drag/numeric edits and save/reload. No mocked/intercepted API routes. |
+| Native location and stock-item locate panels | PASS — real host panels issue simulated sessions and poll real worker execution. |
+| Colours/configuration/diagnostics/drift | PASS — real profile/configuration APIs, simulated observation/import/approval, saved-config drift refusal and browser observation polling. Not physical configuration observation. |
+| Background execution and duplicate delivery | PASS — two additional real Q deliveries complete without resetting expiry or reapplying execution acknowledgements. A task ID alone is not used as proof. |
+| Scheduled watchdog/timeouts | PASS — real scheduled watchdog expires an eight-second simulated session and releases its reservation, with a fresh shared-cache heartbeat. No direct test call substitutes for the scheduler. |
+| Restart/persistence | PASS — this project's PostgreSQL, Redis, backend, worker and nginx restarted; saved layout/electrical documents match before/after. Browser and worker checks pass again after restart. |
+| Isolation and hardware fail-closed | PASS — inspected actual loopback binding, project-owned volume mounts, internal app network and absence of Docker socket mounts; live observe/arm/locate requests return 503 while both hardware gates remain false. |
+| Frontend regression checks | PASS — 64 unit tests, typecheck and lint; actual container builds also compile both frontend bundles. |
+| Driver safety | PASS — three unit tests for private/non-overwritten credentials, project-name guard and Docker context source preservation. Not counted as runtime integration proof. |
+| Physical WLED/electrical/optical/live-recovery tests | NOT RUN — prohibited by the owner; simulation is not physical hardware evidence. |
+| Firefox/WebKit, MariaDB, full unrelated core suite, power-loss/partition/load qualification | NOT RUN — not claimed by this PostgreSQL/Chromium integration task. |
+
+Final achievable integration checks have no remaining failures. Sanitised machine-readable results and selected logs are in [`evidence/verified.json`](../../contrib/storage-layout-integration/evidence/verified.json) and [`evidence/integration.log`](../../contrib/storage-layout-integration/evidence/integration.log). Real host screenshots: [`cabinet`](../../contrib/storage-layout-integration/evidence/cabinet-designer.png), [`drawer/bin`](../../contrib/storage-layout-integration/evidence/drawer-designer.png). Private full logs and traces are deliberately not committed.
+
+### Defects found and corrected
+
+1. Clean container `npm ci` rejected missing optional Rollup platform entries: repaired the lockfile with the locked package versions retained.
+2. Duplicate drawer/bin labels and controller origins/normalised MACs raised database 500s: authoritative validation now returns 400 `duplicate_identity`, checks retained/archived identities, preserves revision on rejection and stages valid label/number swaps atomically. Added API/service/validation regressions and repeated the failing HTTP cases successfully.
+3. Drawer UI validated its front rectangle against interior canvas dimensions, showing a false blocking error despite successful saves: the drawer projection includes cabinet dimensions and the client uses the correct plane. Component, backend projection and real-browser regressions pass.
+4. AppMixin reload recreated model classes while services retained old classes: retained concrete models are re-registered instead of re-executing the module. Three regression tests and the real unload/reload/source-identity check pass. App-plugin code upgrades still require process restart.
+5. Redis existed but shared caching defaulted off, forcing one Q worker and approximately 55-second watchdog-related queue stalls: explicit shared caching and four workers correct the isolated stack configuration; interactive session dispatch was approximately one second and the 30-second latency assertion passes.
+
+Bootstrap fixes (explicit PluginConfig/UserProfile creation), Docker internal-network port publishing and a narrowly scoped Docker ignore pattern were harness corrections, not new inventory-domain architecture. No hardware approval, production deployment or GitHub push is authorised by these results.
+
+After evidence capture, the project-scoped `destroy` command removed this test project's containers, named volumes and networks. Filtered Docker queries confirmed their removal, and port 18761 was free again. Images/build cache were intentionally retained; no Docker-wide cleanup ran. Sanitised evidence remains committed, and private raw artifacts remain gitignored.

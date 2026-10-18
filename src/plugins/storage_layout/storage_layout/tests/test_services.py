@@ -262,6 +262,13 @@ class CasTests(ServiceTestCase):
 class LayoutServiceTests(ServiceTestCase):
     """Tests for the atomic layout aggregate write."""
 
+    def test_drawer_projection_preserves_cabinet_coordinate_bounds(self):
+        """Drawer clients must not confuse top-down interior and front planes."""
+        projection = services.drawer_layout_document(self.drawer)
+        self.assertEqual(projection['cabinet']['width_units'], self.cabinet.width_units)
+        self.assertEqual(projection['cabinet']['height_units'], self.cabinet.height_units)
+        self.assertEqual(projection['drawer']['interior_width'], self.drawer.interior_width)
+
     def test_validate_does_not_persist(self):
         """Validation returns diagnostics without writing."""
         before = self.cabinet.revision
@@ -408,6 +415,180 @@ class LayoutServiceTests(ServiceTestCase):
                 self.cabinet.revision + 3,
             )
 
+    def make_second_drawer(self, label='A2', display_number=2, y=100):
+        """Create a second drawer with its own structural location."""
+        location = StockLocation.objects.create(
+            name=f'Drawer {label}', parent=self.cabinet_location, structural=True
+        )
+
+        return Drawer.objects.create(
+            cabinet=self.cabinet,
+            label=label,
+            display_number=display_number,
+            location=location,
+            x=0,
+            y=y,
+            width=300,
+            height=100,
+            interior_width=280,
+            interior_height=400,
+        )
+
+    def test_apply_layout_rejects_duplicate_drawer_label(self):
+        """A duplicate drawer label is a domain error, not an IntegrityError."""
+        before = self.cabinet.revision
+        second_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document = services.layout_document(self.cabinet)
+        document['drawers'].append({
+            'id': None,
+            'label': 'A1',
+            'display_number': 2,
+            'location': second_location.pk,
+            'x': 0,
+            'y': 100,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+        })
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_layout(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+        self.cabinet.refresh_from_db()
+        self.assertEqual(self.cabinet.revision, before)
+
+    def test_apply_layout_rejects_duplicate_bin_label(self):
+        """A duplicate bin label within a drawer is a domain error."""
+        before = self.cabinet.revision
+        document = services.layout_document(self.cabinet)
+
+        for x in (0, 70):
+            document['bins'].append({
+                'id': None,
+                'drawer': str(self.drawer.pk),
+                'label': 'B1',
+                'location': None,
+                'x': x,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+            })
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_layout(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+        self.cabinet.refresh_from_db()
+        self.assertEqual(self.cabinet.revision, before)
+
+    def test_apply_layout_rejects_archived_label_conflict(self):
+        """An archived drawer still occupies its label."""
+        document = services.layout_document(self.cabinet)
+        document['archive_ids'] = [str(self.drawer.pk)]
+        services.apply_layout(
+            self.cabinet, document, self.user, self.cabinet.revision
+        )
+
+        second_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document = services.layout_document(self.cabinet)
+        document['drawers'].append({
+            'id': None,
+            'label': 'A1',
+            'display_number': 2,
+            'location': second_location.pk,
+            'x': 0,
+            'y': 100,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+        })
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_layout(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+
+    def test_apply_layout_rejects_retained_label_conflict(self):
+        """A partial document cannot reuse a retained drawer's label."""
+        self.make_second_drawer(label='A2', display_number=2)
+        third_location = StockLocation.objects.create(
+            name='Drawer A3', parent=self.cabinet_location, structural=True
+        )
+        document = services.layout_document(self.cabinet)
+        document['drawers'] = [d for d in document['drawers'] if d['label'] != 'A2']
+        document['drawers'].append({
+            'id': None,
+            'label': 'A2',
+            'display_number': 3,
+            'location': third_location.pk,
+            'x': 0,
+            'y': 200,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+        })
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_layout(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+
+    def test_apply_layout_swaps_display_numbers(self):
+        """Two drawers can swap display numbers in a single write."""
+        second = self.make_second_drawer(label='A2', display_number=2)
+        document = services.layout_document(self.cabinet)
+
+        for entry in document['drawers']:
+            if entry['id'] == str(self.drawer.pk):
+                entry['display_number'] = 2
+            elif entry['id'] == str(second.pk):
+                entry['display_number'] = 1
+
+        services.apply_layout(
+            self.cabinet, document, self.user, self.cabinet.revision
+        )
+
+        self.drawer.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(self.drawer.display_number, 2)
+        self.assertEqual(second.display_number, 1)
+
+    def test_apply_layout_swaps_labels(self):
+        """Two drawers can swap labels in a single write."""
+        second = self.make_second_drawer(label='A2', display_number=2)
+        document = services.layout_document(self.cabinet)
+
+        for entry in document['drawers']:
+            if entry['id'] == str(self.drawer.pk):
+                entry['label'] = 'A2'
+            elif entry['id'] == str(second.pk):
+                entry['label'] = 'A1'
+
+        services.apply_layout(
+            self.cabinet, document, self.user, self.cabinet.revision
+        )
+
+        self.drawer.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(self.drawer.label, 'A2')
+        self.assertEqual(second.label, 'A1')
+
 
 class ElectricalServiceTests(ServiceTestCase):
     """Tests for the electrical topology write."""
@@ -465,6 +646,99 @@ class ElectricalServiceTests(ServiceTestCase):
                 self.user,
                 self.cabinet.revision,
             )
+
+    def new_controller(self, name='Controller B', origin=ORIGIN, expected_mac=None):
+        """Build an electrical controller entry for a document."""
+        return {
+            'id': None,
+            'name': name,
+            'origin': origin,
+            'expected_mac': expected_mac,
+            'firmware_adapter': 'wled-v16.0.1-1d',
+            'enabled': False,
+            'commissioning_policy': {},
+            'outputs': [],
+        }
+
+    def make_other_cabinet(self, name='Secret', slug='secret', origin=None, mac=None):
+        """Create a second cabinet, optionally with a controller."""
+        location = StockLocation.objects.create(
+            name=name, parent=self.root, structural=True
+        )
+        cabinet = Cabinet.objects.create(
+            name=name, slug=slug, location=location, width_units=100, height_units=100
+        )
+
+        if origin:
+            Controller.objects.create(
+                cabinet=cabinet, name=name, origin=origin, expected_mac=mac
+            )
+
+        return cabinet
+
+    def test_apply_electrical_rejects_duplicate_origin(self):
+        """A duplicate controller origin is a domain error, not a 500."""
+        before = self.cabinet.revision
+        document = services.electrical_document(self.cabinet)
+        document['controllers'].append(self.new_controller(origin=ORIGIN))
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_electrical(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+        self.cabinet.refresh_from_db()
+        self.assertEqual(self.cabinet.revision, before)
+
+    def test_apply_electrical_rejects_duplicate_mac(self):
+        """A duplicate normalised MAC address is a domain error."""
+        document = services.electrical_document(self.cabinet)
+        document['controllers'][0]['expected_mac'] = 'AA:BB:CC:DD:EE:FF'
+        document['controllers'].append(
+            self.new_controller(
+                origin='http://wled-b.local', expected_mac='aa:bb:cc:dd:ee:ff'
+            )
+        )
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_electrical(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+
+    def test_apply_electrical_rejects_cross_cabinet_origin(self):
+        """An origin owned by another cabinet is rejected without leaking it."""
+        self.make_other_cabinet(origin='http://wled-secret.local')
+        document = services.electrical_document(self.cabinet)
+        document['controllers'].append(
+            self.new_controller(origin='http://wled-secret.local')
+        )
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_electrical(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+        self.assertNotIn('secret', str(ctx.exception.as_dict()).lower())
+
+    def test_apply_electrical_rejects_cross_cabinet_mac(self):
+        """A MAC owned by another cabinet is rejected without leaking it."""
+        self.make_other_cabinet(
+            origin='http://wled-secret.local', mac='AA:BB:CC:DD:EE:FF'
+        )
+        document = services.electrical_document(self.cabinet)
+        document['controllers'][0]['expected_mac'] = 'aa:bb:cc:dd:ee:ff'
+
+        with self.assertRaises(services.StorageLayoutError) as ctx:
+            services.apply_electrical(
+                self.cabinet, document, self.user, self.cabinet.revision
+            )
+
+        self.assertEqual(ctx.exception.code, 'duplicate_identity')
+        self.assertNotIn('secret', str(ctx.exception.as_dict()).lower())
 
 
 class MappingServiceTests(ServiceTestCase):

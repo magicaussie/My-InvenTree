@@ -11,10 +11,13 @@ from storage_layout import validation as v
 
 
 def drawer(**kwargs):
-    """Build a drawer-like mapping for geometry tests."""
+    """Build a drawer-like mapping for geometry tests.
+
+    The default label is derived from the id so that rows which are only meant
+    to exercise geometry do not accidentally collide on the label constraint.
+    """
     data = {
         'id': 'drawer',
-        'label': 'A1',
         'display_number': 1,
         'x': 0,
         'y': 0,
@@ -23,14 +26,18 @@ def drawer(**kwargs):
         'archived': False,
     }
     data.update(kwargs)
+    data.setdefault('label', f'drawer-{data["id"]}')
     return data
 
 
 def bin_row(**kwargs):
-    """Build a bin-like mapping for geometry tests."""
+    """Build a bin-like mapping for geometry tests.
+
+    The default label is derived from the id so that rows which are only meant
+    to exercise geometry do not accidentally collide on the label constraint.
+    """
     data = {
         'id': 'bin',
-        'label': 'A1-01',
         'x': 0,
         'y': 0,
         'width': 10,
@@ -38,6 +45,7 @@ def bin_row(**kwargs):
         'archived': False,
     }
     data.update(kwargs)
+    data.setdefault('label', f'bin-{data["id"]}')
     return data
 
 
@@ -301,6 +309,69 @@ class DrawerGeometryTests(SimpleTestCase):
             v.validate_drawer_geometry(600, 800, rows, include_archived=True).valid
         )
 
+    def test_duplicate_label(self):
+        """Duplicate drawer labels within a cabinet are reported."""
+        report = v.validate_drawer_geometry(
+            600,
+            800,
+            [
+                drawer(id='a', x=0, y=0, width=100, height=50, label='A1'),
+                drawer(
+                    id='b',
+                    x=0,
+                    y=100,
+                    width=100,
+                    height=50,
+                    display_number=2,
+                    label='A1',
+                ),
+            ],
+        )
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_DUPLICATE_IDENTITY)
+        self.assertEqual(sorted(report.errors[0].related_ids), ['a', 'b'])
+
+    def test_archived_rows_still_occupy_identity_constraints(self):
+        """Archived drawers still occupy the label and number constraints."""
+        rows = [
+            drawer(id='a', x=0, y=0, width=100, height=50, label='A1'),
+            drawer(
+                id='b',
+                x=0,
+                y=100,
+                width=100,
+                height=50,
+                label='A1',
+                archived=True,
+            ),
+        ]
+        report = v.validate_drawer_geometry(600, 800, rows)
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_DUPLICATE_IDENTITY)
+
+    def test_retained_drawer_identity_conflict(self):
+        """A proposal cannot collide with a retained (omitted) drawer."""
+        retained = [drawer(id='kept', label='A1', display_number=1)]
+        report = v.validate_drawer_geometry(
+            600,
+            800,
+            [
+                drawer(
+                    id='new',
+                    x=0,
+                    y=0,
+                    width=100,
+                    height=50,
+                    display_number=2,
+                    label='A1',
+                )
+            ],
+            retained=retained,
+        )
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_DUPLICATE_IDENTITY)
+        self.assertIn('kept', report.errors[0].related_ids)
+
 
 class BinGeometryTests(SimpleTestCase):
     """Tests for bin geometry validation against the drawer interior."""
@@ -340,6 +411,54 @@ class BinGeometryTests(SimpleTestCase):
             280, 400, [bin_row(id='a', x=0, y=0, width=280, height=400)]
         )
         self.assertTrue(report.valid, report.as_dict())
+
+    def test_duplicate_label(self):
+        """Duplicate bin labels within a drawer are reported."""
+        report = v.validate_bin_geometry(
+            280,
+            400,
+            [
+                bin_row(id='a', x=0, y=0, width=70, height=100, label='B1'),
+                bin_row(id='b', x=70, y=0, width=70, height=100, label='B1'),
+            ],
+        )
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_DUPLICATE_IDENTITY)
+        self.assertEqual(sorted(report.errors[0].related_ids), ['a', 'b'])
+
+    def test_archived_bin_label_still_unique(self):
+        """An archived bin still occupies its drawer's label constraint."""
+        report = v.validate_bin_geometry(
+            280,
+            400,
+            [
+                bin_row(id='a', x=0, y=0, width=70, height=100, label='B1'),
+                bin_row(
+                    id='b',
+                    x=70,
+                    y=0,
+                    width=70,
+                    height=100,
+                    label='B1',
+                    archived=True,
+                ),
+            ],
+        )
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_DUPLICATE_IDENTITY)
+
+    def test_retained_bin_label_conflict(self):
+        """A proposal cannot collide with a retained (omitted) bin."""
+        retained = [bin_row(id='kept', label='B1')]
+        report = v.validate_bin_geometry(
+            280,
+            400,
+            [bin_row(id='new', x=0, y=0, width=70, height=100, label='B1')],
+            retained=retained,
+        )
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_DUPLICATE_IDENTITY)
+        self.assertIn('kept', report.errors[0].related_ids)
 
 
 class AllocationTests(SimpleTestCase):

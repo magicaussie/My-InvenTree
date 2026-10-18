@@ -1,0 +1,112 @@
+# Always invoke through stack.py: it generates private disposable credentials
+# and supplies a unique project name. Never reuse the production Compose file.
+x-app: &app
+  image: ${SL_PROJECT:?Run stack.py init}-backend
+  build:
+    context: ../..
+    dockerfile: contrib/storage-layout-integration/Dockerfile
+    target: backend
+  env_file: .runtime/stack.env
+  environment:
+    INVENTREE_DB_ENGINE: postgresql
+    INVENTREE_DB_HOST: db
+    INVENTREE_DB_PORT: '5432'
+    INVENTREE_DB_NAME: sl001
+    INVENTREE_DB_USER: sl001
+    INVENTREE_CACHE_ENABLED: 'True'
+    INVENTREE_CACHE_HOST: redis
+    INVENTREE_CACHE_PORT: '6379'
+    INVENTREE_PLUGINS_ENABLED: 'True'
+    INVENTREE_DEBUG: 'False'
+    INVENTREE_ALLOWED_HOSTS: '127.0.0.1,localhost,backend'
+    INVENTREE_SITE_URL: http://127.0.0.1:18761
+    INVENTREE_BACKGROUND_WORKERS: '4'
+    INVENTREE_THROTTLE_USER: none
+    INVENTREE_THROTTLE_ANON: none
+  volumes:
+    - app-data:/data
+  networks: [isolated]
+  security_opt: [no-new-privileges:true]
+  mem_limit: 2g
+
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_DB: sl001
+      POSTGRES_USER: sl001
+      POSTGRES_PASSWORD: ${INVENTREE_DB_PASSWORD:?Run stack.py init}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks: [isolated]
+    healthcheck:
+      test: [CMD, pg_isready, -U, sl001, -d, sl001]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+  redis:
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command: [redis-server, --save, '', --appendonly, 'no']
+    volumes:
+      - redis-data:/data
+    networks: [isolated]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+  bootstrap:
+    <<: *app
+    command: [python, /app/contrib/storage-layout-integration/bootstrap.py]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  backend:
+    <<: *app
+    depends_on:
+      bootstrap: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/', timeout=5)"]
+      interval: 5s
+      timeout: 8s
+      retries: 60
+      start_period: 30s
+  worker:
+    <<: *app
+    command: [python, src/backend/InvenTree/manage.py, qcluster]
+    depends_on:
+      backend: {condition: service_healthy}
+  frontend:
+    image: ${SL_PROJECT:?Run stack.py init}-frontend
+    build:
+      context: ../..
+      dockerfile: contrib/storage-layout-integration/Dockerfile
+      target: frontend
+    ports:
+      - '127.0.0.1:18761:80'
+    volumes:
+      - app-data:/data:ro
+    networks: [isolated, ingress]
+    environment:
+      NGINX_ENTRYPOINT_WORKER_PROCESSES_AUTOTUNE: '1'
+    cpus: 2
+    depends_on:
+      backend: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+
+volumes:
+  pg-data: {}
+  app-data: {}
+  redis-data: {}
+
+networks:
+  isolated:
+    internal: true
+  # Docker 29 does not publish ports from an internal-only network. Only the
+  # static reverse proxy joins this fresh ingress network; app/DB/worker cannot.
+  ingress: {}

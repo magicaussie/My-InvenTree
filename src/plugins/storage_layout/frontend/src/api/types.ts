@@ -213,6 +213,8 @@ export interface DrawerLayoutResponse {
   cabinet: {
     id: string;
     revision: number;
+    width_units?: number;
+    height_units?: number;
     active_mapping: string | null;
     total_pixels: number;
   };
