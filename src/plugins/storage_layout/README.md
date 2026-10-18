@@ -15,6 +15,12 @@ duplicated.
 > controller access or commissioning has been performed. The design document's
 > owner decisions (§16) are adopted as **proposed defaults**, not owner-approved
 > values.
+>
+> See [`LIVE_TEST_READINESS.md`](LIVE_TEST_READINESS.md) for the verified
+> capabilities, explicit unverified items, the safe sample topology, the
+> hardware prerequisite checklist, the supervised live-test runbook and the
+> GO/NO-GO assessment. Live hardware readiness is **NO-GO** until a person
+> performs commissioning.
 
 ## Layout
 
