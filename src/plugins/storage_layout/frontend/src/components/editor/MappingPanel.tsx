@@ -53,9 +53,10 @@ interface SpanRow extends ClientSpanInput {
 }
 
 /**
- * A successful publish is authoritative, but it only describes the candidate
- * that was sent. The signature records that candidate so the panel can tell a
- * still-current publication apart from one superseded by later local edits.
+ * A successful publish is authoritative, but it only describes the exact
+ * context that was sent. The signature records that context so the panel can
+ * tell a still-current publication apart from one superseded by later local
+ * edits, a topology/allocation/version change, or a different cabinet.
  */
 interface PublishedSnapshot {
   response: MappingPublishResponse;
@@ -72,11 +73,48 @@ function toCandidate(row: SpanRow): ClientSpanInput {
   };
 }
 
-/** Stable identity of a candidate, used to detect edits since a publish. */
-function candidateSignature(size: number, spans: SpanRow[]): string {
+/**
+ * Stable identity of everything a publish describes, used to detect any change
+ * that makes a published snapshot no longer current. Each field is included
+ * because it changes the meaning of the published revision:
+ * - `cabinetId`: a revision belongs to one cabinet; an identical candidate on
+ *   another cabinet is a different publication and must not reuse this result.
+ * - `total_pixels` and `spans`: the logical candidate that was actually sent.
+ * - `topology`: the physical string/output layout the candidate resolves
+ *   against, so the same logical spans can map to different physical pixels.
+ * - `replacement_allocations`: drawer allocations replaced atomically with the
+ *   revision; a change means the published revision no longer matches intent.
+ * - `etag`: the server revision context the publish was issued against, so a
+ *   changed etag means another revision may have superseded this one.
+ *
+ * Topology is projected to a stable content shape (not array identity) so a
+ * re-created but unchanged topology array does not spuriously mark a snapshot
+ * stale.
+ */
+function publicationSignature(
+  cabinetId: string,
+  size: number,
+  spans: SpanRow[],
+  topology: StringTopology[],
+  replacementAllocations: ReplacementAllocation[],
+  etag: string | null | undefined
+): string {
   return JSON.stringify({
+    cabinetId,
     total_pixels: size,
-    spans: spans.map(toCandidate)
+    spans: spans.map(toCandidate),
+    topology: topology.map((node) => ({
+      id: node.id,
+      pixel_count: node.pixel_count,
+      output_offset: node.output_offset,
+      output: {
+        id: node.output.id,
+        wled_start: node.output.wled_start,
+        pixel_count: node.output.pixel_count
+      }
+    })),
+    replacement_allocations: replacementAllocations,
+    etag: etag ?? null
   });
 }
 
@@ -161,6 +199,13 @@ export function MappingPanel({
   const inFlight = useRef(0);
   // Guards against dispatching a second publish while one is in flight.
   const publishing = useRef(false);
+  // The cabinet and candidate signature currently rendered. An in-flight
+  // publish response is only applied to the display when it still describes
+  // this context; otherwise it is hidden (server success still counts).
+  const contextRef = useRef<{ cabinetId: string; signature: string }>({
+    cabinetId,
+    signature: ''
+  });
 
   /**
    * Invalidate any preview/hash/message derived from the previous candidate.
@@ -183,15 +228,39 @@ export function MappingPanel({
   }, [initialSpans, invalidateCandidate]);
 
   // Switching cabinet invalidates any preview/hash/message from the previous
-  // one, so a late response cannot be shown against the new cabinet.
+  // one, and hides the previous cabinet's published result so it cannot be
+  // mistaken for a publication of the new cabinet.
   const previousCabinet = useRef(cabinetId);
   useEffect(() => {
     if (previousCabinet.current === cabinetId) return;
     previousCabinet.current = cabinetId;
     invalidateCandidate();
+    setPublished(null);
   }, [cabinetId, invalidateCandidate]);
 
   const errors = coverageDiagnostics(spans, size);
+
+  // Identity of the current publication context. A published snapshot is only
+  // current while this matches the signature recorded at publish time.
+  const currentSignature = useMemo(
+    () =>
+      publicationSignature(
+        cabinetId,
+        size,
+        spans,
+        topology,
+        replacementAllocations,
+        etag
+      ),
+    [cabinetId, size, spans, topology, replacementAllocations, etag]
+  );
+
+  // Keep the rendered context available to in-flight publish responses. The
+  // signature is a value string, so an unstable array identity upstream does
+  // not re-run this effect and cannot cause a render loop.
+  useEffect(() => {
+    contextRef.current = { cabinetId, signature: currentSignature };
+  }, [cabinetId, currentSignature]);
 
   const topologyMap = useMemo(() => {
     const map = new Map<string, StringTopology>();
@@ -263,9 +332,18 @@ export function MappingPanel({
     inFlight.current += 1;
     setBusy(true);
     setMessage(null);
-    // Record the candidate this publish describes, so a later local edit can
-    // be distinguished from the published snapshot.
-    const signature = candidateSignature(size, spans);
+    // Record the exact context this publish describes, so a later local edit,
+    // topology/allocation/version change or cabinet switch can be told apart
+    // from the published snapshot.
+    const publishCabinet = cabinetId;
+    const signature = publicationSignature(
+      cabinetId,
+      size,
+      spans,
+      topology,
+      replacementAllocations,
+      etag
+    );
     try {
       const result = await client.mappingPublish(
         cabinetId,
@@ -276,20 +354,31 @@ export function MappingPanel({
         },
         etag
       );
-      // A successful server response is authoritative even if the candidate
-      // changed locally while the request was in flight; it is simply shown as
-      // describing the snapshot that was sent, not the current edits.
-      setPublished({ response: result, signature });
-      setMessage(
-        t`Published mapping revision ${result.number} (N=${result.total_pixels}, hash ${result.mapping_hash.slice(0, 8)}…).`
-      );
+      // A successful server response is authoritative even if the context
+      // changed while the request was in flight, so onPublished always fires.
       onPublished?.();
+      // Only display the result against the cabinet it was published for. A
+      // response that resolves after a cabinet switch must not masquerade as a
+      // publication of the new cabinet.
+      if (contextRef.current.cabinetId !== publishCabinet) return;
+      // Retain the snapshot so it can be shown as stale if the context changed.
+      setPublished({ response: result, signature });
+      // Only confirm success for the exact context that was published; a
+      // changed candidate is reported by the (stale-marked) snapshot instead.
+      if (contextRef.current.signature === signature) {
+        setMessage(
+          t`Published mapping revision ${result.number} (N=${result.total_pixels}, hash ${result.mapping_hash.slice(0, 8)}…).`
+        );
+      }
     } catch (error) {
       const apiError =
         error instanceof StorageLayoutApiError
           ? error
           : new StorageLayoutApiError(String(error), 0);
-      setMessage(apiError.message);
+      // Do not surface an error for a cabinet that is no longer displayed.
+      if (contextRef.current.cabinetId === publishCabinet) {
+        setMessage(apiError.message);
+      }
     } finally {
       publishing.current = false;
       inFlight.current = Math.max(0, inFlight.current - 1);
@@ -300,6 +389,7 @@ export function MappingPanel({
     client,
     size,
     spans,
+    topology,
     replacementAllocations,
     etag,
     onPublished
@@ -319,11 +409,8 @@ export function MappingPanel({
 
   const rows = preview?.samples ?? localSamples;
 
-  // A published snapshot is stale once the candidate no longer matches it.
-  const currentSignature = useMemo(
-    () => candidateSignature(size, spans),
-    [size, spans]
-  );
+  // A published snapshot is stale once the publication context no longer
+  // matches it (candidate, topology, allocations, etag or cabinet).
   const publishedStale = published
     ? published.signature !== currentSignature
     : false;

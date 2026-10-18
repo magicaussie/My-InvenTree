@@ -359,6 +359,212 @@ describe('MappingPanel publish protection', () => {
     expect(mappingPublish).toHaveBeenCalledTimes(1);
     await settle(d, publishResponse(5));
   });
+
+  it('shows a success message for a current publish', async () => {
+    const { mappingPublish } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    await settle(d, publishResponse(3));
+
+    expect(
+      screen.getByText(/Published mapping revision 3/)
+    ).toBeInTheDocument();
+  });
+});
+
+describe('MappingPanel publication context isolation', () => {
+  it('hides a published result when switching to another cabinet with an identical candidate', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    await settle(d, publishResponse(3));
+
+    expect(screen.getByTestId('publish-result')).toBeInTheDocument();
+
+    // Cabinet B has the same topology, size and spans as cabinet A, so the
+    // candidate is identical; the previous cabinet's revision must not appear
+    // current for the new cabinet.
+    rerender(renderPanel({ cabinetId: 'cab-2' }));
+
+    expect(screen.queryByTestId('publish-result')).toBeNull();
+    expect(screen.queryByTestId('publish-stale')).toBeNull();
+  });
+
+  it('does not present an in-flight publish from the previous cabinet as the new cabinet result', async () => {
+    const { mappingPublish, onPublished, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    rerender(renderPanel({ cabinetId: 'cab-2' }));
+
+    await settle(d, publishResponse(4));
+
+    // The response belongs to cabinet A and must not masquerade as a
+    // publication of cabinet B.
+    expect(screen.queryByTestId('publish-result')).toBeNull();
+    // The server still succeeded, so the existing contract is preserved.
+    expect(onPublished).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not show a late publish success message in the new cabinet', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    rerender(renderPanel({ cabinetId: 'cab-2' }));
+
+    await settle(d, publishResponse(4));
+
+    expect(screen.queryByText(/Published mapping revision/)).toBeNull();
+  });
+
+  it('does not show a publish error from the previous cabinet in the new cabinet', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    rerender(renderPanel({ cabinetId: 'cab-2' }));
+
+    await settleError(d, new StorageLayoutApiError('publish failed', 500));
+
+    expect(screen.queryByText('publish failed')).toBeNull();
+  });
+
+  it('shows a publish error on the same cabinet', async () => {
+    const { mappingPublish } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    await settleError(d, new StorageLayoutApiError('publish failed', 500));
+
+    expect(screen.getByText('publish failed')).toBeInTheDocument();
+  });
+
+  it('does not confirm success for a candidate edited while the publish was in flight', async () => {
+    const { mappingPublish, container } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    fireEvent.change(spanInputs(container)[2], { target: { value: '1' } });
+
+    await settle(d, publishResponse(4));
+
+    // The success is reported by the (stale-marked) snapshot, not as a
+    // confirmation of the edited candidate.
+    expect(screen.queryByText(/Published mapping revision/)).toBeNull();
+    expect(screen.getByTestId('publish-result')).toBeInTheDocument();
+    expect(screen.getByTestId('publish-stale')).toBeInTheDocument();
+  });
+
+  it('marks a published result stale when the topology changes on the same cabinet', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    await settle(d, publishResponse(3));
+
+    expect(screen.getByTestId('publish-result')).toBeInTheDocument();
+    expect(screen.queryByTestId('publish-stale')).toBeNull();
+
+    // Change a physical output field that does not alter the proposed spans, so
+    // only the topology identity/content differs.
+    const nextTopology: StringTopology[] = [
+      {
+        ...topology[0],
+        output: { ...topology[0].output, wled_start: 5 }
+      }
+    ];
+    rerender(renderPanel({ topology: nextTopology }));
+
+    expect(screen.getByTestId('publish-result')).toBeInTheDocument();
+    expect(screen.getByTestId('publish-stale')).toBeInTheDocument();
+  });
+
+  it('marks a published result stale when replacement allocations change on the same cabinet', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    await settle(d, publishResponse(3));
+
+    expect(screen.queryByTestId('publish-stale')).toBeNull();
+
+    rerender(
+      renderPanel({
+        replacementAllocations: [
+          { drawer: 'drawer-1', logical_start: 1, logical_end: 5 }
+        ]
+      })
+    );
+
+    expect(screen.getByTestId('publish-result')).toBeInTheDocument();
+    expect(screen.getByTestId('publish-stale')).toBeInTheDocument();
+  });
+
+  it('marks a published result stale when the etag changes on the same cabinet', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(publishButton());
+    await settle(d, publishResponse(3));
+
+    expect(screen.queryByTestId('publish-stale')).toBeNull();
+
+    rerender(renderPanel({ etag: 'etag-2' }));
+
+    expect(screen.getByTestId('publish-result')).toBeInTheDocument();
+    expect(screen.getByTestId('publish-stale')).toBeInTheDocument();
+  });
+
+  it('does not invalidate the preview when replacement allocations change', async () => {
+    const { mappingPreview, renderPanel, rerender } = setup();
+    const d = deferred<MappingPreviewResponse>();
+    mappingPreview.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(previewButton());
+    await settle(d, previewResponse('hash-a'));
+    expect(hashInput().value).toBe('hash-a');
+
+    // Replacement allocations are not part of the preview payload, so a change
+    // must not clear the preview or trigger a render loop.
+    rerender(
+      renderPanel({
+        replacementAllocations: [
+          { drawer: 'drawer-1', logical_start: 1, logical_end: 5 }
+        ]
+      })
+    );
+
+    expect(hashInput().value).toBe('hash-a');
+    expect(screen.getByTestId('translation-sample')).toBeInTheDocument();
+  });
+
+  it('does not invalidate the preview when the etag changes', async () => {
+    const { mappingPreview, renderPanel, rerender } = setup();
+    const d = deferred<MappingPreviewResponse>();
+    mappingPreview.mockReturnValueOnce(d.promise);
+
+    fireEvent.click(previewButton());
+    await settle(d, previewResponse('hash-a'));
+    expect(hashInput().value).toBe('hash-a');
+
+    rerender(renderPanel({ etag: 'etag-2' }));
+
+    expect(hashInput().value).toBe('hash-a');
+    expect(screen.getByTestId('translation-sample')).toBeInTheDocument();
+  });
 });
 
 describe('MappingPanel duplicate action protection', () => {
