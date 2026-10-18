@@ -175,3 +175,329 @@ describe('client mapping translator (design section 8 example)', () => {
     expect(map.get('s1')?.output.wled_start).toBe(0);
   });
 });
+
+describe('logical-to-physical translation integrity', () => {
+  // FWD and FWD2 share controller A's output 'A-0' but are distinct strings;
+  // REV is a second output on controller A; ALT lives on controller B.
+  const integrity = new Map<string, StringTopology>([
+    ['FWD', node('FWD', 'A', 0, 100)],
+    ['FWD2', node('FWD2', 'A', 0, 100)],
+    ['REV', node('REV', 'A', 200, 100)],
+    ['ALT', node('ALT', 'B', 50, 100)]
+  ]);
+
+  it('rejects an overlap that a gap of equal size cancels out', () => {
+    // Aggregate length is 60 + 40 = 100, exactly the requested span, so a
+    // length-sum check would pass. Pixels 41-60 are covered twice while
+    // 81-100 are never covered.
+    const overlapping: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 60,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 41,
+        length: 40,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      }
+    ];
+    expect(() => translate(overlapping, integrity, 1, 100, 100)).toThrow(
+      /overlapping spans/i
+    );
+  });
+
+  it('rejects a direct overlap between two spans', () => {
+    const overlapping: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 30,
+        length: 41,
+        string: 'FWD',
+        string_offset: 50,
+        direction: 1
+      }
+    ];
+    expect(() => translate(overlapping, integrity, 1, 70, 100)).toThrow(
+      /overlapping spans/i
+    );
+  });
+
+  it('rejects a gap between two spans', () => {
+    const gapped: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 40,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'FWD',
+        string_offset: 40,
+        direction: 1
+      }
+    ];
+    expect(() => translate(gapped, integrity, 1, 100, 100)).toThrow(
+      /not fully covered/i
+    );
+  });
+
+  it('merges logically and physically contiguous forward spans', () => {
+    const contiguous: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'FWD',
+        string_offset: 50,
+        direction: 1
+      }
+    ];
+    const runs = translate(contiguous, integrity, 1, 100, 100);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      logical_start: 1,
+      logical_end: 100,
+      controller: 'A',
+      string: 'FWD',
+      direction: 1,
+      wled_start: 0,
+      wled_stop: 100
+    });
+  });
+
+  it('merges logically adjacent reversed spans that are physically contiguous', () => {
+    // Both spans are reversed. The first covers physical [250,300) and the
+    // second [200,250): the traversal continues downward, so the runs are
+    // physically contiguous and must merge into [200,300).
+    const contiguous: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'REV',
+        string_offset: 50,
+        direction: -1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'REV',
+        string_offset: 0,
+        direction: -1
+      }
+    ];
+    const runs = translate(contiguous, integrity, 1, 100, 100);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      logical_start: 1,
+      logical_end: 100,
+      controller: 'A',
+      string: 'REV',
+      direction: -1,
+      wled_start: 200,
+      wled_stop: 300
+    });
+  });
+
+  it('keeps reversed spans separate when the physical order is not continuous', () => {
+    // The first span covers physical [200,250) and the second [250,300). They
+    // are adjacent in the forward sense, but a reversed traversal jumps from
+    // pixel 200 up to pixel 299, so they must not merge.
+    const discontiguous: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'REV',
+        string_offset: 0,
+        direction: -1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'REV',
+        string_offset: 50,
+        direction: -1
+      }
+    ];
+    const runs = translate(discontiguous, integrity, 1, 100, 100);
+    expect(runs).toHaveLength(2);
+    expect(runs[0]).toMatchObject({
+      logical_start: 1,
+      logical_end: 50,
+      direction: -1,
+      wled_start: 200,
+      wled_stop: 250
+    });
+    expect(runs[1]).toMatchObject({
+      logical_start: 51,
+      logical_end: 100,
+      direction: -1,
+      wled_start: 250,
+      wled_stop: 300
+    });
+  });
+
+  it('does not merge across string, controller or direction boundaries', () => {
+    const acrossString: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'FWD2',
+        string_offset: 50,
+        direction: 1
+      }
+    ];
+    const stringRuns = translate(acrossString, integrity, 1, 100, 100);
+    expect(stringRuns).toHaveLength(2);
+    expect(stringRuns[0].string).toBe('FWD');
+    expect(stringRuns[1].string).toBe('FWD2');
+
+    const acrossDirection: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'FWD',
+        string_offset: 50,
+        direction: -1
+      }
+    ];
+    const directionRuns = translate(acrossDirection, integrity, 1, 100, 100);
+    expect(directionRuns).toHaveLength(2);
+    expect(directionRuns[0].direction).toBe(1);
+    expect(directionRuns[1].direction).toBe(-1);
+
+    const acrossController: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      },
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'ALT',
+        string_offset: 0,
+        direction: 1
+      }
+    ];
+    const controllerRuns = translate(acrossController, integrity, 1, 100, 100);
+    expect(controllerRuns).toHaveLength(2);
+    expect(controllerRuns[0].controller).toBe('A');
+    expect(controllerRuns[1].controller).toBe('B');
+  });
+
+  it('does not mutate the input spans or their order', () => {
+    const input: ClientSpanInput[] = [
+      {
+        logical_start: 51,
+        length: 50,
+        string: 'FWD',
+        string_offset: 50,
+        direction: 1
+      },
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      }
+    ];
+    const snapshot = JSON.parse(JSON.stringify(input));
+
+    translate(input, integrity, 1, 100, 100);
+
+    expect(input).toEqual(snapshot);
+    // The caller's (unsorted) order is preserved.
+    expect(input.map((span) => span.logical_start)).toEqual([51, 1]);
+  });
+
+  it('rejects non-integer geometry and unknown strings', () => {
+    const fractionalStart: ClientSpanInput[] = [
+      {
+        logical_start: 1.5,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      }
+    ];
+    expect(() => translate(fractionalStart, integrity, 1, 50, 100)).toThrow(
+      /integer/i
+    );
+
+    const zeroLength: ClientSpanInput[] = [
+      {
+        logical_start: 10,
+        length: 0,
+        string: 'FWD',
+        string_offset: 0,
+        direction: 1
+      }
+    ];
+    expect(() => translate(zeroLength, integrity, 1, 50, 100)).toThrow(
+      /positive integer/i
+    );
+
+    const fractionalOffset: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'FWD',
+        string_offset: 0.5,
+        direction: 1
+      }
+    ];
+    expect(() => translate(fractionalOffset, integrity, 1, 50, 100)).toThrow(
+      /integer/i
+    );
+
+    const unknown: ClientSpanInput[] = [
+      {
+        logical_start: 1,
+        length: 50,
+        string: 'MISSING',
+        string_offset: 0,
+        direction: 1
+      }
+    ];
+    expect(() => translate(unknown, integrity, 1, 50, 100)).toThrow(
+      /unknown string/i
+    );
+  });
+});
