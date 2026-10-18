@@ -59,6 +59,35 @@ export function rectInside(inner: Rect, outer: Rect): boolean {
   );
 }
 
+/** Find the first free grid position, scanning rows from the top-left. */
+export function findFreeDrawerPosition(
+  bounds: Bounds,
+  size: Bounds,
+  existing: readonly Rect[],
+  grid: number
+): { x: number; y: number } | null {
+  if (
+    ![bounds.width, bounds.height, size.width, size.height, grid].every(
+      (value) => Number.isFinite(value) && value > 0
+    )
+  ) {
+    return null;
+  }
+  const cabinet = { x: 0, y: 0, ...bounds };
+  for (let y = 0; y <= bounds.height - size.height; y += grid) {
+    for (let x = 0; x <= bounds.width - size.width; x += grid) {
+      const candidate = { x, y, ...size };
+      if (
+        rectInside(candidate, cabinet) &&
+        !existing.some((rect) => rectsOverlap(candidate, rect))
+      ) {
+        return { x, y };
+      }
+    }
+  }
+  return null;
+}
+
 /** Integer rectangle equality. */
 export function rectsEqual(a: Rect, b: Rect): boolean {
   return (

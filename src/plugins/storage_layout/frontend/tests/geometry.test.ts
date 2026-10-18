@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clampRect,
+  findFreeDrawerPosition,
   fitZoom,
   moveRect,
   moveRects,
@@ -53,6 +54,90 @@ describe('viewport coordinates', () => {
       expect(after.x).toBeCloseTo(before.x);
       expect(after.y).toBeCloseTo(before.y);
       expect(viewport).toEqual({ zoom: 1.3, offsetX: -72, offsetY: 43 });
+    }
+  );
+});
+
+describe('findFreeDrawerPosition', () => {
+  const bounds = { width: 600, height: 800 };
+  const size = { width: 60, height: 40 };
+
+  it('starts at the origin in an empty cabinet', () => {
+    expect(findFreeDrawerPosition(bounds, size, [], 10)).toEqual({
+      x: 0,
+      y: 0
+    });
+  });
+
+  it('places the next drawer against an occupied drawer without overlap', () => {
+    const existing = [{ x: 0, y: 0, ...size }];
+    const position = findFreeDrawerPosition(bounds, size, existing, 10);
+    expect(position).toEqual({ x: 60, y: 0 });
+    if (!position) throw new Error('Expected a free drawer position');
+    expect(rectsOverlap({ ...position, ...size }, existing[0])).toBe(false);
+  });
+
+  it('scans left to right before advancing to the next free grid row', () => {
+    const existing = [{ x: 0, y: 0, width: 600, height: 40 }];
+    expect(findFreeDrawerPosition(bounds, size, existing, 10)).toEqual({
+      x: 0,
+      y: 40
+    });
+  });
+
+  it('permits touching edges on multiple sides', () => {
+    const existing = [
+      { x: 0, y: 0, width: 60, height: 40 },
+      { x: 60, y: 40, width: 60, height: 40 }
+    ];
+    const position = findFreeDrawerPosition(bounds, size, existing, 10);
+    expect(position).toEqual({ x: 60, y: 0 });
+    if (!position) throw new Error('Expected a free drawer position');
+    expect(
+      existing.every((rect) => !rectsOverlap({ ...position, ...size }, rect))
+    ).toBe(true);
+  });
+
+  it.each([
+    { width: 59, height: 800 },
+    { width: 600, height: 39 }
+  ])('returns null when the drawer cannot fit inside %o', (bounds) => {
+    expect(findFreeDrawerPosition(bounds, size, [], 10)).toBeNull();
+  });
+
+  it('returns null when the cabinet is fully occupied', () => {
+    expect(
+      findFreeDrawerPosition(bounds, size, [{ x: 0, y: 0, ...bounds }], 10)
+    ).toBeNull();
+  });
+
+  it('uses grid-aligned positions even when existing edges are off-grid', () => {
+    const existing = [{ x: 0, y: 0, width: 65, height: 40 }];
+    const position = findFreeDrawerPosition(bounds, size, existing, 10);
+    expect(position).toEqual({ x: 70, y: 0 });
+    if (!position) throw new Error('Expected a free drawer position');
+    expect(position.x % 10).toBe(0);
+    expect(position.y % 10).toBe(0);
+  });
+
+  it('does not use an off-grid gap or move already overlapping rectangles', () => {
+    const existing = Object.freeze([
+      Object.freeze({ x: 0, y: 0, width: 5, height: 40 }),
+      Object.freeze({ x: 0, y: 0, width: 5, height: 40 })
+    ]);
+    expect(
+      findFreeDrawerPosition({ width: 65, height: 40 }, size, existing, 10)
+    ).toBeNull();
+    expect(existing).toEqual([
+      { x: 0, y: 0, width: 5, height: 40 },
+      { x: 0, y: 0, width: 5, height: 40 }
+    ]);
+  });
+
+  it.each([0, -10, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects invalid grid spacing %s without looping',
+    (grid) => {
+      expect(findFreeDrawerPosition(bounds, size, [], grid)).toBeNull();
     }
   );
 });

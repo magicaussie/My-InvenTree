@@ -1,8 +1,15 @@
 import type { InvenTreePluginContext } from '@inventreedb/ui';
 import { MantineProvider } from '@mantine/core';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { DrawerInput, LayoutResponse } from '../src/api/types';
 import { CabinetDesigner } from '../src/components/CabinetDesigner';
 import { CabinetList } from '../src/components/CabinetList';
 import { DrawerDesigner } from '../src/components/DrawerDesigner';
@@ -31,7 +38,10 @@ const LAYOUT = {
   validation: { errors: [], warnings: [] }
 };
 
-function fakeContext(overrides: Record<string, unknown> = {}) {
+function fakeContext(
+  overrides: Record<string, unknown> = {},
+  layout: LayoutResponse = LAYOUT
+) {
   const api = {
     get: vi.fn(async (url: string) => {
       if (url.includes('/electrical/')) {
@@ -52,7 +62,7 @@ function fakeContext(overrides: Record<string, unknown> = {}) {
         };
       }
       if (url.includes('/api/v1/cabinets/')) {
-        return { data: LAYOUT, headers: { etag: '"3"' } };
+        return { data: layout, headers: { etag: '"3"' } };
       }
       return {
         data: { count: 1, next: null, previous: null, results: [CABINET] },
@@ -60,7 +70,7 @@ function fakeContext(overrides: Record<string, unknown> = {}) {
       };
     }),
     post: vi.fn(async () => ({ data: {} })),
-    put: vi.fn(async () => ({ data: LAYOUT, headers: { etag: '"4"' } })),
+    put: vi.fn(async () => ({ data: layout, headers: { etag: '"4"' } })),
     patch: vi.fn(async () => ({ data: CABINET }))
   };
 
@@ -134,7 +144,134 @@ describe('CabinetList', () => {
   });
 });
 
+const EXISTING_DRAWER: DrawerInput = {
+  id: 'existing-drawer',
+  label: 'Existing',
+  display_number: 1,
+  location: null,
+  x: 0,
+  y: 0,
+  width: 60,
+  height: 40,
+  interior_width: 60,
+  interior_height: 40,
+  archived: false,
+  allocation: null
+};
+
+async function renderCabinet(layout: LayoutResponse = LAYOUT) {
+  const context = fakeContext({}, layout);
+  const result = render(
+    <MantineProvider>
+      <CabinetDesigner context={context} cabinetId='cabinet-1' />
+    </MantineProvider>
+  );
+  await screen.findByTestId('cabinet-designer');
+  return { ...result, context };
+}
+
 describe('CabinetDesigner', () => {
+  it('adds non-overlapping drawers without changing size or numbering and supports undo/redo', async () => {
+    const { container, context } = await renderCabinet();
+    fireEvent.click(screen.getByLabelText('Add drawer'));
+    fireEvent.click(screen.getByLabelText('Add drawer'));
+    const rectangles = () =>
+      Array.from(container.querySelectorAll('rect[style*="move"]'));
+    expect(rectangles()).toHaveLength(2);
+    expect(rectangles()[0]).toHaveAttribute('x', '0');
+    expect(rectangles()[1]).toHaveAttribute('x', '60');
+    for (const rect of rectangles()) {
+      expect(rect).toHaveAttribute('y', '0');
+      expect(rect).toHaveAttribute('width', '60');
+      expect(rect).toHaveAttribute('height', '40');
+    }
+    expect(screen.getByRole('button', { name: 'Drawer D1' })).toHaveAttribute(
+      'aria-selected',
+      'false'
+    );
+    expect(screen.getByRole('button', { name: 'Drawer D2' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(rectangles()).toHaveLength(1);
+    expect(rectangles()[0]).toHaveAttribute('x', '0');
+    fireEvent.click(screen.getByLabelText('Redo'));
+    expect(rectangles()).toHaveLength(2);
+    expect(rectangles()[1]).toHaveAttribute('x', '60');
+    expect(context.api.put).not.toHaveBeenCalled();
+  });
+
+  it.each([1, 2])(
+    'avoids %i existing active drawers without repositioning them, even when they overlap',
+    async (count) => {
+      const drawers = Array.from({ length: count }, (_, index) => ({
+        ...EXISTING_DRAWER,
+        id: `existing-${index}`,
+        label: `Existing ${index}`,
+        display_number: index + 1
+      }));
+      const { container } = await renderCabinet({ ...LAYOUT, drawers });
+      fireEvent.click(screen.getByLabelText('Add drawer'));
+      const rects = container.querySelectorAll('rect[style*="move"]');
+      expect(rects).toHaveLength(count + 1);
+      for (let index = 0; index < count; index++) {
+        expect(rects[index]).toHaveAttribute('x', '0');
+        expect(rects[index]).toHaveAttribute('y', '0');
+        expect(rects[index]).toHaveAttribute('width', '60');
+        expect(rects[index]).toHaveAttribute('height', '40');
+      }
+      expect(rects[count]).toHaveAttribute('x', '60');
+      expect(rects[count]).toHaveAttribute('y', '0');
+      expect(
+        screen.getByRole('button', { name: `Drawer D${count + 1}` })
+      ).toHaveAttribute('aria-selected', 'true');
+    }
+  );
+
+  it('ignores archived drawers when finding space for a new drawer', async () => {
+    const layout = {
+      ...LAYOUT,
+      drawers: [{ ...EXISTING_DRAWER, archived: true }]
+    };
+    const { container } = await renderCabinet(layout);
+    fireEvent.click(screen.getByLabelText('Add drawer'));
+    const active = within(screen.getByTestId('drawer-list')).getAllByRole(
+      'button'
+    );
+    expect(active).toHaveLength(1);
+    expect(active[0]).toHaveAttribute('aria-label', 'Drawer D1');
+    expect(active[0]).toHaveAttribute('aria-selected', 'true');
+    const rects = container.querySelectorAll('rect[style*="move"]');
+    expect(rects).toHaveLength(2);
+    expect(rects[1]).toHaveAttribute('x', '0');
+    expect(rects[1]).toHaveAttribute('y', '0');
+    expect(layout.drawers[0]).toEqual({ ...EXISTING_DRAWER, archived: true });
+  });
+
+  it('reports insufficient space without changing the draft, selection or command history', async () => {
+    const layout = {
+      ...LAYOUT,
+      cabinet: { ...CABINET, width_units: 60, height_units: 40 },
+      drawers: [{ ...EXISTING_DRAWER }]
+    };
+    const { container, context } = await renderCabinet(layout);
+    const selected = screen.getByRole('button', { name: 'Drawer Existing' });
+    fireEvent.click(selected);
+    const svg = screen.getByRole('application', { name: 'Cabinet front view' });
+    const before = svg.innerHTML;
+    fireEvent.click(screen.getByLabelText('Add drawer'));
+    expect(
+      screen.getByText('Insufficient free space to add a drawer.')
+    ).toBeVisible();
+    expect(selected).toHaveAttribute('aria-selected', 'true');
+    expect(svg.innerHTML).toBe(before);
+    expect(container.querySelectorAll('rect[style*="move"]')).toHaveLength(1);
+    expect(screen.getByText('Saved', { exact: true })).toBeVisible();
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(context.api.put).not.toHaveBeenCalled();
+    expect(layout.drawers).toEqual([EXISTING_DRAWER]);
+  });
   it('loads the layout and exposes the designer toolbar', async () => {
     render(
       <MantineProvider>

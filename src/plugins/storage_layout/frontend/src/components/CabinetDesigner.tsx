@@ -33,7 +33,7 @@ import {
   type DrawerDraft,
   layoutFromDraft
 } from '../state/commands';
-import type { Rect } from '../state/geometry';
+import { findFreeDrawerPosition, type Rect } from '../state/geometry';
 import { useDirtyUnloadGuard, useLayoutEditor } from '../state/layoutDraft';
 import { topologyFromDocument } from '../state/mapping';
 import { diagnosticsByEntity, severityForEntity } from '../state/validation';
@@ -203,6 +203,25 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
   );
 
   const addDrawer = useCallback(() => {
+    const bounds = {
+      width: editor.draft.cabinet.width_units,
+      height: editor.draft.cabinet.height_units
+    };
+    const size = {
+      width: Math.min(grid * 6, bounds.width),
+      height: Math.min(grid * 4, bounds.height)
+    };
+    const position = findFreeDrawerPosition(
+      bounds,
+      size,
+      activeDrawers.map(drawerRect),
+      grid
+    );
+    if (!position) {
+      setServerMessage(t`Insufficient free space to add a drawer.`);
+      return;
+    }
+    setServerMessage(null);
     const display_numbers = activeDrawers.map(
       (drawer) => drawer.display_number
     );
@@ -212,12 +231,12 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
       label: `D${next}`,
       display_number: next,
       location: null,
-      x: 0,
-      y: 0,
-      width: Math.min(grid * 6, editor.draft.cabinet.width_units),
-      height: Math.min(grid * 4, editor.draft.cabinet.height_units),
-      interior_width: Math.min(grid * 6, editor.draft.cabinet.width_units),
-      interior_height: Math.min(grid * 4, editor.draft.cabinet.height_units),
+      x: position.x,
+      y: position.y,
+      width: size.width,
+      height: size.height,
+      interior_width: size.width,
+      interior_height: size.height,
       archived: false,
       allocation: null
     };
