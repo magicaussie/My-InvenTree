@@ -12,6 +12,7 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils import timezone
 
 from InvenTree.unit_test import InvenTreeTestCase
@@ -267,8 +268,12 @@ class LayoutServiceTests(ServiceTestCase):
         """Drawer clients must not confuse top-down interior and front planes."""
         projection = services.drawer_layout_document(self.drawer)
         self.assertEqual(projection['cabinet']['width_units'], self.cabinet.width_units)
-        self.assertEqual(projection['cabinet']['height_units'], self.cabinet.height_units)
-        self.assertEqual(projection['drawer']['interior_width'], self.drawer.interior_width)
+        self.assertEqual(
+            projection['cabinet']['height_units'], self.cabinet.height_units
+        )
+        self.assertEqual(
+            projection['drawer']['interior_width'], self.drawer.interior_width
+        )
 
     def test_validate_does_not_persist(self):
         """Validation returns diagnostics without writing."""
@@ -286,18 +291,16 @@ class LayoutServiceTests(ServiceTestCase):
         """A new bin is created and the revision advances."""
         before = self.cabinet.revision
         document = services.layout_document(self.cabinet)
-        document['bins'].append(
-            {
-                'id': None,
-                'drawer': str(self.drawer.pk),
-                'label': 'A1-01',
-                'location': self.bin_location.pk,
-                'x': 0,
-                'y': 0,
-                'width': 70,
-                'height': 100,
-            }
-        )
+        document['bins'].append({
+            'id': None,
+            'drawer': str(self.drawer.pk),
+            'label': 'A1-01',
+            'location': self.bin_location.pk,
+            'x': 0,
+            'y': 0,
+            'width': 70,
+            'height': 100,
+        })
 
         result = services.apply_layout(
             self.cabinet, document, self.user, self.cabinet.revision
@@ -311,20 +314,18 @@ class LayoutServiceTests(ServiceTestCase):
         """Overlapping drawers are rejected and nothing is persisted."""
         before = self.cabinet.revision
         document = services.layout_document(self.cabinet)
-        document['drawers'].append(
-            {
-                'id': None,
-                'label': 'A2',
-                'display_number': 2,
-                'location': self.drawer_location.pk,
-                'x': 0,
-                'y': 0,
-                'width': 300,
-                'height': 100,
-                'interior_width': 280,
-                'interior_height': 400,
-            }
-        )
+        document['drawers'].append({
+            'id': None,
+            'label': 'A2',
+            'display_number': 2,
+            'location': self.drawer_location.pk,
+            'x': 0,
+            'y': 0,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+        })
 
         with self.assertRaises(services.StorageLayoutError) as ctx:
             services.apply_layout(
@@ -362,20 +363,18 @@ class LayoutServiceTests(ServiceTestCase):
         )
 
         document = services.layout_document(self.cabinet)
-        document['drawers'].append(
-            {
-                'id': str(other_drawer.pk),
-                'label': 'X1',
-                'display_number': 9,
-                'location': other_drawer_location.pk,
-                'x': 0,
-                'y': 0,
-                'width': 10,
-                'height': 10,
-                'interior_width': 10,
-                'interior_height': 10,
-            }
-        )
+        document['drawers'].append({
+            'id': str(other_drawer.pk),
+            'label': 'X1',
+            'display_number': 9,
+            'location': other_drawer_location.pk,
+            'x': 0,
+            'y': 0,
+            'width': 10,
+            'height': 10,
+            'interior_width': 10,
+            'interior_height': 10,
+        })
 
         with self.assertRaises(services.StorageLayoutError) as ctx:
             services.apply_layout(
@@ -494,9 +493,7 @@ class LayoutServiceTests(ServiceTestCase):
         """An archived drawer still occupies its label."""
         document = services.layout_document(self.cabinet)
         document['archive_ids'] = [str(self.drawer.pk)]
-        services.apply_layout(
-            self.cabinet, document, self.user, self.cabinet.revision
-        )
+        services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision)
 
         second_location = StockLocation.objects.create(
             name='Drawer A2', parent=self.cabinet_location, structural=True
@@ -561,9 +558,7 @@ class LayoutServiceTests(ServiceTestCase):
             elif entry['id'] == str(second.pk):
                 entry['display_number'] = 1
 
-        services.apply_layout(
-            self.cabinet, document, self.user, self.cabinet.revision
-        )
+        services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision)
 
         self.drawer.refresh_from_db()
         second.refresh_from_db()
@@ -581,9 +576,7 @@ class LayoutServiceTests(ServiceTestCase):
             elif entry['id'] == str(second.pk):
                 entry['label'] = 'A1'
 
-        services.apply_layout(
-            self.cabinet, document, self.user, self.cabinet.revision
-        )
+        services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision)
 
         self.drawer.refresh_from_db()
         second.refresh_from_db()
@@ -745,6 +738,188 @@ class ElectricalServiceTests(ServiceTestCase):
 class MappingServiceTests(ServiceTestCase):
     """Tests for mapping preview, publish and translation."""
 
+    def test_final_allocation_integrity(self):
+        """Validate retained and replaced allocations with complete rollback."""
+        self.allocate(1, 60)
+        other = Drawer.objects.create(
+            cabinet=self.cabinet,
+            label='A2',
+            display_number=2,
+            location=StockLocation.objects.create(
+                name='Drawer A2', parent=self.cabinet_location
+            ),
+            x=300,
+            y=0,
+            width=300,
+            height=100,
+            interior_width=280,
+            interior_height=400,
+        )
+
+        def entry(drawer, start, end):
+            return {'drawer': str(drawer), 'logical_start': start, 'logical_end': end}
+
+        cases = [
+            (120, [entry(other.pk, 60, 120)], 'allocation_overlap'),
+            (
+                120,
+                [entry(self.drawer.pk, 1, 70), entry(other.pk, 70, 120)],
+                'allocation_overlap',
+            ),
+            (30, [], 'invalid_bounds'),
+            (
+                120,
+                [entry(other.pk, 61, 90), entry(other.pk, 91, 120)],
+                'invalid_reference',
+            ),
+            (
+                120,
+                [entry('00000000-0000-0000-0000-000000000000', 61, 120)],
+                'invalid_reference',
+            ),
+            (120, [entry(other.pk, 0, 60)], 'invalid_bounds'),
+        ]
+        for total, replacements, code in cases:
+            with (
+                self.subTest(code=code, replacements=replacements),
+                transaction.atomic(),
+            ):
+                self.cabinet.refresh_from_db()
+                before = Cabinet.objects.get(pk=self.cabinet.pk)
+                mapping_count = before.mapping_revisions.count()
+                candidate = {
+                    'total_pixels': total,
+                    'spans': [
+                        {
+                            'logical_start': 1,
+                            'length': total,
+                            'string': str(self.string.pk),
+                            'string_offset': 0,
+                            'direction': 1,
+                        }
+                    ],
+                }
+                with self.assertRaises(services.StorageLayoutError) as ctx:
+                    services.publish_mapping(
+                        self.cabinet,
+                        candidate,
+                        self.user,
+                        before.revision,
+                        replacement_allocations=replacements,
+                    )
+                self.assertEqual(ctx.exception.code, code)
+                self.cabinet.refresh_from_db()
+                self.assertEqual(self.cabinet.revision, before.revision)
+                self.assertEqual(
+                    self.cabinet.active_mapping_id, before.active_mapping_id
+                )
+                self.assertEqual(self.cabinet.mapping_revisions.count(), mapping_count)
+                self.assertEqual(
+                    list(
+                        DrawerAllocation.objects.filter(
+                            drawer__cabinet=self.cabinet
+                        ).values_list('logical_start', 'logical_end')
+                    ),
+                    [(1, 60)],
+                )
+
+    def test_adjacent_and_archived_allocations(self):
+        """Archived allocations remain reserved, and adjacent ranges are legal."""
+        self.allocate(1, 60)
+        self.drawer.archived = True
+        self.drawer.save()
+        other = Drawer.objects.create(
+            cabinet=self.cabinet,
+            label='A2',
+            display_number=2,
+            location=StockLocation.objects.create(
+                name='Drawer A2', parent=self.cabinet_location
+            ),
+            x=300,
+            y=0,
+            width=300,
+            height=100,
+            interior_width=280,
+            interior_height=400,
+        )
+        candidate = {
+            'total_pixels': 120,
+            'spans': [
+                {
+                    'logical_start': 1,
+                    'length': 120,
+                    'string': str(self.string.pk),
+                    'string_offset': 0,
+                    'direction': 1,
+                }
+            ],
+        }
+        services.publish_mapping(
+            self.cabinet,
+            candidate,
+            self.user,
+            self.cabinet.revision,
+            replacement_allocations=[
+                {'drawer': str(self.drawer.pk), 'logical_start': 1, 'logical_end': 60},
+                {'drawer': str(other.pk), 'logical_start': 61, 'logical_end': 120},
+            ],
+        )
+        self.assertEqual(other.allocation.logical_start, 61)
+        self.publish_single_span()
+
+    def test_stale_publication_preserves_allocations(self):
+        """A stale caller cannot replace allocations or create a revision."""
+        self.allocate()
+        stale = Cabinet.objects.get(pk=self.cabinet.pk)
+        self.publish_single_span()
+        before = self.cabinet.mapping_revisions.count()
+        candidate = {
+            'total_pixels': 120,
+            'spans': [
+                {
+                    'logical_start': 1,
+                    'length': 120,
+                    'string': str(self.string.pk),
+                    'string_offset': 0,
+                    'direction': 1,
+                }
+            ],
+        }
+        with self.assertRaises(services.StaleRevisionError):
+            services.publish_mapping(
+                stale,
+                candidate,
+                self.user,
+                stale.revision,
+                replacement_allocations=[
+                    {
+                        'drawer': str(self.drawer.pk),
+                        'logical_start': 61,
+                        'logical_end': 120,
+                    }
+                ],
+            )
+        self.assertEqual(self.cabinet.mapping_revisions.count(), before)
+        self.assertEqual(self.drawer.allocation.logical_start, 1)
+
+    def test_out_of_range_translation_is_bounded(self):
+        """Only bounded numeric diagnostics survive adapter translation."""
+        error = wled.OutOfRangeError(
+            'secret http://private.local',
+            details={
+                'start': 120,
+                'stop': 121,
+                'led_count': 120,
+                'origin': 'http://private.local',
+                'payload': 'x' * 10000,
+            },
+        )
+        result = services.translate_wled_error(error)
+        self.assertEqual(result.code, 'out_of_range')
+        self.assertEqual(result.errors, [{'start': 120, 'stop': 121, 'led_count': 120}])
+        self.assertNotIn('private', str(result.as_dict()))
+        self.assertLess(len(str(result.as_dict())), 600)
+
     def test_preview_valid(self):
         """A valid candidate previews with a hash and samples."""
         candidate = {
@@ -852,11 +1027,7 @@ class MappingServiceTests(ServiceTestCase):
             self.user,
             self.cabinet.revision,
             replacement_allocations=[
-                {
-                    'drawer': str(self.drawer.pk),
-                    'logical_start': 1,
-                    'logical_end': 60,
-                }
+                {'drawer': str(self.drawer.pk), 'logical_start': 1, 'logical_end': 60}
             ],
         )
 
@@ -1162,6 +1333,84 @@ class LiveSessionTests(ServiceTestCase):
         )
         self.controller.save()
 
+    def test_out_of_range_worker_diagnostics_and_cleanup(self):
+        """Bounds fail before pixel POST, retain diagnostics and clear safely."""
+        self.arm()
+        with mock.patch.object(
+            services, 'build_live_adapter', return_value=self.adapter
+        ):
+            session, _ = services.create_locate_session(
+                self.cabinet,
+                self.user,
+                {
+                    'target': {'kind': TargetKind.DRAWER, 'id': str(self.drawer.pk)},
+                    'mode': LocateMode.LIVE,
+                    'approve_live': True,
+                    'idempotency_key': 'bounds-worker',
+                },
+            )
+            # A persisted physical run can become inconsistent with the device.
+            session.plan['runs'][0]['wled_stop'] = 121
+            session.save()
+            services.execute_session(session.pk)
+        session.refresh_from_db()
+        self.assertEqual(session.state, SessionState.FAILED)
+        self.assertEqual(session.failure['code'], 'out_of_range')
+        self.assertEqual(
+            session.failure['errors'], [{'start': 0, 'stop': 121, 'led_count': 120}]
+        )
+        self.assertNotIn(ORIGIN, str(session.failure))
+        self.assertIsNone(
+            CabinetOperation.objects.get(cabinet=self.cabinet).current_session_id
+        )
+        posts = [
+            r['body'] for r in self.adapter.transport.requests if r['method'] == 'POST'
+        ]
+        self.assertFalse(any('"i"' in str(body).replace("'", '"') for body in posts))
+        services.stop_session(session, self.user)
+        session.refresh_from_db()
+        self.assertNotEqual(session.state, SessionState.ACTIVE)
+
+    def test_bounds_failure_with_unconfirmed_cleanup_retains_reservation(self):
+        """A failed clear must not release the cabinet or leak its origin."""
+        self.arm()
+        with mock.patch.object(
+            services, 'build_live_adapter', return_value=self.adapter
+        ):
+            session, _ = services.create_locate_session(
+                self.cabinet,
+                self.user,
+                {
+                    'target': {'kind': TargetKind.DRAWER, 'id': str(self.drawer.pk)},
+                    'mode': LocateMode.LIVE,
+                    'approve_live': True,
+                    'idempotency_key': 'bounds-clear-failure',
+                },
+            )
+            session.plan['runs'][0]['wled_stop'] = 121
+            session.save()
+            with mock.patch.object(
+                self.adapter, 'clear', side_effect=RuntimeError(ORIGIN)
+            ):
+                services.execute_session(session.pk)
+        session.refresh_from_db()
+        self.assertEqual(session.state, SessionState.UNKNOWN)
+        self.assertEqual(session.failure['code'], 'out_of_range')
+        self.assertEqual(
+            CabinetOperation.objects.get(cabinet=self.cabinet).current_session_id,
+            session.pk,
+        )
+        self.assertNotIn(ORIGIN, str(services.session_status(session)))
+        with mock.patch.object(
+            services, 'build_live_adapter', return_value=self.adapter
+        ):
+            services.stop_session(session, self.user)
+        session.refresh_from_db()
+        self.assertEqual(session.state, SessionState.STOPPED)
+        self.assertIsNone(
+            CabinetOperation.objects.get(cabinet=self.cabinet).current_session_id
+        )
+
     def test_arm_fails_closed_without_adapter(self):
         """Arm fails closed when no adapter is available."""
         with mock.patch.object(services, 'build_live_adapter', return_value=None):
@@ -1271,21 +1520,35 @@ class LiveSessionTests(ServiceTestCase):
         """A finite walking test never leaves the previous pixel illuminated."""
         self.arm()
         with (
-            mock.patch.object(services, 'build_live_adapter', return_value=self.adapter),
+            mock.patch.object(
+                services, 'build_live_adapter', return_value=self.adapter
+            ),
             mock.patch.object(services.time, 'sleep'),
             mock.patch.object(self.adapter, 'apply', wraps=self.adapter.apply) as apply,
         ):
-            session, _ = services.create_pixel_test(self.cabinet, self.user, {
-                'logical_start': 1, 'logical_end': 2, 'pattern': 'walk',
-                'mode': LocateMode.LIVE, 'approve_live': True,
-                'idempotency_key': 'finite-walk',
-            })
+            session, _ = services.create_pixel_test(
+                self.cabinet,
+                self.user,
+                {
+                    'logical_start': 1,
+                    'logical_end': 2,
+                    'pattern': 'walk',
+                    'mode': LocateMode.LIVE,
+                    'approve_live': True,
+                    'idempotency_key': 'finite-walk',
+                },
+            )
             result = services.execute_session(session.pk)
         self.assertEqual(result.state, SessionState.STOPPED)
         self.assertEqual(apply.call_count, 2)
-        self.assertEqual([call.args[1]['runs'][0]['logical_start'] for call in apply.call_args_list], [1, 2])
+        self.assertEqual(
+            [call.args[1]['runs'][0]['logical_start'] for call in apply.call_args_list],
+            [1, 2],
+        )
         self.assertEqual(result.executions.get().clear_status, 'confirmed')
-        self.assertIsNone(CabinetOperation.objects.get(cabinet=self.cabinet).current_session_id)
+        self.assertIsNone(
+            CabinetOperation.objects.get(cabinet=self.cabinet).current_session_id
+        )
 
     def test_live_stop_confirmed(self):
         """A confirmed live clear marks the session stopped."""
@@ -1841,25 +2104,41 @@ class DispatchTests(ServiceTestCase):
 
     def test_simulated_walk_has_explicit_pixel_frames(self):
         """Walking previews preserve logical order and bounded time offsets."""
-        session, _ = services.create_pixel_test(self.cabinet, self.user, {
-            'logical_start': 2, 'logical_end': 4, 'pattern': 'walk',
-            'mode': LocateMode.SIMULATE, 'idempotency_key': 'walk-preview',
-        })
+        session, _ = services.create_pixel_test(
+            self.cabinet,
+            self.user,
+            {
+                'logical_start': 2,
+                'logical_end': 4,
+                'pattern': 'walk',
+                'mode': LocateMode.SIMULATE,
+                'idempotency_key': 'walk-preview',
+            },
+        )
         result = services.execute_session(session.pk)
         self.assertEqual(result.state, SessionState.ACTIVE)
         frames = result.plan['frames']
         self.assertEqual([frame['logical_pixel'] for frame in frames], [2, 3, 4])
         self.assertEqual(frames[0]['offset_seconds'], 0)
         self.assertLess(frames[-1]['offset_seconds'], result.plan['duration_seconds'])
-        self.assertEqual([frame['runs'][0]['wled_start'] for frame in frames], [1, 2, 3])
+        self.assertEqual(
+            [frame['runs'][0]['wled_start'] for frame in frames], [1, 2, 3]
+        )
 
     def test_walk_range_is_bounded(self):
         """A walk cannot become an unbounded animation or request flood."""
         with self.assertRaises(services.StorageLayoutError):
-            services.create_pixel_test(self.cabinet, self.user, {
-                'logical_start': 1, 'logical_end': 33, 'pattern': 'walk',
-                'mode': LocateMode.SIMULATE, 'idempotency_key': 'oversize-walk',
-            })
+            services.create_pixel_test(
+                self.cabinet,
+                self.user,
+                {
+                    'logical_start': 1,
+                    'logical_end': 33,
+                    'pattern': 'walk',
+                    'mode': LocateMode.SIMULATE,
+                    'idempotency_key': 'oversize-walk',
+                },
+            )
 
     def test_duplicate_worker_cannot_claim_preflight(self):
         """An already claimed task is never executed by a second delivery."""

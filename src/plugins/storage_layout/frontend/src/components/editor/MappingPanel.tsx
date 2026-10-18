@@ -61,6 +61,8 @@ interface SpanRow extends ClientSpanInput {
 interface PublishedSnapshot {
   response: MappingPublishResponse;
   signature: string;
+  /** The same candidate after this publish's expected cabinet revision advance. */
+  refreshedSignature: string;
 }
 
 function toCandidate(row: SpanRow): ClientSpanInput {
@@ -362,7 +364,18 @@ export function MappingPanel({
       // publication of the new cabinet.
       if (contextRef.current.cabinetId !== publishCabinet) return;
       // Retain the snapshot so it can be shown as stale if the context changed.
-      setPublished({ response: result, signature });
+      setPublished({
+        response: result,
+        signature,
+        refreshedSignature: publicationSignature(
+          cabinetId,
+          size,
+          spans,
+          topology,
+          replacementAllocations,
+          `"${result.revision}"`
+        )
+      });
       // Only confirm success for the exact context that was published; a
       // changed candidate is reported by the (stale-marked) snapshot instead.
       if (contextRef.current.signature === signature) {
@@ -412,7 +425,8 @@ export function MappingPanel({
   // A published snapshot is stale once the publication context no longer
   // matches it (candidate, topology, allocations, etag or cabinet).
   const publishedStale = published
-    ? published.signature !== currentSignature
+    ? published.signature !== currentSignature &&
+      published.refreshedSignature !== currentSignature
     : false;
 
   return (

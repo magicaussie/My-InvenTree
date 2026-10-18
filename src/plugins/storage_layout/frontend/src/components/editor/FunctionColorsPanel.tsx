@@ -323,7 +323,14 @@ export function FunctionColorsPanel({
                     <NumberInput
                       aria-label={t`Duration`}
                       min={1}
-                      max={120}
+                      max={draft.purpose === 'test' ? 10 : 120}
+                      error={
+                        draft.purpose === 'test' &&
+                        (draft.duration_seconds < 1 ||
+                          draft.duration_seconds > 10)
+                          ? t`Test profiles require a duration from 1 to 10 seconds.`
+                          : undefined
+                      }
                       w={80}
                       value={draft.duration_seconds}
                       disabled={readOnly}
@@ -337,7 +344,12 @@ export function FunctionColorsPanel({
                   <Table.Td>
                     <Button
                       size='xs'
-                      disabled={readOnly}
+                      disabled={
+                        readOnly ||
+                        draft.duration_seconds < 1 ||
+                        draft.duration_seconds >
+                          (draft.purpose === 'test' ? 10 : 120)
+                      }
                       onClick={() => void save(profile.id)}
                     >
                       {t`Save`}
@@ -371,7 +383,11 @@ export function FunctionColorsPanel({
             value &&
             setNewProfile((current) => ({
               ...current,
-              purpose: value as Purpose
+              purpose: value as Purpose,
+              duration_seconds: Math.min(
+                current.duration_seconds,
+                value === 'test' ? 10 : 120
+              )
             }))
           }
         />
@@ -434,7 +450,7 @@ export function FunctionColorsPanel({
         <NumberInput
           label={t`Duration`}
           min={1}
-          max={120}
+          max={newProfile.purpose === 'test' ? 10 : 120}
           w={90}
           value={newProfile.duration_seconds}
           disabled={readOnly}
@@ -446,7 +462,13 @@ export function FunctionColorsPanel({
           }
         />
         <Button
-          disabled={readOnly || newProfile.name.trim() === ''}
+          disabled={
+            readOnly ||
+            newProfile.name.trim() === '' ||
+            newProfile.duration_seconds < 1 ||
+            newProfile.duration_seconds >
+              (newProfile.purpose === 'test' ? 10 : 120)
+          }
           onClick={() => void create()}
         >
           {t`Create`}

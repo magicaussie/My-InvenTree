@@ -40,6 +40,12 @@ export interface TopologyEditorProps {
   client: StorageLayoutClient;
   cabinetId: string;
   readOnly: boolean;
+  layoutDirty?: boolean;
+  onSaved?: (result: {
+    controllers: ControllerInput[];
+    revision: number;
+    etag: string;
+  }) => void;
 }
 
 function emptyString(): StringInput {
@@ -90,7 +96,9 @@ function isUnsupported(output: OutputInput): boolean {
 export function TopologyEditor({
   client,
   cabinetId,
-  readOnly
+  readOnly,
+  layoutDirty = false,
+  onSaved
 }: TopologyEditorProps) {
   const [document, setDocument] = useState<ElectricalDocument>({
     schema_version: 1,
@@ -225,6 +233,7 @@ export function TopologyEditor({
     });
 
   const save = async () => {
+    if (readOnly || layoutDirty) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -236,6 +245,11 @@ export function TopologyEditor({
       });
       setRevision(result.data.cabinet.revision);
       setEtag(result.etag ?? `"${result.data.cabinet.revision}"`);
+      onSaved?.({
+        controllers: result.data.controllers ?? [],
+        revision: result.data.cabinet.revision,
+        etag: result.etag ?? `"${result.data.cabinet.revision}"`
+      });
       setMessage(t`Electrical topology saved.`);
     } catch (error) {
       const apiError =
@@ -276,12 +290,18 @@ export function TopologyEditor({
             size='xs'
             onClick={() => void save()}
             loading={saving}
-            disabled={readOnly}
+            disabled={readOnly || layoutDirty}
           >
             {t`Save topology`}
           </Button>
         </Group>
       </Group>
+
+      {layoutDirty ? (
+        <Alert color='yellow'>
+          {t`Save or discard unsaved layout changes before saving topology.`}
+        </Alert>
+      ) : null}
 
       {message ? (
         <Alert color='blue' onClose={() => setMessage(null)} withCloseButton>

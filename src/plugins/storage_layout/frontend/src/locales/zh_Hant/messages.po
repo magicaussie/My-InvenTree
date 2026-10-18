@@ -599,18 +599,21 @@ msgstr ""
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
 msgid "White"
 msgstr ""
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
 msgid "Brightness"
 msgstr ""
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
 msgid "Duration"
 msgstr ""
 
@@ -628,6 +631,11 @@ msgstr ""
 
 #: src/components/editor/FunctionColorsPanel.tsx
 msgid "Blue"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Test profiles require a duration from 1 to 10 seconds."
 msgstr ""
 
 #: src/components/editor/FunctionColorsPanel.tsx
@@ -1130,6 +1138,23 @@ msgid "Simulation uses the production translator and session state machine with 
 msgstr ""
 
 #: src/components/editor/SimulationPanel.tsx
+msgid "Reload profiles"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Effective profile"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Locate profile"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Default profile"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
 #: src/components/editor/SimulationPanel.tsx
 msgid "Target kind"
 msgstr ""
@@ -1153,6 +1178,10 @@ msgstr ""
 
 #: src/components/editor/SimulationPanel.tsx
 msgid "Pixel test / translate range"
+msgstr ""
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Test profile"
 msgstr ""
 
 #: src/components/editor/SimulationPanel.tsx
@@ -1337,6 +1366,10 @@ msgstr ""
 
 #: src/components/editor/TopologyEditor.tsx
 msgid "Save topology"
+msgstr ""
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Save or discard unsaved layout changes before saving topology."
 msgstr ""
 
 #: src/components/editor/TopologyEditor.tsx

@@ -101,6 +101,53 @@ test('pointer drag moves a drawer, undo reverts it, save uses compare-and-swap',
   expect(drawer1.x).toBe(40);
 });
 
+test('topology save is blocked while a dirty drawer layout is preserved', async ({ page }) => {
+  await open(page, {
+    path: '/cabinets/cab-1/design',
+    feature: 'RenderCabinetDesigner'
+  });
+  await dragFirstDrawer(page, 30, 0);
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Topology', exact: true }).click();
+  const topology = page.getByTestId('topology-editor');
+  await topology.getByLabel('Name', { exact: true }).fill('Draft controller');
+  const saveTopology = topology.getByRole('button', { name: 'Save topology' });
+  // A user attempt cannot submit or trigger the layout-discarding refresh.
+  await saveTopology.click({ force: true });
+  await expect(saveTopology).toBeDisabled();
+  await expect(topology.getByText('Save or discard unsaved layout changes before saving topology.')).toBeVisible();
+  expect((await recordedCalls(page)).filter((call) => call.method === 'PUT')).toHaveLength(0);
+
+  await page.getByRole('tab', { name: 'Layout', exact: true }).click();
+  await expect(page.locator('rect[style*="move"]').first()).toHaveAttribute('x', '40');
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+  await page.getByLabel('Save layout').click();
+  await expect(page.getByText('Unsaved changes')).not.toBeVisible();
+  const layoutSave = (await recordedCalls(page)).find((call) => call.method === 'PUT');
+  expect(layoutSave?.body.drawers.find((drawer: { id: string }) => drawer.id === 'drawer-1').x).toBe(40);
+  await page.getByRole('tab', { name: 'Topology', exact: true }).click();
+  await expect(saveTopology).toBeEnabled();
+
+});
+
+test('mapping publication cannot discard unsaved drawer layout edits', async ({ page }) => {
+  await open(page, { path: '/cabinets/cab-1/design', feature: 'RenderCabinetDesigner' });
+  await dragFirstDrawer(page, 30, 0);
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+  await page.getByRole('tab', { name: 'Mapping', exact: true }).click();
+  const mapping = page.getByTestId('mapping-panel');
+  await expect(mapping.getByRole('button', { name: 'Publish mapping' })).toBeDisabled();
+  expect((await recordedCalls(page)).filter((call) => call.url.endsWith('/mapping-publish/'))).toHaveLength(0);
+  await page.getByRole('tab', { name: 'Layout', exact: true }).click();
+  await expect(page.locator('rect[style*="move"]').first()).toHaveAttribute('x', '40');
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+  await page.getByLabel('Save layout').click();
+  await expect(page.getByText('Unsaved changes')).not.toBeVisible();
+  const layoutSave = (await recordedCalls(page)).find((call) => call.method === 'PUT');
+  expect(layoutSave?.body.drawers.find((drawer: { id: string }) => drawer.id === 'drawer-1').x).toBe(40);
+});
+
 test('numeric inspector edits are undoable', async ({ page }) => {
   await open(page, {
     path: '/cabinets/cab-1/design',
@@ -275,6 +322,26 @@ test('mapping panel previews and publishes a candidate mapping', async ({
   );
   expect(publish).toHaveLength(1);
   expect(publish[0].headers?.['If-Match']).toBe('"3"');
+});
+
+test('saved topology reaches Mapping with the new ETag without a page reload', async ({ page }) => {
+  await open(page, { path: '/cabinets/cab-1/design', feature: 'RenderCabinetDesigner' });
+  await page.getByRole('tab', { name: 'Topology', exact: true }).click();
+  const topology = page.getByTestId('topology-editor');
+  await topology.getByLabel('Name', { exact: true }).fill('Renamed controller');
+  await topology.getByRole('button', { name: 'Save topology' }).click();
+  await expect(topology.getByText('Electrical topology saved.')).toBeVisible();
+  await page.getByRole('tab', { name: 'Mapping', exact: true }).click();
+  const mapping = page.getByTestId('mapping-panel');
+  await expect(mapping.getByRole('combobox').first()).toHaveValue('Renamed controller/S1');
+  await mapping.getByRole('button', { name: 'Preview', exact: true }).click();
+  await expect(page.getByTestId('translation-sample')).toBeVisible();
+  await mapping.getByRole('button', { name: 'Publish mapping' }).click();
+  await expect(page.getByTestId('publish-result')).toBeVisible();
+  await expect(page.getByTestId('publish-stale')).toHaveCount(0);
+  const publish = (await recordedCalls(page)).filter((call) => call.url.endsWith('/mapping-publish/'));
+  expect(publish).toHaveLength(1);
+  expect(publish[0].headers?.['If-Match']).toBe('"4"');
 });
 
 test('function colours panel loads, saves and creates profiles', async ({

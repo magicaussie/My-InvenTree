@@ -33,6 +33,7 @@ import {
 import type {
   HardwareReadJob,
   LocateMode,
+  LocateProfile,
   LocateSession,
   TargetKind
 } from '../../api/types';
@@ -54,6 +55,7 @@ export interface SimulationPanelProps {
   mappingHash: string | null;
   topology: StringTopology[];
   readOnly: boolean;
+  active?: boolean;
   /** Drawer/location/item most recently selected in the designer canvas. */
   defaultTarget?: { kind: TargetKind; id: string } | null;
 }
@@ -65,6 +67,7 @@ export function SimulationPanel({
   mappingHash,
   topology,
   readOnly,
+  active = true,
   defaultTarget
 }: SimulationPanelProps) {
   const [mode, setMode] = useState<LocateMode>('simulate');
@@ -72,10 +75,47 @@ export function SimulationPanel({
   const [targetKind, setTargetKind] = useState<TargetKind>('drawer');
   const [targetId, setTargetId] = useState(defaultTarget?.id ?? '');
   const [duration, setDuration] = useState(120);
+  const [profiles, setProfiles] = useState<LocateProfile[]>([]);
+  const [locateProfileId, setLocateProfileId] = useState<string | null>(null);
+  const [testProfileId, setTestProfileId] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const loadProfiles = useCallback(async () => {
+    try {
+      const response = await client.listProfiles(cabinetId);
+      setProfiles(response.results);
+      setLocateProfileId((id) =>
+        response.results.some((p) => p.id === id && p.purpose === 'locate')
+          ? id
+          : null
+      );
+      setTestProfileId((id) =>
+        response.results.some((p) => p.id === id && p.purpose === 'test')
+          ? id
+          : null
+      );
+      setProfileError(null);
+    } catch (error) {
+      setProfileError(describeApiError(error));
+      setProfiles([]);
+      setLocateProfileId(null);
+      setTestProfileId(null);
+    }
+  }, [client, cabinetId]);
+  useEffect(() => {
+    if (active) void loadProfiles();
+  }, [loadProfiles, active]);
+  const selectedLocateProfile = profiles.find((p) => p.id === locateProfileId);
+  const selectedTestProfile = profiles.find((p) => p.id === testProfileId);
+  const invalidTestProfile =
+    selectedTestProfile !== undefined &&
+    (selectedTestProfile.duration_seconds < 1 ||
+      selectedTestProfile.duration_seconds > 10);
+
   const [testPattern, setTestPattern] = useState<'range' | 'walk'>('range');
   const [rangeStart, setRangeStart] = useState(1);
   const [rangeEnd, setRangeEnd] = useState(Math.max(1, totalPixels));
   const [session, setSession] = useState<LocateSession | null>(null);
+  const effectiveProfile = session?.profile ?? session?.plan?.profile;
   const [job, setJob] = useState<HardwareReadJob | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -176,7 +216,9 @@ export function SimulationPanel({
         target: { kind: targetKind, id: targetId },
         mode,
         mapping_hash: mappingHash ?? '',
-        duration_seconds: duration,
+        ...(selectedLocateProfile
+          ? { profile: selectedLocateProfile.id }
+          : { duration_seconds: duration }),
         idempotency_key: generateIdempotencyKey(),
         approve_live: approveLive
       });
@@ -195,6 +237,7 @@ export function SimulationPanel({
     try {
       const created = await client.pixelTest({
         pattern: testPattern,
+        ...(selectedTestProfile ? { profile: selectedTestProfile.id } : {}),
         cabinet: cabinetId,
         logical_start: rangeStart,
         logical_end: rangeEnd,
@@ -344,8 +387,34 @@ export function SimulationPanel({
         </Alert>
       ) : null}
 
+      <Button
+        size='xs'
+        variant='default'
+        onClick={() => void loadProfiles()}
+      >{t`Reload profiles`}</Button>
+      {profileError ? <Alert color='red'>{profileError}</Alert> : null}
+      {effectiveProfile ? (
+        <Text size='xs' data-testid='effective-profile'>
+          {t`Effective profile`}: {effectiveProfile.name}; RGB{' '}
+          {effectiveProfile.rgb.join(', ')}; {t`White`}:{' '}
+          {effectiveProfile.white}; {t`Brightness`}:{' '}
+          {effectiveProfile.brightness}; {t`Duration`}:{' '}
+          {session?.plan?.duration_seconds ?? effectiveProfile.duration_seconds}
+          s
+        </Text>
+      ) : null}
       <Card withBorder padding='sm'>
         <Stack gap='xs'>
+          <Select
+            label={t`Locate profile`}
+            clearable
+            placeholder={t`Default profile`}
+            value={locateProfileId}
+            onChange={setLocateProfileId}
+            data={profiles
+              .filter((p) => p.purpose === 'locate')
+              .map((p) => ({ value: p.id, label: p.name }))}
+          />
           <Group gap='xs' align='flex-end'>
             <Select
               size='xs'
@@ -372,7 +441,8 @@ export function SimulationPanel({
               label={t`Duration (s)`}
               min={1}
               max={120}
-              value={duration}
+              disabled={!!selectedLocateProfile}
+              value={selectedLocateProfile?.duration_seconds ?? duration}
               onChange={(value) => setDuration(Number(value) || 1)}
             />
             <Button
@@ -392,6 +462,19 @@ export function SimulationPanel({
           <Text size='sm' fw={600}>
             {t`Pixel test / translate range`}
           </Text>
+          <Select
+            label={t`Test profile`}
+            clearable
+            placeholder={t`Default profile`}
+            value={testProfileId}
+            onChange={setTestProfileId}
+            data={profiles
+              .filter((p) => p.purpose === 'test')
+              .map((p) => ({ value: p.id, label: p.name }))}
+          />
+          {invalidTestProfile ? (
+            <Alert color='red'>{t`Test profiles require a duration from 1 to 10 seconds.`}</Alert>
+          ) : null}
           <Group gap='xs' align='flex-end'>
             <NumberInput
               size='xs'
@@ -426,7 +509,7 @@ export function SimulationPanel({
               variant='default'
               onClick={() => void pixelTest()}
               loading={busy}
-              disabled={liveBlocked}
+              disabled={liveBlocked || invalidTestProfile}
             >
               {t`Run pixel test`}
             </Button>

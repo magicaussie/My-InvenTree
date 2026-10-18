@@ -1,0 +1,69 @@
+# WLED controller hardware reference
+
+## Owner-reported inventory
+
+Source: owner-supplied Checkpoint 002J-C task, recorded 2026-10-18. These counts are authoritative owner reports, not independently verified wiring.
+
+| Controller | HTTP origin | Owner string label | Pixels |
+|---|---|---|---:|
+| 1 | http://192.168.1.40 | 1 | 546 |
+| 1 | http://192.168.1.40 | 2 | 615 |
+| 2 | http://192.168.1.71 | 1 | 528 |
+| 2 | http://192.168.1.71 | 2 | 668 |
+
+Totals: controller 1 **1,161**; controller 2 **1,196**; combined **2,357** pixels.
+
+String numbers are the owner's labels. Do not infer contiguous ranges or output numbering from owner counts alone. Read-only bus configuration below independently reports contiguous logical ranges, but physical output-to-string assignment, pixel order and cabinet/drawer wiring remain unconfirmed.
+
+## Read-only discovery (2026-10-18)
+
+Queried only `http://192.168.1.40` and `http://192.168.1.71`, using Python `urllib.request.urlopen(..., timeout=2)`, with `GET /json/info`, `GET /json/state`, and `GET /json/cfg`. All three endpoints returned valid JSON from both controllers. The `/json/cfg` responses were parsed in memory; only whitelisted LED bus fields were emitted/recorded, and raw responses were not retained.
+
+| Controller | Reachability / version | Reported LED count | Current reported segment |
+|---|---|---:|---|
+| 1 (`192.168.1.40`) | Online; WLED 16.0.1 | 1,161 | Segment 0: start 0, stop 1,161 (exclusive), length 1,161; enabled |
+| 2 (`192.168.1.71`) | Online; WLED 16.0.1 | 1,196 | Segment 0: start 0, stop 1,196 (exclusive), length 1,196; enabled |
+
+The device-reported totals match the owner-reported controller totals (1,161 and 1,196); no total-count mismatch was observed. The state response reports one segment spanning the full logical index range on each controller. Current reported master brightness is 128 on both; this is a read-only observation, not a test setting.
+
+The sanitized `hw.led.ins` configuration contained two buses per controller:
+
+| Controller | Bus entry order | Start | Length | Exclusive stop | Owner-count match |
+|---|---:|---:|---:|---:|---|
+| 1 (`192.168.1.40`) | 1 | 0 | 546 | 546 | Owner string 1 count (546) |
+| 1 (`192.168.1.40`) | 2 | 546 | 615 | 1,161 | Owner string 2 count (615) |
+| 2 (`192.168.1.71`) | 1 | 0 | 528 | 528 | Owner string 1 count (528) |
+| 2 (`192.168.1.71`) | 2 | 528 | 668 | 1,196 | Owner string 2 count (668) |
+
+For all four bus entries, the sanitized response reported `type=22`, `order=0`, `rev=false`, `skip=0`, `freq=0`, and `ref=false`; no `pin` field was present. The two bus lengths on each device sum exactly to its reported total, and each length exactly matches one owner's string count. Thus the **configuration-based logical index candidates** are controller 1 string-count 546: `[0,546)`, count 615: `[546,1161)`; controller 2 count 528: `[0,528)`, count 668: `[528,1196)`. These are verified configured bus ranges and count matches, not verification that owner string labels identify those physical outputs or that physical pixel order/wiring matches them. Keep physical string-to-bus assignment and illumination **unverified**; do not claim physical mapping from matching lengths alone.
+
+## Verification status
+
+Device connectivity, WLED version, reported total counts, current logical segment bounds, and configured bus starts/lengths: **verified by read-only HTTP responses** as above. Both controllers were online; all four configured bus lengths and ranges match the owner-reported counts. Physical string-to-bus assignment and wiring: **unverified**.
+
+### Acceptance result: read-only only
+
+No controller write or illumination command was sent. The only controller requests were HTTP `GET` requests to `/json/info`, `/json/state` and `/json/cfg` on the two listed hosts, each with a 2-second request timeout. Test brightness and duration: **not applicable** (no test performed). Human observation of physical output: **none**. Restoration: **not needed**; no state was changed.
+
+Backend adapter assessment: its apply operation takes over the canonical segment/master/nightlight state; its clear operation leaves the device off/black rather than restoring a captured prior-state snapshot. Therefore a lighting test through this adapter cannot be described as restoring the previous visible state. This limitation was not exercised on hardware. Although controlled tests are authorized, prerequisites for a safe per-string test were not met: physical string-to-bus correspondence has not been verified, and this adapter does not restore the prior visible state on clear. No test was attempted; no further approval is being requested.
+
+### Owner physical observation checklist
+
+When safely observing the installation, record for each controller and each physical string separately:
+
+- Confirm which physical string responds to a deliberately selected, known-safe logical range; record the controller, bus, and exact zero-based half-open range `[start, stop)`.
+- Confirm the observed string identity/route and whether pixel order is forward or reversed; mark any uncertainty rather than inferring it from matching pixel counts.
+- Verify the other string independently and confirm no unintended string responds.
+- Record observer, date, result, and any unexpected behaviour. Stop if the observed output differs from expectation.
+
+Do not infer physical mapping from HTTP success, matching counts, or bus order alone. Physical illumination and string assignment remain **pending human observation**.
+
+## Safe acceptance procedure
+
+1. Read only the two listed origins with short timeouts. Inspect information, state and LED/bus configuration; retain only non-secret observations here.
+2. Treat identity/count discrepancies or ambiguous output/index assignments as blockers for pixel writes. Establish mappings through existing InvenTree disposable development data only.
+3. Capture the previous visible state before testing. Use a single verified pixel or tiny range, low brightness and a duration no greater than 10 seconds, through the existing integration and worker where safe.
+4. Obtain human observation of each string; distinguish that evidence from device responses.
+5. Stop/off the test and restore the captured visible state where feasible, then read back state. Report restoration failures. Never save presets or write persistent bus, LED, network or firmware settings.
+
+Do not record credentials, tokens, SSIDs, MAC addresses or raw device configuration in this document.

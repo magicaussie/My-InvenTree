@@ -332,18 +332,16 @@ class LayoutApiTests(ApiTestCase):
         """A layout write advances the revision."""
         document = self.get(self.cabinet_url('layout/'), expected_code=200).data
         document.pop('diagnostics', None)
-        document['bins'].append(
-            {
-                'id': None,
-                'drawer': str(self.drawer.pk),
-                'label': 'A1-01',
-                'location': self.bin_location.pk,
-                'x': 0,
-                'y': 0,
-                'width': 70,
-                'height': 100,
-            }
-        )
+        document['bins'].append({
+            'id': None,
+            'drawer': str(self.drawer.pk),
+            'label': 'A1-01',
+            'location': self.bin_location.pk,
+            'x': 0,
+            'y': 0,
+            'width': 70,
+            'height': 100,
+        })
 
         response = self.put(
             self.cabinet_url('layout/'),
@@ -642,6 +640,53 @@ class MappingApiTests(ApiTestCase):
 
         self.assertEqual(response.data['number'], 2)
         self.assertEqual(response.data['total_pixels'], 120)
+
+    def test_publish_rejects_overlap_with_distinct_drawer_over_http(self):
+        """Publication rejects overlapping allocations owned by distinct drawers."""
+        second_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        second_drawer = Drawer.objects.create(
+            cabinet=self.cabinet,
+            label='A2',
+            display_number=2,
+            location=second_location,
+            x=300,
+            y=0,
+            width=300,
+            height=100,
+            interior_width=280,
+            interior_height=400,
+        )
+        DrawerAllocation.objects.create(
+            drawer=second_drawer, logical_start=61, logical_end=120
+        )
+
+        response = self.post(
+            self.cabinet_url('mapping-publish/'),
+            {
+                **self.candidate(),
+                'replacement_allocations': [
+                    {
+                        'drawer': str(self.drawer.pk),
+                        'logical_start': 1,
+                        'logical_end': 70,
+                    }
+                ],
+            },
+            expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'allocation_overlap')
+        self.assertFalse(MappingRevision.objects.filter(number=2).exists())
+        self.assertFalse(
+            DrawerAllocation.objects.filter(
+                drawer=self.drawer, logical_start=1, logical_end=70
+            ).exists()
+        )
+        allocation = DrawerAllocation.objects.get(drawer=second_drawer)
+        self.assertEqual((allocation.logical_start, allocation.logical_end), (61, 120))
 
     def test_publish_requires_if_match(self):
         """Publishing without If-Match is rejected with 428."""

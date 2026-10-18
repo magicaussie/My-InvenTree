@@ -84,6 +84,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
     [context.api]
   );
 
+  const [activeTab, setActiveTab] = useState<string | null>('layout');
   const [snap, setSnap] = useState(true);
   const [grid, setGrid] = useState(10);
   const [renumberOpen, setRenumberOpen] = useState(false);
@@ -541,7 +542,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         </Alert>
       ) : null}
 
-      <Tabs defaultValue='layout'>
+      <Tabs value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
           <Tabs.Tab value='layout'>{t`Layout`}</Tabs.Tab>
           <Tabs.Tab value='topology'>{t`Topology`}</Tabs.Tab>
@@ -695,6 +696,11 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
           <TopologyEditor
             client={client}
             cabinetId={cabinetId}
+            layoutDirty={editor.dirty}
+            onSaved={({ controllers }) => {
+              setTopology(topologyFromDocument(controllers));
+              void editor.refresh();
+            }}
             readOnly={editor.status !== 'ready'}
           />
         </Tabs.Panel>
@@ -705,7 +711,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
             cabinetId={cabinetId}
             totalPixels={editor.totalPixels}
             topology={topologyList}
-            readOnly={editor.status !== 'ready'}
+            readOnly={editor.status !== 'ready' || editor.dirty}
             etag={editor.etag}
             onPublished={() => void editor.refresh()}
           />
@@ -721,6 +727,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
 
         <Tabs.Panel value='diagnostics' pt='sm'>
           <SimulationPanel
+            active={activeTab === 'diagnostics'}
             client={client}
             cabinetId={cabinetId}
             totalPixels={editor.totalPixels}

@@ -512,6 +512,18 @@ describe('MappingPanel publication context isolation', () => {
     expect(screen.getByTestId('publish-stale')).toBeInTheDocument();
   });
 
+  it('keeps publication current after its own authoritative revision refresh', async () => {
+    const { mappingPublish, renderPanel, rerender } = setup();
+    const d = deferred<MappingPublishResponse>();
+    mappingPublish.mockReturnValueOnce(d.promise);
+    fireEvent.click(publishButton());
+    await settle(d, publishResponse(3));
+    rerender(renderPanel({ etag: '"3"' }));
+    expect(screen.queryByTestId('publish-stale')).toBeNull();
+    rerender(renderPanel({ etag: '"4"' }));
+    expect(screen.getByTestId('publish-stale')).toBeInTheDocument();
+  });
+
   it('marks a published result stale when the etag changes on the same cabinet', async () => {
     const { mappingPublish, renderPanel, rerender } = setup();
     const d = deferred<MappingPublishResponse>();

@@ -599,18 +599,21 @@ msgstr "B"
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
 msgid "White"
 msgstr "White"
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
 msgid "Brightness"
 msgstr "Brightness"
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
 msgid "Duration"
 msgstr "Duration"
 
@@ -629,6 +632,11 @@ msgstr "Green"
 #: src/components/editor/FunctionColorsPanel.tsx
 msgid "Blue"
 msgstr "Blue"
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Test profiles require a duration from 1 to 10 seconds."
+msgstr "Test profiles require a duration from 1 to 10 seconds."
 
 #: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/Toolbar.tsx
@@ -1130,6 +1138,23 @@ msgid "Simulation uses the production translator and session state machine with 
 msgstr "Simulation uses the production translator and session state machine with a fake transport. No network access is performed."
 
 #: src/components/editor/SimulationPanel.tsx
+msgid "Reload profiles"
+msgstr "Reload profiles"
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Effective profile"
+msgstr "Effective profile"
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Locate profile"
+msgstr "Locate profile"
+
+#: src/components/editor/SimulationPanel.tsx
+#: src/components/editor/SimulationPanel.tsx
+msgid "Default profile"
+msgstr "Default profile"
+
+#: src/components/editor/SimulationPanel.tsx
 #: src/components/editor/SimulationPanel.tsx
 msgid "Target kind"
 msgstr "Target kind"
@@ -1154,6 +1179,10 @@ msgstr "Duration (s)"
 #: src/components/editor/SimulationPanel.tsx
 msgid "Pixel test / translate range"
 msgstr "Pixel test / translate range"
+
+#: src/components/editor/SimulationPanel.tsx
+msgid "Test profile"
+msgstr "Test profile"
 
 #: src/components/editor/SimulationPanel.tsx
 msgid "Start"
@@ -1338,6 +1367,10 @@ msgstr "Reload"
 #: src/components/editor/TopologyEditor.tsx
 msgid "Save topology"
 msgstr "Save topology"
+
+#: src/components/editor/TopologyEditor.tsx
+msgid "Save or discard unsaved layout changes before saving topology."
+msgstr "Save or discard unsaved layout changes before saving topology."
 
 #: src/components/editor/TopologyEditor.tsx
 msgid "Unsupported configuration present"

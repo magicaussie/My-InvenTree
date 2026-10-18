@@ -29,6 +29,7 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import timedelta
+from itertools import pairwise
 from typing import Any
 
 from django.core.cache import cache
@@ -2299,29 +2300,40 @@ def publish_mapping(
     """
     require_configure(actor)
 
-    if not cabinet_is_idle(cabinet):
-        raise CabinetBusyError(
-            _('The cabinet has an active operation'), code='cabinet_busy'
-        )
-
-    rows, total = _candidate_span_rows(cabinet, candidate)
-    report = v.validate_mapping_spans(rows, total)
-    _report_error(
-        report,
-        _('The mapping is invalid'),
-        report.errors[0].code if report.errors else 'mapping_gap',
-    )
-
-    if expected_fingerprints:
-        _check_fingerprints(cabinet, expected_fingerprints)
-
-    content_hash = mapping_module.mapping_hash(rows, total)
-    manifest = mapping_module.build_manifest(rows, total)
-
-    before = cabinet.revision
+    before = expected_revision
 
     with transaction.atomic():
-        previous = cabinet.active_mapping
+        # A conditional write locks the aggregate on all supported databases,
+        # including SQLite where select_for_update is a no-op. Check CAS before
+        # reading allocations or computing the next immutable revision number.
+        if not Cabinet.objects.filter(pk=cabinet.pk, revision=expected_revision).update(
+            revision=expected_revision
+        ):
+            raise StaleRevisionError(
+                _('The cabinet has changed since it was loaded; reload and retry'),
+                code='stale',
+            )
+        current = Cabinet.objects.get(pk=cabinet.pk)
+        if not cabinet_is_idle(current):
+            raise CabinetBusyError(
+                _('The cabinet has an active operation'), code='cabinet_busy'
+            )
+
+        rows, total = _candidate_span_rows(current, candidate)
+        report = v.validate_mapping_spans(rows, total)
+        _report_error(
+            report,
+            _('The mapping is invalid'),
+            report.errors[0].code if report.errors else 'mapping_gap',
+        )
+        if expected_fingerprints:
+            _check_fingerprints(current, expected_fingerprints)
+        replacements = _validate_publication_allocations(
+            current, replacement_allocations or [], total
+        )
+        content_hash = mapping_module.mapping_hash(rows, total)
+        manifest = mapping_module.build_manifest(rows, total)
+        previous = current.active_mapping
 
         number = (
             MappingRevision.objects.filter(cabinet=cabinet).aggregate(
@@ -2351,8 +2363,11 @@ def publish_mapping(
                 direction=row['direction'],
             )
 
-        if replacement_allocations:
-            _apply_replacement_allocations(cabinet, replacement_allocations, total)
+        for drawer_id, (start, end) in replacements.items():
+            DrawerAllocation.objects.update_or_create(
+                drawer_id=drawer_id,
+                defaults={'logical_start': start, 'logical_end': end},
+            )
 
         cas_update_cabinet(cabinet, expected_revision, active_mapping_id=revision.pk)
 
@@ -2413,31 +2428,49 @@ def _check_fingerprints(cabinet: Cabinet, expected: dict[str, str]) -> None:
             )
 
 
-def _apply_replacement_allocations(
+def _validate_publication_allocations(
     cabinet: Cabinet, allocations: list[dict[str, Any]], total: int
-) -> None:
-    """Apply explicit replacement drawer allocations during a publish."""
+) -> dict[Any, tuple[int, int]]:
+    """Validate the complete final set while the cabinet write lock is held.
+
+    Archived drawers retain their allocations, matching layout validation; an
+    archive does not silently free reserved logical pixels.
+    """
+    drawers = set(Drawer.objects.filter(cabinet=cabinet).values_list('pk', flat=True))
+    final = {
+        row.drawer_id: (row.logical_start, row.logical_end)
+        for row in DrawerAllocation.objects.filter(drawer__cabinet=cabinet)
+    }
+    replacements = {}
     for entry in allocations:
-        drawer = Drawer.objects.filter(
-            pk=_as_uuid(entry.get('drawer'), 'drawer'), cabinet=cabinet
-        ).first()
-
-        if drawer is None:
+        drawer_id = _as_uuid(entry.get('drawer'), 'drawer')
+        if drawer_id not in drawers or drawer_id in replacements:
             raise StorageLayoutError(
-                _('Unknown drawer in replacement allocations'), code='invalid_reference'
+                _('Unknown or duplicate drawer in replacement allocations'),
+                code='invalid_reference',
             )
+        start = _as_int(entry.get('logical_start'), 'logical_start')
+        end = _as_int(entry.get('logical_end'), 'logical_end')
+        replacements[drawer_id] = (start, end)
+        final[drawer_id] = (start, end)
 
-        start = _as_int(entry.get('logical_start'), 'logical_start', 1)
-        end = _as_int(entry.get('logical_end'), 'logical_end', 1)
-
-        if end < start or end > total:
-            raise StorageLayoutError(
-                _('Replacement allocation is out of bounds'), code='invalid_bounds'
-            )
-
-        DrawerAllocation.objects.update_or_create(
-            drawer=drawer, defaults={'logical_start': start, 'logical_end': end}
-        )
+    report = v.validate_allocations(
+        [
+            {'id': str(drawer_id), 'logical_start': start, 'logical_end': end}
+            for drawer_id, (start, end) in final.items()
+        ],
+        total,
+    )
+    # Allocation endpoints are inclusive, unlike physical WLED intervals.
+    ordered = sorted(final.values())
+    if any(right[0] <= left[1] for left, right in pairwise(ordered)):
+        report.add_error('allocation_overlap', _('Drawer allocations must not overlap'))
+    _report_error(
+        report,
+        _('The final drawer allocations are invalid'),
+        report.errors[0].code if report.errors else 'invalid_bounds',
+    )
+    return replacements
 
 
 def translate_range(
@@ -2774,6 +2807,23 @@ def translate_wled_error(exc: Exception) -> StorageLayoutError:
 
     if not getattr(cls, '__module__', '').startswith('storage_layout'):
         return LiveNotAvailableError(message, code='live_unavailable')
+
+    if name == 'OutOfRangeError':
+        details = getattr(exc, 'details', {})
+        safe = (
+            {
+                key: value
+                for key in ('start', 'stop', 'led_count')
+                if type(value := details.get(key)) is int and abs(value) <= 2**63 - 1
+            }
+            if isinstance(details, dict)
+            else {}
+        )
+        return StorageLayoutError(
+            _('A pixel interval is outside the controller LED bounds'),
+            code='out_of_range',
+            errors=[safe] if safe else [],
+        )
 
     if name in ('ConfigDriftError', 'ConfigDrift'):
         return ConfigDriftError(message, code='config_drift')
@@ -3656,7 +3706,10 @@ def _fail_live_session(
                 result = adapter.clear(execution.controller)
             except Exception as clear_exc:
                 result = None
-                execution.error = {'clear_error': str(clear_exc)}
+                execution.error = {
+                    'clear_error': 'Controller clear failed',
+                    'code': translate_wled_error(clear_exc).code,
+                }
 
             if result is not None and getattr(result, 'confirmed', False):
                 execution.state = ExecutionState.CLEARED
@@ -3677,7 +3730,11 @@ def _fail_live_session(
 
         execution.save()
 
-    session.failure = {'code': translated.code, 'message': translated.message}
+    session.failure = {
+        'code': translated.code,
+        'message': translated.message,
+        'errors': translated.errors,
+    }
 
     if all_confirmed:
         session.state = SessionState.FAILED
