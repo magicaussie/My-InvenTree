@@ -276,3 +276,44 @@ test('mapping panel previews and publishes a candidate mapping', async ({
   expect(publish).toHaveLength(1);
   expect(publish[0].headers?.['If-Match']).toBe('"3"');
 });
+
+test('function colours panel loads, saves and creates profiles', async ({
+  page
+}) => {
+  await open(page, {
+    path: '/cabinets/cab-1/design',
+    feature: 'RenderCabinetDesigner'
+  });
+  await expect(page.getByTestId('cabinet-designer')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Colors' }).click();
+  await expect(page.getByTestId('function-colors-panel')).toBeVisible();
+  await expect(page.getByTestId('profile-row-profile-1')).toBeVisible();
+  await expect(page.getByTestId('profile-swatch-profile-1')).toHaveCSS(
+    'background-color',
+    'rgb(0, 255, 0)'
+  );
+
+  // Edit the red channel and save through the API.
+  const row = page.getByTestId('profile-row-profile-1');
+  await row.getByLabel('Red').fill('12');
+  await row.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByTestId('function-colors-message')).toBeVisible();
+
+  const patch = (await recordedCalls(page)).filter(
+    (call) => call.method === 'PATCH' && call.url.includes('/profiles/profile-1/')
+  );
+  expect(patch).toHaveLength(1);
+  expect(patch[0].body).toMatchObject({ rgb_r: 12 });
+
+  // Create a new function colour.
+  const panel = page.getByTestId('function-colors-panel');
+  await panel.getByLabel('Name', { exact: true }).fill('Test blue');
+  await panel.getByRole('button', { name: 'Create' }).click();
+
+  const created = (await recordedCalls(page)).filter(
+    (call) => call.method === 'POST' && call.url.endsWith('/profiles/')
+  );
+  expect(created).toHaveLength(1);
+  expect(created[0].body).toMatchObject({ cabinet: 'cab-1', name: 'Test blue' });
+});

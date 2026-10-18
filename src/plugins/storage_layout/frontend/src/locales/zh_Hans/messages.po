@@ -26,6 +26,22 @@ msgid "Server validation: {0} error(s), {1} warning(s) — blocking errors found
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "Cannot move drawers: placement overlaps another drawer or exceeds cabinet bounds."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Cannot resize drawer: placement overlaps another drawer or exceeds cabinet bounds."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Insufficient free space to add a drawer."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Insufficient free space to duplicate the selected drawers."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 msgid "Loading cabinet layout…"
 msgstr ""
 
@@ -84,6 +100,10 @@ msgstr ""
 #: src/components/CabinetList.tsx
 #: src/components/editor/MappingPanel.tsx
 msgid "Mapping"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Colors"
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
@@ -156,6 +176,8 @@ msgstr ""
 
 #: src/components/CabinetList.tsx
 #: src/components/CabinetList.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/TopologyEditor.tsx
 msgid "Name"
 msgstr ""
@@ -200,6 +222,7 @@ msgid "Cancel"
 msgstr ""
 
 #: src/components/CabinetList.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
 msgid "Create"
 msgstr ""
 
@@ -295,6 +318,7 @@ msgid "The cabinet revision changed. Reload before saving."
 msgstr ""
 
 #: src/components/LocateControl.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
 #: src/components/editor/SimulationPanel.tsx
 msgid "Locate"
 msgstr ""
@@ -501,6 +525,11 @@ msgstr ""
 
 #: src/components/editor/EditorCanvas.tsx
 #: src/components/editor/EditorCanvas.tsx
+msgid "Fit to view"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+#: src/components/editor/EditorCanvas.tsx
 msgid "Reset view"
 msgstr ""
 
@@ -512,6 +541,102 @@ msgstr ""
 #. placeholder {0}: entities.length
 #: src/components/editor/EditorCanvas.tsx
 msgid "{0} items"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Test"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Reserved"
+msgstr ""
+
+#. placeholder {0}: draft.name
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Saved profile {0}"
+msgstr ""
+
+#. placeholder {0}: newProfile.name
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Created profile {0}"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Configure the colour, brightness and duration used for each function. Colours are stored as locate profiles (purposes: locate, test, reserved). The product schema does not model separate colours for locate-drawer vs locate-bin, selection, warning/error or idle/clear."
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Loading profiles..."
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "No profiles yet. Create one below to set a function colour."
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Purpose"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Colour"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "R"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "G"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "B"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "White"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Brightness"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Duration"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Profile name"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Red"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Green"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Blue"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+#: src/components/editor/Toolbar.tsx
+msgid "Save"
+msgstr ""
+
+#: src/components/editor/FunctionColorsPanel.tsx
+msgid "Add a function colour"
 msgstr ""
 
 #: src/components/editor/Inspector.tsx
@@ -782,25 +907,29 @@ msgstr ""
 msgid "Published mapping"
 msgstr ""
 
-#. placeholder {0}: published.number
-#. placeholder {1}: published.total_pixels
-#. placeholder {2}: published.changed_count ?? 0
+#. placeholder {0}: published.response.number
+#. placeholder {1}: published.response.total_pixels
+#. placeholder {2}: published.response.changed_count ?? 0
 #: src/components/editor/MappingPanel.tsx
 msgid "Revision {0}, N={1}, {2} physical pixel(s) changed (list truncated)."
 msgstr ""
 
-#. placeholder {0}: published.number
-#. placeholder {1}: published.total_pixels
-#. placeholder {2}: published.changed_count ?? 0
+#. placeholder {0}: published.response.number
+#. placeholder {1}: published.response.total_pixels
+#. placeholder {2}: published.response.changed_count ?? 0
 #: src/components/editor/MappingPanel.tsx
 msgid "Revision {0}, N={1}, {2} physical pixel(s) changed."
 msgstr ""
 
-#. placeholder {0}: published.changed_pixels[0].logical
-#. placeholder {1}: published.changed_pixels[0].before?.join(':') ?? 'none'
-#. placeholder {2}: published.changed_pixels[0].after?.join(':') ?? 'none'
+#. placeholder {0}: published.response.changed_pixels[0].logical
+#. placeholder {1}: published.response.changed_pixels[0].before?.join(':') ?? 'none'
+#. placeholder {2}: published.response.changed_pixels[0].after?.join(':') ?? 'none'
 #: src/components/editor/MappingPanel.tsx
 msgid "e.g. logical {0}: {1} → {2}"
+msgstr ""
+
+#: src/components/editor/MappingPanel.tsx
+msgid "The candidate has been edited since this revision was published; publish again to apply the current edits."
 msgstr ""
 
 #: src/components/editor/MappingPanel.tsx
@@ -1180,10 +1309,6 @@ msgstr ""
 
 #: src/components/editor/Toolbar.tsx
 msgid "Save layout"
-msgstr ""
-
-#: src/components/editor/Toolbar.tsx
-msgid "Save"
 msgstr ""
 
 #: src/components/editor/TopologyEditor.tsx

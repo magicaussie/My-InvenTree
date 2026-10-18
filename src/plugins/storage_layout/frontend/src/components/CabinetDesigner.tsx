@@ -45,6 +45,7 @@ import { topologyFromDocument } from '../state/mapping';
 import { diagnosticsByEntity, severityForEntity } from '../state/validation';
 import { formatRange, newId, rangeCount } from '../utils';
 import { type CanvasEntity, EditorCanvas } from './editor/EditorCanvas';
+import { FunctionColorsPanel } from './editor/FunctionColorsPanel';
 import { DrawerInspector } from './editor/Inspector';
 import { MappingPanel } from './editor/MappingPanel';
 import {
@@ -91,6 +92,12 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
   const [topology, setTopology] = useState<
     ReturnType<typeof topologyFromDocument>
   >(new Map());
+
+  // A stable array identity for the topology. Spreading the map inline on every
+  // render would hand the mapping/simulation panels a new array each time the
+  // parent re-renders (for example after a publish refresh), which resets their
+  // candidate state and clears the publish confirmation.
+  const topologyList = useMemo(() => [...topology.values()], [topology]);
 
   useDirtyUnloadGuard(editor.dirty);
 
@@ -539,6 +546,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
           <Tabs.Tab value='layout'>{t`Layout`}</Tabs.Tab>
           <Tabs.Tab value='topology'>{t`Topology`}</Tabs.Tab>
           <Tabs.Tab value='mapping'>{t`Mapping`}</Tabs.Tab>
+          <Tabs.Tab value='colors'>{t`Colors`}</Tabs.Tab>
           <Tabs.Tab value='diagnostics'>{t`Diagnostics`}</Tabs.Tab>
         </Tabs.List>
 
@@ -696,10 +704,18 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
             client={client}
             cabinetId={cabinetId}
             totalPixels={editor.totalPixels}
-            topology={[...topology.values()]}
+            topology={topologyList}
             readOnly={editor.status !== 'ready'}
             etag={editor.etag}
             onPublished={() => void editor.refresh()}
+          />
+        </Tabs.Panel>
+
+        <Tabs.Panel value='colors' pt='sm'>
+          <FunctionColorsPanel
+            client={client}
+            cabinetId={cabinetId}
+            readOnly={editor.status !== 'ready'}
           />
         </Tabs.Panel>
 
@@ -709,7 +725,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
             cabinetId={cabinetId}
             totalPixels={editor.totalPixels}
             mappingHash={editor.activeMapping?.content_hash ?? null}
-            topology={[...topology.values()]}
+            topology={topologyList}
             readOnly={editor.status !== 'ready'}
             defaultTarget={
               selectedDrawer ? { kind: 'drawer', id: selectedDrawer.id } : null

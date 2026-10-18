@@ -69,6 +69,7 @@ export interface MockState {
   controllers: Record<string, unknown>[];
   sessions: Record<string, Record<string, unknown>>;
   jobs: Record<string, Record<string, unknown>>;
+  profiles: Record<string, unknown>[];
   nextSaveStatus: number | null;
 }
 
@@ -211,6 +212,18 @@ function initialState(): MockState {
     ],
     sessions: {},
     jobs: {},
+    profiles: [
+      {
+        id: 'profile-1',
+        cabinet: 'cab-1',
+        name: 'Locate green',
+        purpose: 'locate',
+        rgb: [0, 255, 0],
+        white: 0,
+        brightness: 64,
+        duration_seconds: 120
+      }
+    ],
     nextSaveStatus: null
   };
 }
@@ -851,23 +864,55 @@ export function createMockApi(options: MockOptions = {}): MockApi {
     }
 
     if (method === 'GET' && path.startsWith('/profiles/')) {
-      return ok({ count: 0, next: null, previous: null, results: [] });
+      return ok({
+        count: state.profiles.length,
+        next: null,
+        previous: null,
+        results: state.profiles
+      });
     }
 
     if (method === 'POST' && path === '/profiles/') {
-      return ok(
-        {
-          id: 'profile-1',
-          cabinet: state.cabinet.id,
-          name: 'locate',
-          purpose: 'locate',
-          rgb: [0, 255, 0],
-          white: 0,
-          brightness: 64,
-          duration_seconds: 120
-        },
-        201
-      );
+      const created = {
+        id: `profile-${state.profiles.length + 1}`,
+        cabinet: state.cabinet.id,
+        name: doc.name ?? 'profile',
+        purpose: doc.purpose ?? 'locate',
+        rgb: [doc.rgb_r ?? 0, doc.rgb_g ?? 255, doc.rgb_b ?? 0],
+        white: doc.white ?? 0,
+        brightness: doc.brightness ?? 64,
+        duration_seconds: doc.duration_seconds ?? 120
+      };
+      state.profiles.push(created);
+      return ok(created, 201);
+    }
+
+    if (method === 'PATCH' && path.startsWith('/profiles/')) {
+      const id = path.split('/')[2];
+      const existing = state.profiles.find((item) => item.id === id);
+      if (existing) {
+        if (doc.name !== undefined) existing.name = doc.name;
+        if (doc.purpose !== undefined) existing.purpose = doc.purpose;
+        if (
+          doc.rgb_r !== undefined ||
+          doc.rgb_g !== undefined ||
+          doc.rgb_b !== undefined
+        ) {
+          const rgb = (existing.rgb as number[]) ?? [0, 0, 0];
+          existing.rgb = [
+            doc.rgb_r ?? rgb[0],
+            doc.rgb_g ?? rgb[1],
+            doc.rgb_b ?? rgb[2]
+          ];
+        }
+        if (doc.white !== undefined) existing.white = doc.white;
+        if (doc.brightness !== undefined) existing.brightness = doc.brightness;
+        if (doc.duration_seconds !== undefined) {
+          existing.duration_seconds = doc.duration_seconds;
+        }
+        return ok({ ...existing });
+      }
+      return ok({ id, cabinet: state.cabinet.id, name: 'profile' });
     }
 
     throw new HttpError(404, {
