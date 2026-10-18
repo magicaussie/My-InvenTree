@@ -313,6 +313,62 @@ describe('validateMove', () => {
     );
   });
 
+  it('accepts a move that preserves an existing overlap with a stationary drawer', () => {
+    // `a` already overlaps the stationary drawer at x=30 before the move; the
+    // shared translation keeps that legacy collision, so it must not block.
+    expect(
+      validateMove({ a: rect(10, 0) }, { a: rect(0, 0) }, [rect(30, 0)], bounds)
+    ).toBe(true);
+  });
+
+  it('rejects a new overlap with a different stationary drawer even when another overlap pre-exists', () => {
+    const original = { a: rect(0, 0, 200) };
+    const proposed = { a: rect(150, 0, 200) };
+    const legacy = rect(100, 0); // overlapped `a` before and after the move
+    const fresh = rect(300, 0); // only overlapped after the move
+    expect(validateMove(proposed, original, [legacy, fresh], bounds)).toBe(
+      false
+    );
+  });
+
+  it('accepts a move that touches a stationary drawer along an edge', () => {
+    expect(
+      validateMove(
+        { a: rect(60, 0) },
+        { a: rect(0, 0) },
+        [rect(120, 0)],
+        bounds
+      )
+    ).toBe(true);
+  });
+
+  it('still rejects invalid or out-of-bounds rectangles with stationary drawers present', () => {
+    expect(
+      validateMove(
+        { a: { x: 0, y: 0, width: 0, height: 40 } },
+        { a: rect(0, 0) },
+        [rect(30, 0)],
+        bounds
+      )
+    ).toBe(false);
+    expect(
+      validateMove(
+        { a: rect(-10, 0) },
+        { a: rect(0, 0) },
+        [rect(30, 0)],
+        bounds
+      )
+    ).toBe(false);
+    expect(
+      validateMove(
+        { a: rect(550, 0) },
+        { a: rect(540, 0) },
+        [rect(30, 0)],
+        bounds
+      )
+    ).toBe(false);
+  });
+
   it('rejects invalid rectangles', () => {
     expect(
       validateMove(

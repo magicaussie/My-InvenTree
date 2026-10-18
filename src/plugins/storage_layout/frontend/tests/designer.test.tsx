@@ -980,6 +980,50 @@ describe('CabinetDesigner move and resize collisions', () => {
     expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
   });
 
+  it('commits a move that preserves an existing overlap with a stationary drawer', async () => {
+    // `a` and `b` already overlap before the move (0..60 vs 30..90). Moving `a`
+    // keeps that legacy collision, so it must commit rather than be rejected.
+    const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
+    const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 30 });
+    const layout: LayoutResponse = { ...LAYOUT, drawers: [a, b] };
+    const { container } = await renderCabinet(layout);
+    const svg = canvasOf();
+    mockCanvas(svg);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    dragEntity(svg, entityRects(container)[0], 10, 0);
+
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 10,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(rectOf(entityRects(container)[1])).toEqual({
+      x: 30,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    expect(screen.queryByText(MOVE_MESSAGE)).not.toBeInTheDocument();
+    expect(screen.getByText('Unsaved changes')).toBeVisible();
+
+    fireEvent.click(screen.getByLabelText('Undo'));
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+    fireEvent.click(screen.getByLabelText('Redo'));
+    expect(rectOf(entityRects(container)[0])).toEqual({
+      x: 10,
+      y: 0,
+      width: 60,
+      height: 40
+    });
+  });
+
   it('rejects a resize that grows into another active drawer', async () => {
     const a = drawerFixture({ id: 'a', label: 'A', display_number: 1 });
     const b = drawerFixture({ id: 'b', label: 'B', display_number: 2, x: 60 });

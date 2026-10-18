@@ -76,11 +76,14 @@ export function isValidRect(rect: Rect): boolean {
  *
  * `proposed` holds the translated rectangles keyed by id, `original` the same
  * drawers before the move, and `stationary` every active drawer that is *not*
- * moving. Every proposed rectangle must be valid, stay inside `bounds` and
- * avoid the stationary drawers. Overlaps *among* the moving rectangles are
- * only rejected when they are new: a shared translation preserves relative
+ * moving. Every proposed rectangle must be valid and stay inside `bounds`.
+ *
+ * Only *new* overlaps are rejected. A shared translation preserves relative
  * offsets, so a pre-existing overlap between two moving drawers is unchanged
- * and must not block the move (design rule 3).
+ * and must not block the move (design rule 3). The same rule applies to a
+ * stationary drawer: a proposed overlap with a stationary rectangle is only
+ * rejected when the corresponding original moving rectangle did not already
+ * overlap it, so a legacy collision is left untouched rather than repaired.
  */
 export function validateMove(
   proposed: Record<string, Rect>,
@@ -90,9 +93,16 @@ export function validateMove(
 ): boolean {
   const cabinet = { x: 0, y: 0, ...bounds };
 
-  for (const rect of Object.values(proposed)) {
+  for (const [id, rect] of Object.entries(proposed)) {
     if (!isValidRect(rect) || !rectInside(rect, cabinet)) return false;
-    if (stationary.some((other) => rectsOverlap(rect, other))) return false;
+    const before = original[id];
+    for (const other of stationary) {
+      if (!rectsOverlap(rect, other)) continue;
+      // Reject only a *new* overlap: an overlap that already existed between
+      // this moving drawer and the stationary drawer before the move is
+      // preserved rather than treated as a collision.
+      if (!before || !rectsOverlap(before, other)) return false;
+    }
   }
 
   const entries = Object.entries(proposed);
