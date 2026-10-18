@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "description": "Canonical logical-to-physical mapping translation fixtures. This single file is consumed by BOTH the Python suite (storage_layout/tests/test_mapping_fixtures.py) and the TypeScript suite (frontend/tests/mapping-fixtures.test.ts) so the two translators cannot drift. Physical indices are zero-based and half-open: a run covers [wled_start, wled_stop).",
+  "topologies": {
+    "two_controllers": {
+      "controllers": [
+        {
+          "id": "ctrl-a",
+          "name": "Controller A",
+          "outputs": [
+            {
+              "id": "out-a0",
+              "bus_index": 0,
+              "wled_start": 0,
+              "pixel_count": 100,
+              "strings": [
+                {
+                  "id": "str-a0",
+                  "label": "A0",
+                  "output_offset": 0,
+                  "pixel_count": 60,
+                  "archived": false
+                },
+                {
+                  "id": "str-a1",
+                  "label": "A1",
+                  "output_offset": 60,
+                  "pixel_count": 40,
+                  "archived": false
+                }
+              ]
+            },
+            {
+              "id": "out-a1",
+              "bus_index": 1,
+              "wled_start": 200,
+              "pixel_count": 50,
+              "strings": [
+                {
+                  "id": "str-a2",
+                  "label": "A2",
+                  "output_offset": 0,
+                  "pixel_count": 50,
+                  "archived": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ctrl-b",
+          "name": "Controller B",
+          "outputs": [
+            {
+              "id": "out-b0",
+              "bus_index": 0,
+              "wled_start": 10,
+              "pixel_count": 40,
+              "strings": [
+                {
+                  "id": "str-b0",
+                  "label": "B0",
+                  "output_offset": 0,
+                  "pixel_count": 40,
+                  "archived": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "forward full single string",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 60},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 60, "controller": "ctrl-a", "output": "out-a0", "string": "str-a0", "wled_start": 0, "wled_stop": 60, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "forward split across two strings of one output",
+      "topology": "two_controllers",
+      "total_pixels": 100,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1},
+        {"logical_start": 61, "length": 40, "string": "str-a1", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 100},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 60, "controller": "ctrl-a", "output": "out-a0", "string": "str-a0", "wled_start": 0, "wled_stop": 60, "direction": 1},
+          {"logical_start": 61, "logical_end": 100, "controller": "ctrl-a", "output": "out-a0", "string": "str-a1", "wled_start": 60, "wled_stop": 100, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "partial range inside one span",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 10, "end": 20},
+      "expect": {
+        "runs": [
+          {"logical_start": 10, "logical_end": 20, "controller": "ctrl-a", "output": "out-a0", "string": "str-a0", "wled_start": 9, "wled_stop": 20, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "single pixel uses zero-based half-open physical index",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 1},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 1, "controller": "ctrl-a", "output": "out-a0", "string": "str-a0", "wled_start": 0, "wled_stop": 1, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "multi-controller split never merges across controllers",
+      "topology": "two_controllers",
+      "total_pixels": 140,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1},
+        {"logical_start": 61, "length": 40, "string": "str-a1", "string_offset": 0, "direction": 1},
+        {"logical_start": 101, "length": 40, "string": "str-b0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 140},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 60, "controller": "ctrl-a", "output": "out-a0", "string": "str-a0", "wled_start": 0, "wled_stop": 60, "direction": 1},
+          {"logical_start": 61, "logical_end": 100, "controller": "ctrl-a", "output": "out-a0", "string": "str-a1", "wled_start": 60, "wled_stop": 100, "direction": 1},
+          {"logical_start": 101, "logical_end": 140, "controller": "ctrl-b", "output": "out-b0", "string": "str-b0", "wled_start": 10, "wled_stop": 50, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "split output on one controller stays separate",
+      "topology": "two_controllers",
+      "total_pixels": 90,
+      "spans": [
+        {"logical_start": 1, "length": 40, "string": "str-a1", "string_offset": 0, "direction": 1},
+        {"logical_start": 41, "length": 50, "string": "str-a2", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 90},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 40, "controller": "ctrl-a", "output": "out-a0", "string": "str-a1", "wled_start": 60, "wled_stop": 100, "direction": 1},
+          {"logical_start": 41, "logical_end": 90, "controller": "ctrl-a", "output": "out-a1", "string": "str-a2", "wled_start": 200, "wled_stop": 250, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "forward contiguous spans on one string merge",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 30, "string": "str-a0", "string_offset": 0, "direction": 1},
+        {"logical_start": 31, "length": 30, "string": "str-a0", "string_offset": 30, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 60},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 60, "controller": "ctrl-a", "output": "out-a0", "string": "str-a0", "wled_start": 0, "wled_stop": 60, "direction": 1}
+        ]
+      }
+    },
+    {
+      "name": "reversed full span",
+      "topology": "two_controllers",
+      "total_pixels": 50,
+      "spans": [
+        {"logical_start": 1, "length": 50, "string": "str-a2", "string_offset": 0, "direction": -1}
+      ],
+      "request": {"start": 1, "end": 50},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 50, "controller": "ctrl-a", "output": "out-a1", "string": "str-a2", "wled_start": 200, "wled_stop": 250, "direction": -1}
+        ]
+      }
+    },
+    {
+      "name": "reversed subrange",
+      "topology": "two_controllers",
+      "total_pixels": 50,
+      "spans": [
+        {"logical_start": 1, "length": 50, "string": "str-a2", "string_offset": 0, "direction": -1}
+      ],
+      "request": {"start": 1, "end": 10},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 10, "controller": "ctrl-a", "output": "out-a1", "string": "str-a2", "wled_start": 240, "wled_stop": 250, "direction": -1}
+        ]
+      }
+    },
+    {
+      "name": "reversed physically contiguous spans merge",
+      "topology": "two_controllers",
+      "total_pixels": 50,
+      "spans": [
+        {"logical_start": 1, "length": 25, "string": "str-a2", "string_offset": 25, "direction": -1},
+        {"logical_start": 26, "length": 25, "string": "str-a2", "string_offset": 0, "direction": -1}
+      ],
+      "request": {"start": 1, "end": 50},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 50, "controller": "ctrl-a", "output": "out-a1", "string": "str-a2", "wled_start": 200, "wled_stop": 250, "direction": -1}
+        ]
+      }
+    },
+    {
+      "name": "reversed physically discontiguous spans stay separate",
+      "topology": "two_controllers",
+      "total_pixels": 50,
+      "spans": [
+        {"logical_start": 1, "length": 25, "string": "str-a2", "string_offset": 0, "direction": -1},
+        {"logical_start": 26, "length": 25, "string": "str-a2", "string_offset": 25, "direction": -1}
+      ],
+      "request": {"start": 1, "end": 50},
+      "expect": {
+        "runs": [
+          {"logical_start": 1, "logical_end": 25, "controller": "ctrl-a", "output": "out-a1", "string": "str-a2", "wled_start": 200, "wled_stop": 225, "direction": -1},
+          {"logical_start": 26, "logical_end": 50, "controller": "ctrl-a", "output": "out-a1", "string": "str-a2", "wled_start": 225, "wled_stop": 250, "direction": -1}
+        ]
+      }
+    },
+    {
+      "name": "gap in coverage is rejected",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 40, "string": "str-a0", "string_offset": 0, "direction": 1},
+        {"logical_start": 51, "length": 10, "string": "str-a0", "string_offset": 40, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 60},
+      "expect": {"error": "not fully covered"}
+    },
+    {
+      "name": "overlap is rejected",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1},
+        {"logical_start": 41, "length": 20, "string": "str-a0", "string_offset": 40, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 60},
+      "expect": {"error": "overlapping spans"}
+    },
+    {
+      "name": "overlap cancelled by an equal gap is still rejected",
+      "topology": "two_controllers",
+      "total_pixels": 80,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1},
+        {"logical_start": 41, "length": 40, "string": "str-a0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 80},
+      "expect": {"error": "overlapping spans"}
+    },
+    {
+      "name": "request beyond the mapping size is rejected",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 1, "end": 61},
+      "expect": {"error": "must not exceed"}
+    },
+    {
+      "name": "invalid logical range is rejected",
+      "topology": "two_controllers",
+      "total_pixels": 60,
+      "spans": [
+        {"logical_start": 1, "length": 60, "string": "str-a0", "string_offset": 0, "direction": 1}
+      ],
+      "request": {"start": 0, "end": 10},
+      "expect": {"error": "1 <= start <= end"}
+    }
+  ]
+}
