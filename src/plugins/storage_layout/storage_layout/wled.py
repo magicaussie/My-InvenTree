@@ -262,6 +262,18 @@ class PayloadTooLargeError(WledError):
     code = 'payload_too_large'
 
 
+class OutOfRangeError(WledError):
+    """A pixel interval addresses LEDs outside the controller's reported count.
+
+    This is a fail-closed safety interlock: a mapping may declare an output
+    range larger than the device actually reports (after a firmware or wiring
+    change), so every interval is re-checked against the *observed* LED count
+    before the first illuminating write. An out-of-range address is never sent.
+    """
+
+    code = 'out_of_range'
+
+
 class ControllerError(WledError):
     """The controller returned a non-success HTTP status or error payload."""
 
@@ -1801,6 +1813,43 @@ def build_pixel_payload(
     }
 
 
+def validate_pixel_bounds(intervals: Iterable[tuple[int, int]], led_count: int) -> None:
+    """Reject any interval that addresses pixels outside the device.
+
+    The controller-global WLED index space is the zero-based half-open range
+    ``[0, led_count)``. A mapping may declare an output range larger than the
+    device actually reports (for example after a firmware or wiring change), so
+    every interval must be re-checked against the *observed* LED count before
+    the first illuminating write. This is a fail-closed safety interlock: an
+    out-of-range address is never sent to the controller.
+
+    Args:
+        intervals: ``(start, stop)`` half-open pixel intervals.
+        led_count: The LED count reported by the observed controller.
+
+    Raises:
+        OutOfRangeError: If any interval is empty or addresses a pixel outside
+            ``[0, led_count)``.
+    """
+    count = int(led_count)
+
+    for start, stop in intervals:
+        start = int(start)
+        stop = int(stop)
+
+        if stop <= start:
+            raise OutOfRangeError(
+                _('A pixel interval must have a positive length'),
+                details={'start': start, 'stop': stop, 'led_count': count},
+            )
+
+        if start < 0 or stop > count:
+            raise OutOfRangeError(
+                _('A pixel interval addresses LEDs outside the controller'),
+                details={'start': start, 'stop': stop, 'led_count': count},
+            )
+
+
 def prepare_pixel_runs(
     intervals: Iterable[tuple[int, int]], colour: str
 ) -> list[PixelRun]:
@@ -2554,6 +2603,9 @@ class WledAdapter:
             )
 
         intervals = [(int(run['wled_start']), int(run['wled_stop'])) for run in runs]
+        # Fail closed before any illuminating write: the mapping's declared
+        # output range may exceed the LED count the device actually reports.
+        validate_pixel_bounds(intervals, led_count)
         pixel_runs = prepare_pixel_runs(intervals, colour)
         chunks = chunk_pixel_writes(pixel_runs)
         deadline = self.clock() + duration
@@ -2735,6 +2787,7 @@ __all__ = [
     'HttpTransport',
     'MalformedResponseError',
     'OriginPolicy',
+    'OutOfRangeError',
     'PayloadTooLargeError',
     'PixelRun',
     'PreflightError',
@@ -2776,4 +2829,5 @@ __all__ = [
     'segment_takeover_payload',
     'system_resolver',
     'topology_fingerprint',
+    'validate_pixel_bounds',
 ]

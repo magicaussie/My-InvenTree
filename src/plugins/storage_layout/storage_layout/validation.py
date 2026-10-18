@@ -781,6 +781,21 @@ def validate_mapping_spans(
         local_start = output_offset + string_offset
         local_end = local_start + length
 
+        # The span's output-local slice must lie inside the controller output's
+        # declared pixel count. This is checked explicitly (rather than relying
+        # on the string-inside-output rule) so an out-of-range physical address
+        # is rejected at publish time even if the electrical topology is not
+        # re-validated in the same pass.
+        output_count = _resolve(span, 'string.output.pixel_count', None)
+
+        if output_count is not None and local_end > int(output_count):
+            report.add_error(
+                CODE_INVALID_BOUNDS,
+                _('Span must lie inside its controller output'),
+                path=path,
+                related_ids=[identity, string_id],
+            )
+
         physical.setdefault(string_id, []).append((local_start, local_end, identity))
 
         wled_start = _resolve(span, 'string.output.wled_start', None)

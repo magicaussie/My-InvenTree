@@ -671,6 +671,63 @@ class MappingSpanTests(SimpleTestCase):
         self.assertFalse(report.valid)
         self.assertEqual(report.errors[0].code, v.CODE_INVALID_BOUNDS)
 
+    def test_span_beyond_controller_output_is_reported(self):
+        """A span whose output-local slice overruns the output is reported.
+
+        The string fits inside the output (offset 40 + count 60 == 100), but the
+        output only declares 80 pixels, so the physical address would be out of
+        range. This must be rejected at publish time even though the
+        string-local bound passes.
+        """
+        report = v.validate_mapping_spans(
+            [
+                span(
+                    id='a',
+                    logical_start=1,
+                    length=60,
+                    string_offset=0,
+                    string={
+                        'id': 'S2',
+                        'output_offset': 40,
+                        'pixel_count': 60,
+                        'output': {
+                            'wled_start': 0,
+                            'pixel_count': 80,
+                            'controller_id': 'A',
+                        },
+                    },
+                )
+            ],
+            60,
+        )
+        self.assertFalse(report.valid)
+        self.assertEqual(report.errors[0].code, v.CODE_INVALID_BOUNDS)
+
+    def test_span_within_controller_output_is_valid(self):
+        """A span whose output-local slice fits the output is valid."""
+        report = v.validate_mapping_spans(
+            [
+                span(
+                    id='a',
+                    logical_start=1,
+                    length=60,
+                    string_offset=0,
+                    string={
+                        'id': 'S2',
+                        'output_offset': 40,
+                        'pixel_count': 60,
+                        'output': {
+                            'wled_start': 0,
+                            'pixel_count': 100,
+                            'controller_id': 'A',
+                        },
+                    },
+                )
+            ],
+            60,
+        )
+        self.assertTrue(report.valid, report.as_dict())
+
     def test_physical_overlap_within_string(self):
         """Two spans claiming the same string slice are reported."""
         report = v.validate_mapping_spans(

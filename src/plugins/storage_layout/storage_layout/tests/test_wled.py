@@ -28,6 +28,7 @@ from storage_layout.wled import (
     HttpTransport,
     MalformedResponseError,
     OriginPolicy,
+    OutOfRangeError,
     PayloadTooLargeError,
     PixelRun,
     PreflightError,
@@ -1158,6 +1159,44 @@ class ChunkingTests(SimpleTestCase):
 # endregion
 
 
+# region pixel bounds
+
+
+class PixelBoundsTests(SimpleTestCase):
+    """Tests for the fail-closed physical-address bounds interlock."""
+
+    def test_accepts_intervals_inside_the_device(self):
+        """Intervals within ``[0, led_count)`` are accepted."""
+        wled.validate_pixel_bounds([(0, 1), (10, 20), (119, 120)], 120)
+
+    def test_rejects_stop_beyond_led_count(self):
+        """A half-open interval ending past the LED count is rejected."""
+        with self.assertRaises(OutOfRangeError):
+            wled.validate_pixel_bounds([(0, 121)], 120)
+
+    def test_rejects_negative_start(self):
+        """A negative start index is rejected."""
+        with self.assertRaises(OutOfRangeError):
+            wled.validate_pixel_bounds([(-1, 10)], 120)
+
+    def test_rejects_empty_interval(self):
+        """An empty interval is rejected."""
+        with self.assertRaises(OutOfRangeError):
+            wled.validate_pixel_bounds([(10, 10)], 120)
+
+    def test_error_carries_diagnostics(self):
+        """The rejection reports the offending interval and the LED count."""
+        with self.assertRaises(OutOfRangeError) as ctx:
+            wled.validate_pixel_bounds([(0, 200)], 120)
+
+        self.assertEqual(ctx.exception.code, 'out_of_range')
+        self.assertEqual(ctx.exception.details['led_count'], 120)
+        self.assertEqual(ctx.exception.details['stop'], 200)
+
+
+# endregion
+
+
 # region protocol
 
 
@@ -1313,6 +1352,39 @@ class ProtocolTests(SimpleTestCase):
         self.assertFalse(result['acknowledged'])
         self.assertEqual(result['reason'], 'no-runs')
         self.assertEqual(state_posts(transport), [])
+
+    def test_apply_rejects_run_beyond_led_count(self):
+        """A run addressing pixels past the observed LED count fails closed.
+
+        The mapping may declare an output range larger than the device reports
+        (for example after a firmware or wiring change). The adapter must refuse
+        before the first illuminating write rather than send an out-of-range
+        address.
+        """
+        transport = device(info=info_fixture(count=120))
+
+        with self.assertRaises(OutOfRangeError):
+            adapter(transport).apply(controller(), plan([make_run(0, 130)]))
+
+        self.assertEqual(state_posts(transport), [])
+
+    def test_apply_rejects_negative_run_start(self):
+        """A run with a negative start index fails closed."""
+        transport = device(info=info_fixture(count=120))
+
+        with self.assertRaises(OutOfRangeError):
+            adapter(transport).apply(controller(), plan([make_run(-1, 10)]))
+
+        self.assertEqual(state_posts(transport), [])
+
+    def test_apply_accepts_run_at_led_count_boundary(self):
+        """A half-open run ending exactly at the LED count is in range."""
+        transport = device(info=info_fixture(count=120))
+
+        result = adapter(transport).apply(controller(), plan([make_run(110, 120)]))
+
+        self.assertTrue(result['acknowledged'])
+        self.assertEqual(result['pixels'], 10)
 
     def test_apply_verifies_master_on(self):
         """A device which never switches on fails preflight verification."""
