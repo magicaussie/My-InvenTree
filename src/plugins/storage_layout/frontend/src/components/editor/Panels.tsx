@@ -53,10 +53,43 @@ export interface AllocationBandsProps {
 const BAND_HEIGHT = 6;
 const BAND_GAP = 2;
 
-export function AllocationBands({
-  regions,
-  totalPixels
-}: AllocationBandsProps) {
+/**
+ * Map an inclusive logical LED range onto the drawer's inner band width.
+ *
+ * The drawer allocation length (`rangeCount(region.logicalStart,
+ * region.logicalEnd)`) is the single denominator for both the offset and the
+ * width, so segments fill their correct proportional positions inside the
+ * drawer band. The cabinet-wide `totalPixels` is deliberately not used here:
+ * a drawer covering only part of the cabinet would otherwise be scaled as if
+ * it spanned the whole cabinet.
+ *
+ * Returns `null` for malformed input (non-positive region length, non-positive
+ * inner width, or a non-finite/negative result) so the SVG never receives
+ * NaN, Infinity or negative widths. Valid data is returned exactly, with no
+ * minimum-width clamp, so adjacent segments meet without gaps or overlaps.
+ */
+function segmentGeometry(
+  region: AllocationRegion,
+  segment: BandSegment,
+  innerWidth: number
+): { offset: number; width: number } | null {
+  const regionCount = rangeCount(region.logicalStart, region.logicalEnd);
+  if (regionCount <= 0 || !Number.isFinite(innerWidth) || innerWidth <= 0) {
+    return null;
+  }
+  const unit = innerWidth / regionCount;
+  const offset = (segment.logical_start - region.logicalStart) * unit;
+  const width = rangeCount(segment.logical_start, segment.logical_end) * unit;
+  if (!Number.isFinite(offset) || !Number.isFinite(width) || width < 0) {
+    return null;
+  }
+  return { offset, width };
+}
+
+// `totalPixels` remains part of the public props for API compatibility, but is
+// intentionally unused: each segment is scaled to its own drawer allocation
+// (`region.logicalStart..region.logicalEnd`), not the cabinet-wide pixel count.
+export function AllocationBands({ regions }: AllocationBandsProps) {
   return (
     <g data-testid='allocation-bands'>
       {regions.map((region) => {
@@ -76,26 +109,14 @@ export function AllocationBands({
             />
             {region.segments && region.segments.length > 0 ? (
               region.segments.map((segment) => {
-                const segmentCount = rangeCount(
-                  segment.logical_start,
-                  segment.logical_end
-                );
-                const width =
-                  totalPixels > 0
-                    ? (segmentCount / totalPixels) * innerWidth
-                    : innerWidth;
-                const offset =
-                  totalPixels > 0
-                    ? ((segment.logical_start - region.logicalStart) /
-                        Math.max(1, count)) *
-                      innerWidth
-                    : 0;
+                const geometry = segmentGeometry(region, segment, innerWidth);
+                if (!geometry) return null;
                 return (
                   <rect
                     key={`${region.id}-${segment.logical_start}`}
-                    x={region.rect.x + BAND_GAP + offset}
+                    x={region.rect.x + BAND_GAP + geometry.offset}
                     y={bandY}
-                    width={Math.max(1, width)}
+                    width={geometry.width}
                     height={BAND_HEIGHT}
                     fill={segment.colour}
                   />
