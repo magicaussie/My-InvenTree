@@ -67,6 +67,36 @@ function binRect(bin: BinDraft): Rect {
   return { x: bin.x, y: bin.y, width: bin.width, height: bin.height };
 }
 
+function firstAvailableBinPosition(
+  width: number,
+  height: number,
+  interior: { width: number; height: number },
+  bins: BinDraft[],
+  grid: number
+): { x: number; y: number } | null {
+  const xPositions = new Set<number>([0]);
+  const yPositions = new Set<number>([0]);
+  for (let x = grid; x + width <= interior.width; x += grid) xPositions.add(x);
+  for (let y = grid; y + height <= interior.height; y += grid)
+    yPositions.add(y);
+  xPositions.add(Math.max(0, interior.width - width));
+  yPositions.add(Math.max(0, interior.height - height));
+
+  for (const y of [...yPositions].sort((a, b) => a - b)) {
+    for (const x of [...xPositions].sort((a, b) => a - b)) {
+      const overlaps = bins.some(
+        (bin) =>
+          x < bin.x + bin.width &&
+          x + width > bin.x &&
+          y < bin.y + bin.height &&
+          y + height > bin.y
+      );
+      if (!overlaps) return { x, y };
+    }
+  }
+  return null;
+}
+
 export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
   const client = useMemo(
     () => new StorageLayoutClient(context.api),
@@ -201,20 +231,34 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
 
   const addBin = useCallback(() => {
     if (!drawer) return;
+    const width = Math.min(grid * 4, drawer.interior_width);
+    const height = Math.min(grid * 4, drawer.interior_height);
+    const position = firstAvailableBinPosition(
+      width,
+      height,
+      { width: drawer.interior_width, height: drawer.interior_height },
+      activeBins,
+      grid
+    );
+    if (!position) {
+      setError(
+        t`No clear space is available for a new bin. Move or resize an existing bin first.`
+      );
+      return;
+    }
     const bin: BinDraft = {
       id: newId(),
       drawer: drawer.id,
       label: `B${activeBins.length + 1}`,
       location: null,
-      x: 0,
-      y: 0,
-      width: Math.min(grid * 4, drawer.interior_width),
-      height: Math.min(grid * 4, drawer.interior_height),
+      ...position,
+      width,
+      height,
       archived: false
     };
     apply({ type: 'add_bin', bin });
     setSelection([bin.id]);
-  }, [activeBins.length, apply, drawer, grid]);
+  }, [activeBins, apply, drawer, grid]);
 
   const duplicateSelection = useCallback(() => {
     if (!drawer) return;
@@ -298,25 +342,49 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
   }, [apply, draft.bins, selection]);
 
   const save = useCallback(async () => {
-    if (!drawer || !historyRef.current) return;
+    if (!drawer || !historyRef.current || saving) return;
+    const submittedDraft = historyRef.current.present;
     setSaving(true);
     setError(null);
     try {
       const document = {
         schema_version: 1,
         drawer: { ...drawer },
-        bins: Object.values(draft.bins).map(({ id, ...rest }) => ({
+        bins: Object.values(submittedDraft.bins).map(({ id, ...rest }) => ({
           id,
           ...rest
         })),
-        archive_ids: [...draft.archiveIds]
+        archive_ids: [...submittedDraft.archiveIds]
       };
       const result = await client.saveDrawerLayout(drawerId, document, etag);
       setEtag(result.etag ?? etag);
       setTotalPixels(result.data.cabinet.total_pixels ?? 0);
-      setDirty(false);
       setConflict(false);
-      setError('Drawer layout saved.');
+      if (historyRef.current.present === submittedDraft) {
+        const savedDraft = emptyDraft({
+          width_units:
+            result.data.cabinet.width_units ??
+            submittedDraft.cabinet.width_units,
+          height_units:
+            result.data.cabinet.height_units ??
+            submittedDraft.cabinet.height_units
+        });
+        savedDraft.drawers[result.data.drawer.id ?? drawerId] = {
+          ...result.data.drawer,
+          id: result.data.drawer.id ?? drawerId
+        } as DrawerDraft;
+        savedDraft.drawerOrder = [result.data.drawer.id ?? drawerId];
+        for (const bin of result.data.bins) {
+          if (bin.id) savedDraft.bins[bin.id] = { ...bin, id: bin.id };
+        }
+        savedDraft.archiveIds = [...(result.data.archive_ids ?? [])];
+        historyRef.current.reset(savedDraft);
+        setDirty(false);
+      } else {
+        setDirty(true);
+      }
+      setError(t`Drawer layout saved.`);
+      rerender();
     } catch (err) {
       const apiError =
         err instanceof StorageLayoutApiError
@@ -330,7 +398,7 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
     } finally {
       setSaving(false);
     }
-  }, [client, draft, drawer, drawerId, etag]);
+  }, [client, drawer, drawerId, etag, rerender, saving]);
 
   const entities = useMemo<CanvasEntity[]>(
     () =>

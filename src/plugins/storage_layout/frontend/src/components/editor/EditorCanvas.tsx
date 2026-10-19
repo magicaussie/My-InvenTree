@@ -19,6 +19,7 @@ import { t } from '@lingui/core/macro';
 import {
   ActionIcon,
   Badge,
+  Button,
   Group,
   Paper,
   Stack,
@@ -135,6 +136,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const [spaceHeld, setSpaceHeld] = useState(false);
   const spaceHeldRef = useRef(false);
   const pointerIdRef = useRef<number | null>(null);
+  const [gridVisible, setGridVisible] = useState(true);
 
   // Event refs mirror the rendered state synchronously, so capture/move/up
   // sequences do not depend on React having rendered between pointer events.
@@ -163,6 +165,19 @@ export function EditorCanvas(props: EditorCanvasProps) {
   }, [entities]);
 
   const snapEnabled = snap;
+  const canvasWidth =
+    Number.isFinite(bounds.width) && bounds.width > 0 ? bounds.width : 0;
+  const canvasHeight =
+    Number.isFinite(bounds.height) && bounds.height > 0 ? bounds.height : 0;
+  const validCanvasBounds = canvasWidth > 0 && canvasHeight > 0;
+  const gridXCount =
+    validCanvasBounds && Number.isFinite(grid) && grid > 0
+      ? Math.min(Math.floor(canvasWidth / grid) + 1, 1000)
+      : 0;
+  const gridYCount =
+    validCanvasBounds && Number.isFinite(grid) && grid > 0
+      ? Math.min(Math.floor(canvasHeight / grid) + 1, 1000)
+      : 0;
 
   const toCanvas = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -510,6 +525,26 @@ export function EditorCanvas(props: EditorCanvasProps) {
     if (next) updateViewport(next);
   }, [bounds, updateViewport]);
 
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      const screen = svg.getBoundingClientRect();
+      const fitted = fitViewport(bounds, screen);
+      if (fitted && pointerIdRef.current === null) {
+        updateViewport((current) =>
+          current.zoom === fitted.zoom &&
+          current.offsetX === fitted.offsetX &&
+          current.offsetY === fitted.offsetY
+            ? current
+            : fitted
+        );
+      }
+    });
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [bounds.width, bounds.height, updateViewport]);
+
   // Escape/blur cancels either interaction even if focus left the SVG.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -591,6 +626,14 @@ export function EditorCanvas(props: EditorCanvasProps) {
               o
             </ActionIcon>
           </Tooltip>
+          <Button
+            size='compact-xs'
+            variant={gridVisible ? 'light' : 'default'}
+            aria-pressed={gridVisible}
+            onClick={() => setGridVisible((visible) => !visible)}
+          >
+            {t`Grid`}
+          </Button>
           <Text size='xs' c='dimmed'>
             {Math.round(viewport.zoom * 100)}%
           </Text>
@@ -649,11 +692,45 @@ export function EditorCanvas(props: EditorCanvasProps) {
               pointerEvents='none'
               x={0}
               y={0}
-              width={bounds.width}
-              height={bounds.height}
+              width={canvasWidth}
+              height={canvasHeight}
               fill='var(--mantine-color-body)'
               stroke='var(--mantine-color-gray-5)'
             />
+            {gridVisible && gridXCount > 0 && gridYCount > 0 ? (
+              <g
+                pointerEvents='none'
+                stroke='var(--mantine-color-gray-3)'
+                strokeWidth={0.5 / viewport.zoom}
+              >
+                {Array.from(
+                  { length: gridXCount },
+                  (_, index) => index * grid
+                ).map((position) => (
+                  <line
+                    data-grid-line='x'
+                    key={`grid-x-${position}`}
+                    x1={position}
+                    y1={0}
+                    x2={position}
+                    y2={canvasHeight}
+                  />
+                ))}
+                {Array.from(
+                  { length: gridYCount },
+                  (_, index) => index * grid
+                ).map((position) => (
+                  <line
+                    data-grid-line='y'
+                    key={`grid-y-${position}`}
+                    x1={0}
+                    y1={position}
+                    x2={canvasWidth}
+                    y2={position}
+                  />
+                ))}
+              </g>
+            ) : null}
             <g pointerEvents='none'>{overlay}</g>
             {entities.map((entity) => {
               const live = drag?.preview[entity.id];
@@ -711,6 +788,43 @@ export function EditorCanvas(props: EditorCanvasProps) {
                   >
                     {entity.label}
                   </text>
+                  {selected ? (
+                    <g
+                      pointerEvents='none'
+                      fill='var(--mantine-color-blue-7)'
+                      stroke='var(--mantine-color-blue-7)'
+                      strokeWidth={0.75 / viewport.zoom}
+                      fontSize={10 / viewport.zoom}
+                    >
+                      <line
+                        x1={rect.x}
+                        y1={rect.y - 3 / viewport.zoom}
+                        x2={rect.x + rect.width}
+                        y2={rect.y - 3 / viewport.zoom}
+                      />
+                      <line
+                        x1={rect.x - 3 / viewport.zoom}
+                        y1={rect.y}
+                        x2={rect.x - 3 / viewport.zoom}
+                        y2={rect.y + rect.height}
+                      />
+                      <text
+                        x={rect.x + rect.width / 2}
+                        y={rect.y - 6 / viewport.zoom}
+                        textAnchor='middle'
+                        stroke='none'
+                      >
+                        {`${rect.width} × ${rect.height}`}
+                      </text>
+                      <text
+                        x={rect.x}
+                        y={rect.y + rect.height + 12 / viewport.zoom}
+                        stroke='none'
+                      >
+                        {`x ${rect.x}, y ${rect.y}`}
+                      </text>
+                    </g>
+                  ) : null}
                   {entity.detail ? (
                     <text
                       x={rect.x + 4}

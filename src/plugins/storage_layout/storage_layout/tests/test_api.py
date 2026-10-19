@@ -352,6 +352,33 @@ class LayoutApiTests(ApiTestCase):
 
         self.assertEqual(len(response.data['bins']), 1)
 
+    def test_put_layout_persists_drawer_dimensions_after_reload(self):
+        """A saved drawer edit is returned by a fresh layout request."""
+        document = self.get(self.cabinet_url('layout/'), expected_code=200).data
+        document.pop('diagnostics', None)
+        document['drawers'][0]['width'] = 360
+
+        self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        reloaded = self.get(self.cabinet_url('layout/'), expected_code=200).data
+        self.assertEqual(reloaded['drawers'], document['drawers'])
+        self.assertEqual(reloaded['bins'], document['bins'])
+        self.assertEqual(reloaded['cabinet']['revision'], self.cabinet.revision + 1)
+        self.assertEqual(
+            reloaded['cabinet']['active_mapping'], document['cabinet']['active_mapping']
+        )
+        self.assertEqual(
+            reloaded['cabinet']['mapping_hash'], document['cabinet']['mapping_hash']
+        )
+        self.assertEqual(
+            reloaded['cabinet']['total_pixels'], document['cabinet']['total_pixels']
+        )
+
     def test_put_layout_requires_if_match(self):
         """A layout write without If-Match is rejected with 428."""
         document = self.get(self.cabinet_url('layout/'), expected_code=200).data

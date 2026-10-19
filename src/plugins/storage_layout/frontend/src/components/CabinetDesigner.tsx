@@ -16,8 +16,10 @@ import { t } from '@lingui/core/macro';
 import {
   Alert,
   Badge,
+  Button,
   Card,
   Group,
+  NumberInput,
   Paper,
   ScrollArea,
   Stack,
@@ -87,6 +89,9 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
   const [activeTab, setActiveTab] = useState<string | null>('layout');
   const [snap, setSnap] = useState(true);
   const [grid, setGrid] = useState(10);
+  const [propertiesOpen, setPropertiesOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+
   const [renumberOpen, setRenumberOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
@@ -368,8 +373,93 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
   }, [activeDrawers, editor, grid, selected]);
 
   const archiveSelection = useCallback(() => {
-    setArchiveOpen(true);
-  }, []);
+    if (selected.some((drawer) => !drawer.archived)) setArchiveOpen(true);
+  }, [selected]);
+
+  const arrangeSelection = useCallback(
+    (mode: 'left' | 'right' | 'top' | 'bottom' | 'horizontal' | 'vertical') => {
+      const items = selected.filter((drawer) => !drawer.archived);
+      if (items.length < 2) return;
+      const horizontal =
+        mode === 'left' || mode === 'right' || mode === 'horizontal';
+      const sorted = [...items].sort((a, b) =>
+        horizontal
+          ? a.x - b.x || a.id.localeCompare(b.id)
+          : a.y - b.y || a.id.localeCompare(b.id)
+      );
+      const min = Math.min(
+        ...items.map((item) => (horizontal ? item.x : item.y))
+      );
+      const max = Math.max(
+        ...items.map((item) =>
+          horizontal ? item.x + item.width : item.y + item.height
+        )
+      );
+      const start = horizontal ? sorted[0].x : sorted[0].y;
+      const endItem = sorted[sorted.length - 1];
+      const end = horizontal
+        ? endItem.x + endItem.width
+        : endItem.y + endItem.height;
+      const totalSize = sorted.reduce(
+        (sum, item) => sum + (horizontal ? item.width : item.height),
+        0
+      );
+      let cursor = start;
+      const deltas: Record<string, { dx: number; dy: number }> = {};
+      for (const item of sorted) {
+        const target =
+          mode === 'left'
+            ? min
+            : mode === 'right'
+              ? max - item.width
+              : mode === 'top'
+                ? min
+                : mode === 'bottom'
+                  ? max - item.height
+                  : cursor;
+        const position = snap
+          ? Math.round(target / grid) * grid
+          : Math.round(target);
+        deltas[item.id] = horizontal
+          ? { dx: position - item.x, dy: 0 }
+          : { dx: 0, dy: position - item.y };
+        if (mode === 'horizontal')
+          cursor +=
+            item.width + (end - start - totalSize) / (sorted.length - 1);
+        if (mode === 'vertical')
+          cursor +=
+            item.height + (end - start - totalSize) / (sorted.length - 1);
+      }
+      const moving = Object.fromEntries(
+        items.map((item) => [item.id, drawerRect(item)])
+      );
+      const stationary = activeDrawers
+        .filter((item) => !moving[item.id])
+        .map(drawerRect);
+      const next = moveRects(moving, 0, 0);
+      for (const [id, delta] of Object.entries(deltas)) {
+        next[id] = {
+          ...next[id],
+          x: next[id].x + delta.dx,
+          y: next[id].y + delta.dy
+        };
+      }
+      if (
+        !validateMove(next, moving, stationary, {
+          width: editor.draft.cabinet.width_units,
+          height: editor.draft.cabinet.height_units
+        })
+      ) {
+        setServerMessage(
+          t`Cannot arrange selection: the result would overlap another drawer or exceed cabinet bounds.`
+        );
+        return;
+      }
+      setServerMessage(null);
+      editor.apply({ type: 'move', entity: 'drawer', deltas });
+    },
+    [activeDrawers, editor, grid, selected, snap]
+  );
 
   const confirmArchive = useCallback(() => {
     const commands: Command[] = [];
@@ -529,7 +619,18 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
       />
 
       {editor.error && !editor.conflict ? (
-        <Alert color='red'>{editor.error}</Alert>
+        <Alert color='red' title={t`Save failed`} role='alert'>
+          <Stack gap={4}>
+            <Text>{editor.error}</Text>
+            <Text size='sm'>
+              {/network|request failed|timeout|failed to fetch/i.test(
+                editor.error
+              )
+                ? t`Check your connection and sign-in, then retry. Your draft remains unsaved.`
+                : t`Your draft remains unsaved. Check the response above, correct the issue if needed, then retry or copy the error for your administrator.`}
+            </Text>
+          </Stack>
+        </Alert>
       ) : null}
 
       {serverMessage ? (
@@ -552,10 +653,94 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         </Tabs.List>
 
         <Tabs.Panel value='layout' pt='sm'>
-          <Group align='flex-start' gap='sm' wrap='nowrap'>
-            <Paper withBorder p='xs' w={200} style={{ flexShrink: 0 }}>
+          <Group align='stretch' gap='sm' wrap='wrap' style={{ minWidth: 0 }}>
+            <Paper withBorder p='xs' w={220} style={{ flexShrink: 0 }}>
               <Stack gap='xs'>
-                <Text size='sm' fw={600}>
+                <Button
+                  variant='subtle'
+                  size='compact-sm'
+                  aria-expanded={propertiesOpen}
+                  onClick={() => setPropertiesOpen((open) => !open)}
+                >
+                  {propertiesOpen
+                    ? t`Hide cabinet properties`
+                    : t`Show cabinet properties`}
+                </Button>
+                {propertiesOpen ? (
+                  <>
+                    <Text size='sm' fw={600}>
+                      {t`Cabinet properties`}
+                    </Text>
+                    <Group grow gap='xs'>
+                      <NumberInput
+                        label={t`Width (units)`}
+                        min={1}
+                        max={100000}
+                        value={editor.draft.cabinet.width_units}
+                        disabled={editor.status !== 'ready'}
+                        onChange={(value) => {
+                          const width = Number(value);
+                          if (
+                            !Number.isInteger(width) ||
+                            width < 1 ||
+                            width > 100000
+                          )
+                            return;
+                          const from = editor.draft.cabinet;
+                          editor.apply(
+                            {
+                              type: 'set_cabinet',
+                              from,
+                              to: { ...from, width_units: width }
+                            },
+                            'cabinet-dimensions'
+                          );
+                        }}
+                        aria-label={t`Cabinet width in units`}
+                      />
+                      <NumberInput
+                        label={t`Height (units)`}
+                        min={1}
+                        max={100000}
+                        value={editor.draft.cabinet.height_units}
+                        disabled={editor.status !== 'ready'}
+                        onChange={(value) => {
+                          const height = Number(value);
+                          if (
+                            !Number.isInteger(height) ||
+                            height < 1 ||
+                            height > 100000
+                          )
+                            return;
+                          const from = editor.draft.cabinet;
+                          editor.apply(
+                            {
+                              type: 'set_cabinet',
+                              from,
+                              to: { ...from, height_units: height }
+                            },
+                            'cabinet-dimensions'
+                          );
+                        }}
+                        aria-label={t`Cabinet height in units`}
+                      />
+                    </Group>
+                    {activeDrawers.some(
+                      (drawer) =>
+                        drawer.x < 0 ||
+                        drawer.y < 0 ||
+                        drawer.x + drawer.width >
+                          editor.draft.cabinet.width_units ||
+                        drawer.y + drawer.height >
+                          editor.draft.cabinet.height_units
+                    ) ? (
+                      <Alert color='orange' p='xs' role='status'>
+                        {t`One or more drawers extend beyond these cabinet bounds. Their saved positions were not changed.`}
+                      </Alert>
+                    ) : null}
+                  </>
+                ) : null}
+                <Text size='sm' fw={600} mt='sm'>
                   {t`Drawers`}
                 </Text>
                 <ScrollArea h={420} type='auto'>
@@ -594,10 +779,43 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                     ))}
                   </Stack>
                 </ScrollArea>
+                {selected.length > 1 ? (
+                  <Stack gap={4}>
+                    <Text size='sm' fw={600}>{t`Arrange selection`}</Text>
+                    <Group gap={4} wrap='wrap'>
+                      {(
+                        [
+                          'left',
+                          'right',
+                          'top',
+                          'bottom',
+                          'horizontal',
+                          'vertical'
+                        ] as const
+                      ).map((mode) => (
+                        <Button
+                          key={mode}
+                          size='compact-xs'
+                          variant='default'
+                          onClick={() => arrangeSelection(mode)}
+                        >
+                          {mode === 'horizontal'
+                            ? t`Distribute horizontally`
+                            : mode === 'vertical'
+                              ? t`Distribute vertically`
+                              : t`Align ${mode}`}
+                        </Button>
+                      ))}
+                    </Group>
+                  </Stack>
+                ) : null}
               </Stack>
             </Paper>
 
-            <Stack gap='xs' style={{ flex: 1, minWidth: 320 }}>
+            <Stack
+              gap='xs'
+              style={{ flex: '1 1 520px', minWidth: 300, minHeight: 480 }}
+            >
               <EditorCanvas
                 bounds={{
                   width: editor.draft.cabinet.width_units,
@@ -629,65 +847,93 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
               />
             </Stack>
 
-            <Paper withBorder p='xs' w={280} style={{ flexShrink: 0 }}>
-              <ScrollArea h={520} type='auto'>
-                <Stack gap='sm'>
-                  {selectedDrawer ? (
-                    <DrawerInspector
-                      drawer={selectedDrawer}
-                      totalPixels={editor.totalPixels}
-                      readOnly={editor.status !== 'ready'}
-                      onField={(change) =>
-                        editor.apply({
-                          type: 'set_field',
-                          entity: 'drawer',
-                          id: selectedDrawer.id,
-                          field: change.field,
-                          from: (
-                            selectedDrawer as unknown as Record<string, unknown>
-                          )[change.field],
-                          to: change.value
-                        })
-                      }
-                      onAllocate={(start, end) =>
-                        editor.apply({
-                          type: 'allocate',
-                          id: selectedDrawer.id,
-                          from: selectedDrawer.allocation,
-                          to:
-                            start !== null && end !== null
-                              ? { logical_start: start, logical_end: end }
-                              : null
-                        })
-                      }
-                      onOpenLocation={openLocation}
-                      onEditLocation={(id) => id !== null && openLocation(id)}
-                      conflictIds={conflictDiagnostics.map((d) => d.code)}
+            <Paper
+              withBorder
+              p='xs'
+              w={280}
+              style={{ flex: '0 1 280px', minWidth: 240 }}
+            >
+              <Button
+                variant='subtle'
+                size='compact-sm'
+                aria-expanded={inspectorOpen}
+                onClick={() => setInspectorOpen((open) => !open)}
+              >
+                {inspectorOpen ? t`Hide properties` : t`Show properties`}
+              </Button>
+              {inspectorOpen ? (
+                <ScrollArea h={520} type='auto'>
+                  <Stack gap='sm'>
+                    {selectedDrawer ? (
+                      <DrawerInspector
+                        drawer={selectedDrawer}
+                        totalPixels={editor.totalPixels}
+                        readOnly={editor.status !== 'ready'}
+                        onField={(change) =>
+                          editor.apply({
+                            type: 'set_field',
+                            entity: 'drawer',
+                            id: selectedDrawer.id,
+                            field: change.field,
+                            from: (
+                              selectedDrawer as unknown as Record<
+                                string,
+                                unknown
+                              >
+                            )[change.field],
+                            to: change.value
+                          })
+                        }
+                        onAllocate={(start, end) =>
+                          editor.apply({
+                            type: 'allocate',
+                            id: selectedDrawer.id,
+                            from: selectedDrawer.allocation,
+                            to:
+                              start !== null && end !== null
+                                ? { logical_start: start, logical_end: end }
+                                : null
+                          })
+                        }
+                        onOpenLocation={openLocation}
+                        onEditLocation={(id) => id !== null && openLocation(id)}
+                        conflictIds={conflictDiagnostics.map((d) => d.code)}
+                      />
+                    ) : (
+                      <Text size='sm' c='dimmed'>
+                        {t`Select a drawer to edit its properties, native binding and logical allocation. Arrow keys move the selection by one grid unit; Shift+arrows use a larger step.`}
+                      </Text>
+                    )}
+                    <ValidationPanel
+                      report={editor.validation}
+                      onSelectEntity={(ids) => editor.setSelection(ids)}
                     />
-                  ) : (
-                    <Text size='sm' c='dimmed'>
-                      {t`Select a drawer to edit its properties, native binding and logical allocation. Arrow keys move the selection by one grid unit; Shift+arrows use a larger step.`}
-                    </Text>
-                  )}
-                  <ValidationPanel
-                    report={editor.validation}
-                    onSelectEntity={(ids) => editor.setSelection(ids)}
-                  />
-                  {editor.serverValidation ? (
-                    <Alert
-                      data-testid='server-diagnostics'
-                      variant='light'
-                      color={
-                        editor.serverValidation.errors.length > 0
-                          ? 'red'
-                          : 'green'
-                      }
-                    >
-                      {t`Server diagnostics: ${editor.serverValidation.errors.length} error(s), ${editor.serverValidation.warnings.length} warning(s)`}
-                    </Alert>
-                  ) : null}
-                </Stack>
-              </ScrollArea>
+                    {selectedDrawer ? (
+                      <Button
+                        variant='light'
+                        onClick={() =>
+                          context.navigate(
+                            `/plugin/storage-layout/drawers/${selectedDrawer.id}/design`
+                          )
+                        }
+                      >{t`Design drawer interior and bins`}</Button>
+                    ) : null}
+                    {editor.serverValidation ? (
+                      <Alert
+                        data-testid='server-diagnostics'
+                        variant='light'
+                        color={
+                          editor.serverValidation.errors.length > 0
+                            ? 'red'
+                            : 'green'
+                        }
+                      >
+                        {t`Server diagnostics: ${editor.serverValidation.errors.length} error(s), ${editor.serverValidation.warnings.length} warning(s)`}
+                      </Alert>
+                    ) : null}
+                  </Stack>
+                </ScrollArea>
+              ) : null}
             </Paper>
           </Group>
         </Tabs.Panel>

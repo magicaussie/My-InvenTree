@@ -83,6 +83,29 @@ function fakeContext(
   } as unknown as InvenTreePluginContext;
 }
 
+describe('CabinetDesigner dimensions', () => {
+  it('edits native cabinet width and height through undoable layout commands', async () => {
+    const context = fakeContext();
+    render(
+      <MantineProvider>
+        <CabinetDesigner context={context} cabinetId='cabinet-1' />
+      </MantineProvider>
+    );
+
+    const width = await screen.findByLabelText('Cabinet width in units');
+    const height = screen.getByLabelText('Cabinet height in units');
+    fireEvent.change(width, { target: { value: '720' } });
+    fireEvent.change(height, { target: { value: '960' } });
+
+    expect(width).toHaveValue('720');
+    expect(height).toHaveValue('960');
+    expect(screen.getByText(/Cabinet 720x960 units/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(height).toHaveValue('800');
+  });
+});
+
 describe('DrawerDesigner', () => {
   it('validates a drawer front rectangle against cabinet dimensions, not its interior', async () => {
     const context = fakeContext();
@@ -170,7 +193,233 @@ async function renderCabinet(layout: LayoutResponse = LAYOUT) {
   return { ...result, context };
 }
 
-describe('CabinetDesigner', () => {
+describe('CabinetDesigner practical tools', () => {
+  it('gives connection guidance after a failed save and keeps the draft unsaved', async () => {
+    const context = fakeContext();
+    context.api.put = vi
+      .fn()
+      .mockRejectedValue(new Error('Network Error')) as typeof context.api.put;
+    render(
+      <MantineProvider>
+        <CabinetDesigner context={context} cabinetId='cabinet-1' />
+      </MantineProvider>
+    );
+    const width = await screen.findByLabelText('Cabinet width in units');
+    fireEvent.change(width, { target: { value: '620' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+    await waitFor(() =>
+      expect(screen.getByText(/Network Error/)).toBeInTheDocument()
+    );
+    expect(
+      screen.getByText(/Check your connection and sign-in/)
+    ).toBeInTheDocument();
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+  });
+
+  it('allows desktop property panels to be collapsed and reopened', async () => {
+    await renderCabinet();
+    const properties = screen.getByRole('button', {
+      name: 'Hide cabinet properties'
+    });
+    fireEvent.click(properties);
+    expect(
+      screen.getByRole('button', { name: 'Show cabinet properties' })
+    ).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Show cabinet properties' })
+    );
+    expect(
+      screen.getByRole('button', { name: 'Hide cabinet properties' })
+    ).toHaveAttribute('aria-expanded', 'true');
+  });
+  it('aligns selected drawers without collisions and opens the drawer interior designer', async () => {
+    const first = drawerFixture({
+      id: 'align-a',
+      label: 'A',
+      display_number: 1,
+      x: 10,
+      y: 10
+    });
+    const second = drawerFixture({
+      id: 'align-b',
+      label: 'B',
+      display_number: 2,
+      x: 100,
+      y: 60
+    });
+    const { context } = await renderCabinet({
+      ...LAYOUT,
+      drawers: [first, second]
+    } as LayoutResponse);
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    expect(screen.getByRole('button', { name: 'Drawer A' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    expect(screen.getByRole('button', { name: 'Drawer B' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Align left' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Design drawer interior and bins' })
+    );
+    expect(context.navigate).toHaveBeenCalledWith(
+      '/plugin/storage-layout/drawers/align-a/design'
+    );
+  });
+
+  it('distributes selected drawers horizontally using equal edge gaps and supports undo/redo', async () => {
+    const drawers = [
+      drawerFixture({
+        id: 'horizontal-a',
+        label: 'A',
+        display_number: 1,
+        x: 20,
+        width: 60
+      }),
+      drawerFixture({
+        id: 'horizontal-b',
+        label: 'B',
+        display_number: 2,
+        x: 200,
+        width: 100
+      }),
+      drawerFixture({
+        id: 'horizontal-c',
+        label: 'C',
+        display_number: 3,
+        x: 400,
+        width: 80
+      })
+    ];
+    const { container } = await renderCabinet({
+      ...LAYOUT,
+      drawers
+    } as LayoutResponse);
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer C' }), {
+      ctrlKey: true
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Distribute horizontally' })
+    );
+    const expected = [20, 190, 400];
+    expect(entityRects(container).map((rect) => rectOf(rect).x)).toEqual(
+      expected
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(entityRects(container).map((rect) => rectOf(rect).x)).toEqual([
+      20, 200, 400
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(entityRects(container).map((rect) => rectOf(rect).x)).toEqual(
+      expected
+    );
+  });
+
+  it('distributes selected drawers vertically using equal edge gaps and supports undo/redo', async () => {
+    const drawers = [
+      drawerFixture({
+        id: 'vertical-a',
+        label: 'A',
+        display_number: 1,
+        y: 20,
+        height: 40
+      }),
+      drawerFixture({
+        id: 'vertical-b',
+        label: 'B',
+        display_number: 2,
+        y: 200,
+        height: 60
+      }),
+      drawerFixture({
+        id: 'vertical-c',
+        label: 'C',
+        display_number: 3,
+        y: 400,
+        height: 80
+      })
+    ];
+    const { container } = await renderCabinet({
+      ...LAYOUT,
+      drawers
+    } as LayoutResponse);
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer B' }), {
+      ctrlKey: true
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer C' }), {
+      ctrlKey: true
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Distribute vertically' })
+    );
+    const expected = [20, 200, 400];
+    expect(entityRects(container).map((rect) => rectOf(rect).y)).toEqual(
+      expected
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(entityRects(container).map((rect) => rectOf(rect).y)).toEqual([
+      20, 200, 400
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(entityRects(container).map((rect) => rectOf(rect).y)).toEqual(
+      expected
+    );
+  });
+
+  it('confirms archival of a selected persisted drawer and can cancel safely', async () => {
+    const drawer = drawerFixture({
+      id: 'archive-me',
+      label: 'A',
+      display_number: 1
+    });
+    await renderCabinet({ ...LAYOUT, drawers: [drawer] } as LayoutResponse);
+    fireEvent.click(screen.getByRole('button', { name: 'Drawer A' }));
+    expect(screen.getByRole('button', { name: 'Drawer A' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' })
+    );
+    expect(
+      screen.getByRole('button', { name: 'Drawer A' })
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Archive'
+      })
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Drawer A' })
+      ).not.toBeInTheDocument()
+    );
+  });
+
   it('adds non-overlapping drawers without changing size or numbering and supports undo/redo', async () => {
     const { container, context } = await renderCabinet();
     fireEvent.click(screen.getByLabelText('Add drawer'));

@@ -1,16 +1,28 @@
 import type { InvenTreePluginContext } from '@inventreedb/ui';
 import { MantineProvider } from '@mantine/core';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor
+} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CabinetDesigner } from '../src/components/CabinetDesigner';
+import { DrawerDesigner } from '../src/components/DrawerDesigner';
 import {
   type CanvasEntity,
   EditorCanvas
 } from '../src/components/editor/EditorCanvas';
-import { DrawerInspector } from '../src/components/editor/Inspector';
+import {
+  BinInspector,
+  DrawerInspector
+} from '../src/components/editor/Inspector';
 import { ValidationPanel } from '../src/components/editor/Panels';
 import { EditorToolbar } from '../src/components/editor/Toolbar';
+import { useLayoutEditor } from '../src/state/layoutDraft';
 
 function wrap(ui: React.ReactNode) {
   return render(<MantineProvider>{ui}</MantineProvider>);
@@ -1076,6 +1088,117 @@ describe('EditorCanvas archived read-only geometry', () => {
   });
 });
 
+describe('layout editor save concurrency', () => {
+  it('preserves edits made during save and uses the returned revision on the next save', async () => {
+    const cabinet = {
+      id: 'save-race-cabinet',
+      name: 'Save race cabinet',
+      slug: 'save-race',
+      location: 41,
+      width_units: 600,
+      height_units: 800,
+      revision: 3,
+      archived: false,
+      active_mapping: null
+    };
+    const layout = { schema_version: 1, cabinet, drawers: [], bins: [] };
+    let resolveFirstSave!: (value: {
+      data: typeof layout;
+      headers: { etag: string };
+    }) => void;
+    const firstSave = new Promise<{
+      data: typeof layout;
+      headers: { etag: string };
+    }>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    const api = {
+      get: vi.fn(async () => ({ data: layout, headers: { etag: '"3"' } })),
+      put: vi
+        .fn()
+        .mockReturnValueOnce(firstSave)
+        .mockImplementationOnce(async () => ({
+          data: {
+            ...layout,
+            cabinet: {
+              ...cabinet,
+              width_units: 700,
+              height_units: 900,
+              revision: 5
+            }
+          },
+          headers: { etag: '"5"' }
+        })),
+      post: vi.fn(),
+      patch: vi.fn()
+    };
+    const { result } = renderHook(() =>
+      useLayoutEditor({
+        api: api as never,
+        cabinetId: cabinet.id,
+        disableRecovery: true
+      })
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    act(() => {
+      result.current.apply({
+        type: 'set_cabinet',
+        from: result.current.draft.cabinet,
+        to: { ...result.current.draft.cabinet, width_units: 700 }
+      });
+    });
+    let firstSaveResult!: Promise<boolean>;
+    act(() => {
+      firstSaveResult = result.current.save();
+    });
+    act(() => {
+      result.current.apply({
+        type: 'set_cabinet',
+        from: result.current.draft.cabinet,
+        to: { ...result.current.draft.cabinet, height_units: 900 }
+      });
+    });
+
+    await act(async () => {
+      resolveFirstSave({
+        data: {
+          ...layout,
+          cabinet: { ...cabinet, width_units: 700, revision: 4 }
+        },
+        headers: { etag: '"4"' }
+      });
+      await firstSaveResult;
+    });
+
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.draft.cabinet).toMatchObject({
+      width_units: 700,
+      height_units: 900
+    });
+    expect(result.current.revision).toBe(4);
+    expect(result.current.etag).toBe('"4"');
+
+    await act(async () => {
+      await result.current.save();
+    });
+    expect(api.put).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      expect.objectContaining({
+        cabinet: expect.objectContaining({
+          width_units: 700,
+          height_units: 900
+        })
+      }),
+      expect.objectContaining({ headers: { 'If-Match': '"4"' } })
+    );
+    expect(result.current.revision).toBe(5);
+    expect(result.current.etag).toBe('"5"');
+    expect(result.current.dirty).toBe(false);
+  });
+});
+
 describe('canvas navigation and designer state', () => {
   it('preserves geometry, selection, dirty state and undo/redo history', async () => {
     const cabinet = {
@@ -1180,6 +1303,145 @@ describe('canvas navigation and designer state', () => {
     expect(api.post).not.toHaveBeenCalled();
     expect(api.patch).not.toHaveBeenCalled();
     expect(layout.drawers).toEqual([drawer]);
+  });
+});
+
+describe('DrawerDesigner bin workflow', () => {
+  it('adds a bin in the first clear grid-aligned position', async () => {
+    const cabinet = {
+      id: 'bin-cabinet',
+      name: 'Bin cabinet',
+      slug: 'bin-cabinet',
+      location: 41,
+      width_units: 600,
+      height_units: 800,
+      revision: 3,
+      archived: false,
+      total_pixels: 40,
+      active_mapping: null
+    };
+    const drawer = {
+      id: 'bin-drawer',
+      label: 'D1',
+      display_number: 1,
+      location: 42,
+      x: 0,
+      y: 0,
+      width: 60,
+      height: 40,
+      interior_width: 60,
+      interior_height: 40,
+      archived: false,
+      allocation: { logical_start: 1, logical_end: 40 }
+    };
+    const existingBin = {
+      id: 'bin-1',
+      drawer: drawer.id,
+      label: 'B1',
+      location: null,
+      x: 0,
+      y: 0,
+      width: 20,
+      height: 20,
+      archived: false
+    };
+    let storedBins = [existingBin];
+    let revision = 3;
+    const api = {
+      get: vi.fn(async (url: string) => ({
+        data: url.includes('/electrical/')
+          ? { cabinet, controllers: [] }
+          : url.includes('/drawers/')
+            ? { cabinet: { ...cabinet, revision }, drawer, bins: storedBins }
+            : {
+                schema_version: 1,
+                cabinet: { ...cabinet, revision },
+                drawers: [drawer],
+                bins: storedBins
+              },
+        headers: { etag: `"${revision}"` }
+      })),
+      post: vi.fn(),
+      put: vi.fn(
+        async (_url: string, document: { bins: typeof storedBins }) => {
+          storedBins = document.bins;
+          revision += 1;
+          const response = {
+            schema_version: 1,
+            cabinet: { ...cabinet, revision },
+            drawer,
+            bins: storedBins,
+            archive_ids: []
+          };
+          return { data: response, headers: { etag: `"${revision}"` } };
+        }
+      ),
+      patch: vi.fn()
+    };
+    const context = {
+      api,
+      navigate: vi.fn()
+    } as unknown as InvenTreePluginContext;
+    const view = wrap(
+      <DrawerDesigner context={context} drawerId={drawer.id} />
+    );
+
+    await screen.findByTestId('drawer-designer');
+    fireEvent.click(screen.getByRole('button', { name: 'Add bin' }));
+    expect(screen.getByLabelText('X')).toHaveValue('20');
+    expect(screen.getByLabelText('Y')).toHaveValue('0');
+    expect(screen.getByText('Unsaved')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+    await screen.findByText('Drawer layout saved.');
+    expect(api.put).toHaveBeenCalledWith(
+      '/plugin/storage-layout/api/v1/drawers/bin-drawer/layout/',
+      expect.objectContaining({
+        schema_version: 1,
+        drawer,
+        bins: expect.arrayContaining([
+          expect.objectContaining({ x: 20, y: 0, width: 20, height: 20 })
+        ])
+      }),
+      { headers: { 'If-Match': '"3"' } }
+    );
+    expect(screen.queryByText('Unsaved')).not.toBeInTheDocument();
+
+    view.unmount();
+    wrap(<DrawerDesigner context={context} drawerId={drawer.id} />);
+    expect((await screen.findAllByText('B2')).length).toBeGreaterThan(0);
+    expect(api.get).toHaveBeenCalledWith(
+      '/plugin/storage-layout/api/v1/drawers/bin-drawer/layout/'
+    );
+  });
+});
+
+describe('BinInspector', () => {
+  it('edits the native location and shows the inherited LED allocation', () => {
+    const onField = vi.fn();
+    wrap(
+      <BinInspector
+        bin={{
+          id: 'bin-1',
+          drawer: 'd1',
+          label: 'B1',
+          location: 45,
+          x: 0,
+          y: 0,
+          width: 20,
+          height: 20,
+          archived: false
+        }}
+        inheritedRange={{ logical_start: 8, logical_end: 19 }}
+        readOnly={false}
+        onField={onField}
+      />
+    );
+    fireEvent.change(screen.getByLabelText('Location ID'), {
+      target: { value: '46' }
+    });
+    expect(onField).toHaveBeenCalledWith({ field: 'location', value: 46 });
+    expect(screen.getByTestId('inherited-range')).toHaveTextContent('8–19');
   });
 });
 

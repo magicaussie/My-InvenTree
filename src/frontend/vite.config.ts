@@ -72,6 +72,11 @@ export default defineConfig(({ command, mode }) => {
     },
     server: {
       proxy: {
+        '/plugin': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          secure: true
+        },
         '/media': {
           target: 'http://localhost:8000',
           changeOrigin: true,

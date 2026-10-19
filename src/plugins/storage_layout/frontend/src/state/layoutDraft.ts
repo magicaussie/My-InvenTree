@@ -297,12 +297,20 @@ export function useLayoutEditor(options: UseLayoutEditorOptions): LayoutEditor {
     setSaving(true);
     setError(null);
     try {
-      const document = layoutFromDraft(historyRef.current.present);
+      const submittedDraft = historyRef.current.present;
+      const document = layoutFromDraft(submittedDraft);
       const result = await client.saveLayout(cabinetId, document, etag);
       const response = result.data;
       const nextDraft = draftFromResponse(response);
-      historyRef.current.reset(nextDraft);
       baselineRef.current = nextDraft;
+      if (historyRef.current.present === submittedDraft) {
+        historyRef.current.reset(nextDraft);
+        setDirty(false);
+      } else {
+        // Keep edits made while the request was in flight; the next save uses
+        // the revision returned here as its new compare-and-swap base.
+        setDirty(true);
+      }
       setCabinet(response.cabinet);
       setRevision(response.cabinet.revision);
       setEtag(result.etag ?? `"${response.cabinet.revision}"`);
@@ -315,11 +323,18 @@ export function useLayoutEditor(options: UseLayoutEditorOptions): LayoutEditor {
             ? normaliseReport(response.validation)
             : null
       );
-      setDirty(false);
       setConflict(false);
       if (!options.disableRecovery) {
         clearRecovery(cabinetId, revision);
-        setRecovery(null);
+        if (historyRef.current.present === nextDraft) {
+          setRecovery(null);
+        } else {
+          writeRecovery(
+            cabinetId,
+            response.cabinet.revision,
+            historyRef.current.present
+          );
+        }
       }
       rerender();
       return true;
