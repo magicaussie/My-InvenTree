@@ -40,6 +40,86 @@ describe('EditorCanvas', () => {
     expect(container.querySelectorAll('[data-grid-line]')).toHaveLength(0);
   });
 
+  it('draws a snapped rectangle by dragging on the empty canvas', () => {
+    const onDraw = vi.fn();
+    const { container } = render(
+      <MantineProvider>
+        <EditorCanvas {...props} selection={[]} onDraw={onDraw} />
+      </MantineProvider>
+    );
+    const svg = screen.getByRole('application', { name: 'Cabinet canvas' });
+    vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 600,
+      bottom: 800,
+      width: 600,
+      height: 800,
+      toJSON: () => ({})
+    } as DOMRect);
+    fireEvent.click(screen.getByRole('button', { name: 'Draw drawer' }));
+    fireEvent.pointerDown(svg, {
+      button: 0,
+      pointerId: 1,
+      clientX: 25,
+      clientY: 35
+    });
+    fireEvent.pointerMove(svg, {
+      button: 0,
+      pointerId: 1,
+      clientX: 86,
+      clientY: 97
+    });
+    expect(
+      container.querySelector('rect[stroke="var(--mantine-color-blue-7)"]')
+    ).toBeInTheDocument();
+    fireEvent.pointerUp(svg, {
+      button: 0,
+      pointerId: 1,
+      clientX: 86,
+      clientY: 97
+    });
+    expect(onDraw).toHaveBeenCalledWith({
+      x: 30,
+      y: 40,
+      width: 60,
+      height: 60
+    });
+  });
+
+  it('cancels a drawer preview without committing it', () => {
+    const onDraw = vi.fn();
+    const { container } = render(
+      <MantineProvider>
+        <EditorCanvas {...props} selection={[]} onDraw={onDraw} />
+      </MantineProvider>
+    );
+    const svg = screen.getByRole('application', { name: 'Cabinet canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Draw drawer' }));
+    expect(svg).toHaveStyle({ cursor: 'crosshair' });
+    fireEvent.pointerDown(svg, {
+      button: 0,
+      pointerId: 2,
+      clientX: 25,
+      clientY: 35
+    });
+    fireEvent.pointerMove(svg, {
+      button: 0,
+      pointerId: 2,
+      clientX: 86,
+      clientY: 97
+    });
+
+    fireEvent.pointerCancel(svg, { pointerId: 2 });
+
+    expect(onDraw).not.toHaveBeenCalled();
+    expect(
+      container.querySelector('rect[stroke="var(--mantine-color-blue-7)"]')
+    ).not.toBeInTheDocument();
+  });
+
   it('renders safely when canvas bounds are infinite', () => {
     const { container } = render(
       <MantineProvider>

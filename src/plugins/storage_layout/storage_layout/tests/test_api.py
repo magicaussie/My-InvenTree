@@ -5,6 +5,7 @@ These tests exercise the full endpoint surface, the permission matrix, the
 error shape and the fail-closed hardware behaviour. No test opens a socket.
 """
 
+import uuid
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -15,6 +16,7 @@ from django.test import override_settings
 from InvenTree.unit_test import InvenTreeAPITestCase
 from stock.models import StockLocation
 from storage_layout.models import (
+    Bin,
     Cabinet,
     Controller,
     ControllerOutput,
@@ -351,6 +353,305 @@ class LayoutApiTests(ApiTestCase):
         )
 
         self.assertEqual(len(response.data['bins']), 1)
+
+    def test_put_layout_creates_client_identified_drawer_and_retry_is_safe(self):
+        """A client UUID identifies a new drawer across an ambiguous retry."""
+        document = self.layout_document()
+        client_id = uuid.UUID('dd7a4702-d3b0-4255-9bde-528676bc3940')
+        new_drawer_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document['drawers'].append({
+            'id': str(client_id),
+            'is_new': True,
+            'label': 'A2',
+            'display_number': 2,
+            'location': new_drawer_location.pk,
+            'x': 0,
+            'y': 120,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+            'archived': False,
+            'allocation': None,
+        })
+
+        response = self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        created = Drawer.objects.get(pk=client_id, cabinet=self.cabinet)
+        self.assertEqual(created.label, 'A2')
+        self.assertEqual(response.data['drawers'][1]['id'], str(client_id))
+        self.cabinet.refresh_from_db()
+
+        # A transport retry with the old revision cannot write twice. Reloading
+        # the latest revision and resubmitting resolves the ambiguous outcome.
+        self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=412,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision - 1}"',
+        )
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 2)
+
+        retried = self.put(
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 2)
+        self.assertEqual(retried.data['drawers'][1]['id'], str(client_id))
+
+    def test_put_layout_new_drawer_without_id_and_archive_existing(self):
+        """Null IDs create generated identities and archived edits persist."""
+        document = self.layout_document()
+        document['drawers'][0]['archived'] = True
+        new_drawer_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document['drawers'].append({
+            'id': None,
+            'label': 'A2',
+            'display_number': 2,
+            'location': new_drawer_location.pk,
+            'x': 0,
+            'y': 120,
+            'width': 300,
+            'height': 100,
+            'interior_width': 280,
+            'interior_height': 400,
+            'archived': False,
+            'allocation': None,
+        })
+
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(len(response.data['drawers']), 2)
+        self.assertTrue(response.data['drawers'][0]['archived'])
+        self.assertIsNotNone(response.data['drawers'][1]['id'])
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 2)
+
+    def test_put_layout_creates_client_identified_bin_and_retry_is_safe(self):
+        """A newly generated bin UUID is stored and remains addressable."""
+        document = self.layout_document()
+        bin_id = uuid.uuid4()
+        document['bins'].append({
+            'id': str(bin_id),
+            'is_new': True,
+            'drawer': str(self.drawer.pk),
+            'label': 'A1-02',
+            'location': None,
+            'x': 80,
+            'y': 0,
+            'width': 70,
+            'height': 100,
+            'archived': False,
+        })
+
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertTrue(Bin.objects.filter(pk=bin_id, drawer=self.drawer).exists())
+        self.assertIn(str(bin_id), {row['id'] for row in response.data['bins']})
+        self.cabinet.refresh_from_db()
+
+        self.put(
+            self.cabinet_url('layout/'), document, expected_code=412,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision - 1}"',
+        )
+        self.assertEqual(Bin.objects.filter(drawer=self.drawer).count(), 1)
+        retried = self.put(
+            self.cabinet_url('layout/'), document, expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+        self.assertEqual(Bin.objects.filter(drawer=self.drawer).count(), 1)
+        self.assertEqual(retried.data['bins'][0]['id'], str(bin_id))
+
+    def test_put_layout_rejects_unknown_ids_without_new_marker(self):
+        """Unknown UUIDs are not silently re-created as deleted persisted rows."""
+        document = self.layout_document()
+        new_drawer_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document['drawers'].append({
+            'id': str(uuid.uuid4()), 'label': 'A2', 'display_number': 2,
+            'location': new_drawer_location.pk, 'x': 0, 'y': 120,
+            'width': 300, 'height': 100, 'interior_width': 280,
+            'interior_height': 400, 'archived': False, 'allocation': None,
+        })
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
+
+        document = self.layout_document()
+        document['bins'].append({
+            'id': str(uuid.uuid4()), 'drawer': str(self.drawer.pk),
+            'label': 'A1-02', 'location': None, 'x': 80, 'y': 0,
+            'width': 70, 'height': 100, 'archived': False,
+        })
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertEqual(Bin.objects.filter(drawer=self.drawer).count(), 0)
+
+    def test_put_layout_rejects_duplicate_drawer_ids(self):
+        """One persisted identity cannot be represented twice in one document."""
+        document = self.layout_document()
+        duplicate = dict(document['drawers'][0])
+        duplicate['id'] = duplicate['id'].upper()
+        duplicate['y'] = 120
+        document['drawers'].append(duplicate)
+
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
+
+    def test_put_layout_rejects_duplicate_bin_ids(self):
+        """One bin identity cannot appear twice in a layout payload."""
+        document = self.layout_document()
+        bin_id = uuid.uuid4()
+        row = {
+            'id': str(bin_id), 'is_new': True,
+            'drawer': str(self.drawer.pk), 'label': 'A1-02',
+            'location': None, 'x': 80, 'y': 0, 'width': 70, 'height': 100,
+            'archived': False,
+        }
+        document['bins'].extend([row, {**row, 'label': 'A1-03', 'x': 160}])
+
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertFalse(Bin.objects.filter(pk=bin_id).exists())
+
+    def test_put_layout_rejects_uuid_reused_between_drawer_and_bin(self):
+        """Archive IDs stay unambiguous across drawer and bin namespaces."""
+        document = self.layout_document()
+        document['bins'].append({
+            'id': str(self.drawer.pk), 'is_new': True,
+            'drawer': str(self.drawer.pk), 'label': 'A1-02',
+            'location': None, 'x': 80, 'y': 0, 'width': 70, 'height': 100,
+            'archived': False,
+        })
+
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertFalse(Bin.objects.filter(pk=self.drawer.pk).exists())
+
+    def test_put_layout_handles_cross_cabinet_uuid_claimed_during_save(self):
+        """A concurrent foreign claim returns a safe reference error, not 500."""
+        other_location = StockLocation.objects.create(name='Cabinet 2', structural=True)
+        other_cabinet = Cabinet.objects.create(
+            name='Cabinet 2', slug='cabinet-2', location=other_location,
+            width_units=600, height_units=800,
+        )
+        other_drawer_location = StockLocation.objects.create(
+            name='Drawer B1', parent=other_location, structural=True
+        )
+        new_drawer_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        client_id = uuid.uuid4()
+        document = self.layout_document()
+        document['drawers'].append({
+            'id': str(client_id), 'is_new': True, 'label': 'A2',
+            'display_number': 2, 'location': new_drawer_location.pk,
+            'x': 0, 'y': 120, 'width': 300, 'height': 100,
+            'interior_width': 280, 'interior_height': 400,
+            'archived': False, 'allocation': None,
+        })
+
+        def claim_uuid(**kwargs):
+            values = dict(kwargs['defaults'])
+            values.update(cabinet=other_cabinet, location=other_drawer_location)
+            raced_row = Drawer.objects.create(pk=kwargs['pk'], **values)
+            return raced_row, False
+
+        with mock.patch.object(Drawer.objects, 'get_or_create', side_effect=claim_uuid):
+            response = self.put(
+                self.cabinet_url('layout/'), document, expected_code=400,
+                HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+            )
+
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
+
+    def test_put_layout_rejects_cross_cabinet_drawer_identity(self):
+        """A real UUID owned by another cabinet is never treated as new."""
+        other_location = StockLocation.objects.create(name='Cabinet 2', structural=True)
+        other_cabinet = Cabinet.objects.create(
+            name='Cabinet 2', slug='cabinet-2', location=other_location,
+            width_units=600, height_units=800,
+        )
+        other_drawer_location = StockLocation.objects.create(
+            name='Drawer B1', parent=other_location, structural=True
+        )
+        other_drawer = Drawer.objects.create(
+            cabinet=other_cabinet, label='B1', display_number=1,
+            location=other_drawer_location, x=0, y=0, width=300, height=100,
+            interior_width=280, interior_height=400,
+        )
+        document = self.layout_document()
+        document['drawers'][0]['id'] = str(other_drawer.pk)
+
+        response = self.put(
+            self.cabinet_url('layout/'), document, expected_code=400,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.assertEqual(response.data['code'], 'invalid_reference')
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
+
+    def test_put_layout_rejects_stale_revision_without_creating_drawer(self):
+        """Stale writes cannot create even client-identified new drawers."""
+        import uuid
+
+        stale_revision = self.cabinet.revision
+        document = self.layout_document()
+        new_drawer_location = StockLocation.objects.create(
+            name='Drawer A2', parent=self.cabinet_location, structural=True
+        )
+        document['drawers'].append({
+            'id': str(uuid.uuid4()), 'is_new': True,
+            'label': 'A2', 'display_number': 2,
+            'location': new_drawer_location.pk, 'x': 0, 'y': 120, 'width': 300, 'height': 100,
+            'interior_width': 280, 'interior_height': 400, 'archived': False,
+            'allocation': None,
+        })
+        self.cabinet.revision += 1
+        self.cabinet.save(update_fields=['revision'])
+
+        self.put(
+            self.cabinet_url('layout/'), document, expected_code=412,
+            HTTP_IF_MATCH=f'"{stale_revision}"',
+        )
+        self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
 
     def test_put_layout_persists_drawer_dimensions_after_reload(self):
         """A saved drawer edit is returned by a fresh layout request."""

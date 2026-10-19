@@ -422,6 +422,7 @@ class DrawerInputSerializer(serializers.Serializer):
     """A drawer row in a layout document."""
 
     id = serializers.UUIDField(required=False, allow_null=True)
+    is_new = serializers.BooleanField(required=False, default=False)
     label = serializers.CharField(max_length=64)
     display_number = serializers.IntegerField(min_value=1)
     location = serializers.IntegerField(required=False, allow_null=True)
@@ -439,6 +440,7 @@ class BinInputSerializer(serializers.Serializer):
     """A bin row in a layout document."""
 
     id = serializers.UUIDField(required=False, allow_null=True)
+    is_new = serializers.BooleanField(required=False, default=False)
     drawer = serializers.CharField()
     label = serializers.CharField(max_length=64)
     location = serializers.IntegerField(required=False, allow_null=True)

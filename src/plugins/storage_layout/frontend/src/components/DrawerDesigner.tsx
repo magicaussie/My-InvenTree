@@ -248,6 +248,7 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
     }
     const bin: BinDraft = {
       id: newId(),
+      is_new: true,
       drawer: drawer.id,
       label: `B${activeBins.length + 1}`,
       location: null,
@@ -270,6 +271,7 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
       const copy: BinDraft = {
         ...bin,
         id: newId(),
+        is_new: true,
         label: `${bin.label} copy`,
         // A duplicated bin never reuses a native location binding.
         location: null,

@@ -29,6 +29,8 @@ export interface AllocationInput {
 /** A drawer row inside a layout document. */
 export interface DrawerInput {
   id: string | null;
+  /** Explicitly identify a client-created entity for safe UUID persistence. */
+  is_new?: boolean;
   label: string;
   display_number: number;
   location: number | null;
@@ -45,6 +47,8 @@ export interface DrawerInput {
 /** A bin row inside a layout document. */
 export interface BinInput {
   id: string | null;
+  /** Explicitly identify a client-created entity for safe UUID persistence. */
+  is_new?: boolean;
   drawer: string;
   label: string;
   location: number | null;

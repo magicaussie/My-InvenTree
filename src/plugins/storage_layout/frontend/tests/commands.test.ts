@@ -5,6 +5,7 @@ import {
   type BinDraft,
   coalesceCommands,
   type DrawerDraft,
+  draftFromResponse,
   emptyDraft,
   invertCommand,
   LayoutHistory,
@@ -176,16 +177,56 @@ describe('commands', () => {
     expect(history.depth).toBeLessThanOrEqual(MAX_HISTORY);
   });
 
-  it('serialises a draft into a layout document', () => {
+  it('serialises creation identity only for explicitly new drawers and bins', () => {
     const draft = applyCommand(emptyDraft(), {
       type: 'add_drawer',
-      drawer: drawer()
+      drawer: drawer({ is_new: true })
     });
-    const withBin = applyCommand(draft, { type: 'add_bin', bin: bin() });
-    const document = layoutFromDraft(withBin);
+    const withPersistedDrawer = applyCommand(draft, {
+      type: 'add_drawer',
+      drawer: drawer({ id: 'd2' })
+    });
+    const withNewBin = applyCommand(withPersistedDrawer, {
+      type: 'add_bin',
+      bin: bin({ is_new: true })
+    });
+    const complete = applyCommand(withNewBin, {
+      type: 'add_bin',
+      bin: bin({ id: 'b2' })
+    });
+    const document = layoutFromDraft(complete);
+
     expect(document.schema_version).toBe(1);
-    expect(document.drawers).toHaveLength(1);
-    expect(document.bins).toHaveLength(1);
+    expect(document.drawers).toHaveLength(2);
+    expect(document.bins).toHaveLength(2);
+    expect(document.drawers.find((row) => row.id === 'd1')?.is_new).toBe(true);
+    expect(document.drawers.find((row) => row.id === 'd2')?.is_new).toBeUndefined();
+    expect(document.bins.find((row) => row.id === 'b1')?.is_new).toBe(true);
+    expect(document.bins.find((row) => row.id === 'b2')?.is_new).toBeUndefined();
     expect(document.archive_ids).toEqual([]);
+  });
+
+  it('preserves creation identity through undo/redo and failed-save retries', () => {
+    const history = new LayoutHistory(emptyDraft());
+    const newDrawer = drawer({ is_new: true });
+    history.apply({ type: 'add_drawer', drawer: newDrawer });
+    history.undo();
+    expect(history.present.drawers.d1).toBeUndefined();
+    history.redo();
+    expect(history.present.drawers.d1.is_new).toBe(true);
+    expect(layoutFromDraft(history.present).drawers[0].is_new).toBe(true);
+  });
+
+  it('does not mark server-loaded drawer or bin rows as new', () => {
+    const response = {
+      cabinet: { width_units: 600, height_units: 800 },
+      drawers: [drawer()],
+      bins: [bin()]
+    } as Parameters<typeof draftFromResponse>[0];
+    const draft = draftFromResponse(response);
+    expect(draft.drawers.d1.is_new).toBeUndefined();
+    expect(draft.bins.b1.is_new).toBeUndefined();
+    expect(layoutFromDraft(draft).drawers[0].is_new).toBeUndefined();
+    expect(layoutFromDraft(draft).bins[0].is_new).toBeUndefined();
   });
 });

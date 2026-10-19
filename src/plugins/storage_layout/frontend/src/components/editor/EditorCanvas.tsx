@@ -75,6 +75,7 @@ export interface EditorCanvasProps {
   onClearSelection?: () => void;
   onMove: (ids: string[], dx: number, dy: number, phase: DragPhase) => void;
   onResize: (id: string, rect: Rect, phase: DragPhase) => void;
+  onDraw?: (rect: Rect) => void;
   onActivate?: (id: string) => void;
 }
 
@@ -119,6 +120,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
     onClearSelection,
     onMove,
     onResize,
+    onDraw,
     onActivate
   } = props;
 
@@ -137,6 +139,10 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const spaceHeldRef = useRef(false);
   const pointerIdRef = useRef<number | null>(null);
   const [gridVisible, setGridVisible] = useState(true);
+  const [drawMode, setDrawMode] = useState(false);
+  const [drawPreview, setDrawPreview] = useState<Rect | null>(null);
+  const drawPreviewRef = useRef<Rect | null>(null);
+  const drawStart = useRef<{ x: number; y: number } | null>(null);
 
   // Event refs mirror the rendered state synchronously, so capture/move/up
   // sequences do not depend on React having rendered between pointer events.
@@ -307,6 +313,23 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<SVGElement>) => {
       if (pointerIdRef.current !== event.pointerId) return;
+      if (drawStart.current) {
+        const point = toCanvas(event.clientX, event.clientY);
+        const start = drawStart.current;
+        const snapValue = snapEnabled ? grid : 1;
+        const x1 =
+          Math.round(Math.min(start.x, point.x) / snapValue) * snapValue;
+        const y1 =
+          Math.round(Math.min(start.y, point.y) / snapValue) * snapValue;
+        const x2 =
+          Math.round(Math.max(start.x, point.x) / snapValue) * snapValue;
+        const y2 =
+          Math.round(Math.max(start.y, point.y) / snapValue) * snapValue;
+        const preview = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+        drawPreviewRef.current = preview;
+        setDrawPreview(preview);
+        return;
+      }
       const pan = panRef.current;
       if (pan) {
         updateViewport(
@@ -383,6 +406,15 @@ export function EditorCanvas(props: EditorCanvasProps) {
     (cancelled: boolean) => {
       const pointerId = pointerIdRef.current;
       if (pointerId === null) return;
+      if (drawStart.current) {
+        const preview = drawPreviewRef.current;
+        drawStart.current = null;
+        drawPreviewRef.current = null;
+        setDrawPreview(null);
+        if (!cancelled && preview && preview.width > 0 && preview.height > 0) {
+          onDraw?.(preview);
+        }
+      }
       const drag = dragRef.current;
       const pan = panRef.current;
       pointerIdRef.current = null;
@@ -396,7 +428,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
       }
       if (drag) commitDrag(drag, cancelled);
     },
-    [commitDrag, updateDrag, updateViewport]
+    [commitDrag, onDraw, updateDrag, updateViewport]
   );
 
   const handlePointerUp = useCallback(
@@ -530,7 +562,10 @@ export function EditorCanvas(props: EditorCanvasProps) {
     if (!svg || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(() => {
       const screen = svg.getBoundingClientRect();
-      const fitted = fitViewport(bounds, screen);
+      const fitted = fitViewport(
+        { width: canvasWidth, height: canvasHeight },
+        screen
+      );
       if (fitted && pointerIdRef.current === null) {
         updateViewport((current) =>
           current.zoom === fitted.zoom &&
@@ -543,7 +578,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
     });
     observer.observe(svg);
     return () => observer.disconnect();
-  }, [bounds.width, bounds.height, updateViewport]);
+  }, [canvasWidth, canvasHeight, updateViewport]);
 
   // Escape/blur cancels either interaction even if focus left the SVG.
   useEffect(() => {
@@ -575,6 +610,8 @@ export function EditorCanvas(props: EditorCanvasProps) {
     return () => {
       const pointerId = pointerIdRef.current;
       pointerIdRef.current = null;
+      drawStart.current = null;
+      drawPreviewRef.current = null;
       if (pointerId !== null && svg?.hasPointerCapture?.(pointerId)) {
         svg.releasePointerCapture(pointerId);
       }
@@ -626,6 +663,16 @@ export function EditorCanvas(props: EditorCanvasProps) {
               o
             </ActionIcon>
           </Tooltip>
+          {onDraw ? (
+            <Button
+              size='compact-xs'
+              variant={drawMode ? 'filled' : 'default'}
+              aria-pressed={drawMode}
+              onClick={() => setDrawMode((mode) => !mode)}
+            >
+              {drawMode ? t`Drawing — drag on cabinet` : t`Draw drawer`}
+            </Button>
+          ) : null}
           <Button
             size='compact-xs'
             variant={gridVisible ? 'light' : 'default'}
@@ -661,7 +708,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
             display: 'block',
             touchAction: 'none',
             outline: 'none',
-            cursor: panCursor
+            cursor: panCursor ?? (drawMode ? 'crosshair' : undefined)
           }}
           onKeyDown={handleKeyDown}
           onBlur={() => updateSpace(false)}
@@ -683,6 +730,16 @@ export function EditorCanvas(props: EditorCanvasProps) {
               pointerIdRef.current === null &&
               event.target === svgRef.current
             ) {
+              if (drawMode && onDraw) {
+                const point = toCanvas(event.clientX, event.clientY);
+                drawStart.current = point;
+                const preview = { x: point.x, y: point.y, width: 0, height: 0 };
+                drawPreviewRef.current = preview;
+                setDrawPreview(preview);
+                pointerIdRef.current = event.pointerId;
+                svgRef.current?.setPointerCapture?.(event.pointerId);
+                return;
+              }
               onClearSelection?.();
             }
           }}
@@ -732,6 +789,19 @@ export function EditorCanvas(props: EditorCanvasProps) {
               </g>
             ) : null}
             <g pointerEvents='none'>{overlay}</g>
+            {drawPreview ? (
+              <rect
+                x={drawPreview.x}
+                y={drawPreview.y}
+                width={drawPreview.width}
+                height={drawPreview.height}
+                fill='var(--mantine-color-blue-2)'
+                fillOpacity={0.45}
+                stroke='var(--mantine-color-blue-7)'
+                strokeDasharray='4 2'
+                pointerEvents='none'
+              />
+            ) : null}
             {entities.map((entity) => {
               const live = drag?.preview[entity.id];
               const rect = live ?? entity.rect;

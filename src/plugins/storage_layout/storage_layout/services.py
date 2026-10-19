@@ -959,6 +959,7 @@ def _parse_drawer_specs(
 ) -> list[DrawerSpec]:
     """Parse drawer entries into specs, resolving existing rows."""
     specs: list[DrawerSpec] = []
+    seen_ids: set[uuid.UUID] = set()
 
     for index, entry in enumerate(entries):
         if not isinstance(entry, dict):
@@ -967,19 +968,43 @@ def _parse_drawer_specs(
             )
 
         raw_id = entry.get('id')
+        is_new = entry.get('is_new', False)
+        if not isinstance(is_new, bool):
+            raise StorageLayoutError(
+                _('drawer.is_new must be a boolean'), code='invalid_value'
+            )
+
         instance = None
-        doc_id = str(raw_id) if raw_id else f'new-drawer-{index}'
+        doc_id = f'new-drawer-{index}'
 
-        if raw_id:
-            instance = Drawer.objects.filter(
-                pk=_as_uuid(raw_id, 'drawer.id'), cabinet=cabinet
-            ).first()
-
-            if instance is None:
+        if raw_id is not None:
+            drawer_id = _as_uuid(raw_id, 'drawer.id')
+            doc_id = str(drawer_id)
+            if drawer_id in seen_ids:
                 raise StorageLayoutError(
-                    _('Unknown or cross-cabinet drawer id: %(id)s') % {'id': raw_id},
+                    _('Duplicate drawer id: %(id)s') % {'id': raw_id},
                     code='invalid_reference',
                 )
+            seen_ids.add(drawer_id)
+            instance = Drawer.objects.filter(pk=drawer_id, cabinet=cabinet).first()
+            if Bin.objects.filter(pk=drawer_id).exists():
+                raise StorageLayoutError(
+                    _('The UUID is already used by a bin: %(id)s') % {'id': raw_id},
+                    code='invalid_reference',
+                )
+            if instance is None:
+                if Drawer.objects.filter(pk=drawer_id).exists():
+                    raise StorageLayoutError(
+                        _('Unknown or cross-cabinet drawer id: %(id)s')
+                        % {'id': raw_id},
+                        code='invalid_reference',
+                    )
+                if not is_new:
+                    raise StorageLayoutError(
+                        _('Unknown drawer id: %(id)s; new client IDs require is_new')
+                        % {'id': raw_id},
+                        code='invalid_reference',
+                    )
 
         allocation = None
         allocation_present = 'allocation' in entry
@@ -1030,6 +1055,7 @@ def _parse_bin_specs(
 ) -> list[BinSpec]:
     """Parse bin entries into specs, resolving existing rows."""
     specs: list[BinSpec] = []
+    seen_ids: set[uuid.UUID] = set()
 
     for index, entry in enumerate(entries):
         if not isinstance(entry, dict):
@@ -1038,19 +1064,42 @@ def _parse_bin_specs(
             )
 
         raw_id = entry.get('id')
+        is_new = entry.get('is_new', False)
+        if not isinstance(is_new, bool):
+            raise StorageLayoutError(
+                _('bin.is_new must be a boolean'), code='invalid_value'
+            )
+
         instance = None
-        doc_id = str(raw_id) if raw_id else f'new-bin-{index}'
+        doc_id = f'new-bin-{index}'
 
-        if raw_id:
-            instance = Bin.objects.filter(
-                pk=_as_uuid(raw_id, 'bin.id'), drawer__cabinet=cabinet
-            ).first()
-
-            if instance is None:
+        if raw_id is not None:
+            bin_id = _as_uuid(raw_id, 'bin.id')
+            doc_id = str(bin_id)
+            if bin_id in seen_ids:
                 raise StorageLayoutError(
-                    _('Unknown or cross-cabinet bin id: %(id)s') % {'id': raw_id},
+                    _('Duplicate bin id: %(id)s') % {'id': raw_id},
                     code='invalid_reference',
                 )
+            seen_ids.add(bin_id)
+            instance = Bin.objects.filter(pk=bin_id, drawer__cabinet=cabinet).first()
+            if Drawer.objects.filter(pk=bin_id).exists():
+                raise StorageLayoutError(
+                    _('The UUID is already used by a drawer: %(id)s') % {'id': raw_id},
+                    code='invalid_reference',
+                )
+            if instance is None:
+                if Bin.objects.filter(pk=bin_id).exists():
+                    raise StorageLayoutError(
+                        _('Unknown or cross-cabinet bin id: %(id)s') % {'id': raw_id},
+                        code='invalid_reference',
+                    )
+                if not is_new:
+                    raise StorageLayoutError(
+                        _('Unknown bin id: %(id)s; new client IDs require is_new')
+                        % {'id': raw_id},
+                        code='invalid_reference',
+                    )
 
         drawer_ref = entry.get('drawer')
 
@@ -1058,6 +1107,11 @@ def _parse_bin_specs(
             raise StorageLayoutError(
                 _('Each bin must reference a drawer'), code='invalid_reference'
             )
+
+        try:
+            drawer_ref = str(uuid.UUID(str(drawer_ref)))
+        except (TypeError, ValueError, AttributeError):
+            drawer_ref = str(drawer_ref)
 
         specs.append(
             BinSpec(
@@ -1344,19 +1398,32 @@ def apply_layout(
 
         for spec in plan.drawers:
             if spec.instance is None:
-                drawer = Drawer.objects.create(
-                    cabinet=cabinet,
-                    label=spec.label,
-                    display_number=spec.display_number,
-                    location_id=spec.location_id,
-                    x=spec.x,
-                    y=spec.y,
-                    width=spec.width,
-                    height=spec.height,
-                    interior_width=spec.interior_width,
-                    interior_height=spec.interior_height,
-                    archived=spec.archived,
-                )
+                drawer_values = {
+                    'cabinet': cabinet,
+                    'label': spec.label,
+                    'display_number': spec.display_number,
+                    'location_id': spec.location_id,
+                    'x': spec.x,
+                    'y': spec.y,
+                    'width': spec.width,
+                    'height': spec.height,
+                    'interior_width': spec.interior_width,
+                    'interior_height': spec.interior_height,
+                    'archived': spec.archived,
+                }
+                if spec.doc_id.startswith('new-drawer-'):
+                    drawer = Drawer.objects.create(**drawer_values)
+                else:
+                    drawer_id = _as_uuid(spec.doc_id, 'drawer.id')
+                    drawer, created = Drawer.objects.get_or_create(
+                        pk=drawer_id, defaults=drawer_values
+                    )
+                    if not created:
+                        raise StorageLayoutError(
+                            _('Drawer id was claimed during save: %(id)s')
+                            % {'id': drawer_id},
+                            code='invalid_reference',
+                        )
             else:
                 drawer = spec.instance
                 drawer.label = spec.label
@@ -1391,16 +1458,29 @@ def apply_layout(
             drawer = drawer_map[spec.drawer_doc_id]
 
             if spec.instance is None:
-                Bin.objects.create(
-                    drawer=drawer,
-                    label=spec.label,
-                    location_id=spec.location_id,
-                    x=spec.x,
-                    y=spec.y,
-                    width=spec.width,
-                    height=spec.height,
-                    archived=spec.archived,
-                )
+                bin_values = {
+                    'drawer': drawer,
+                    'label': spec.label,
+                    'location_id': spec.location_id,
+                    'x': spec.x,
+                    'y': spec.y,
+                    'width': spec.width,
+                    'height': spec.height,
+                    'archived': spec.archived,
+                }
+                if spec.doc_id.startswith('new-bin-'):
+                    Bin.objects.create(**bin_values)
+                else:
+                    bin_id = _as_uuid(spec.doc_id, 'bin.id')
+                    bin_row, created = Bin.objects.get_or_create(
+                        pk=bin_id, defaults=bin_values
+                    )
+                    if not created:
+                        raise StorageLayoutError(
+                            _('Bin id was claimed during save: %(id)s')
+                            % {'id': bin_row.pk},
+                            code='invalid_reference',
+                        )
             else:
                 bin_row = spec.instance
                 bin_row.drawer = drawer

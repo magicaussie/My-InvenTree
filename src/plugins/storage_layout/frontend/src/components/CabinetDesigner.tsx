@@ -39,6 +39,7 @@ import {
   findFreeDrawerPosition,
   moveRects,
   type Rect,
+  rectsOverlap,
   validateMove,
   validateResize
 } from '../state/geometry';
@@ -269,47 +270,74 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
     [activeDrawers, editor]
   );
 
-  const addDrawer = useCallback(() => {
-    const bounds = {
-      width: editor.draft.cabinet.width_units,
-      height: editor.draft.cabinet.height_units
-    };
-    const size = {
-      width: Math.min(grid * 6, bounds.width),
-      height: Math.min(grid * 4, bounds.height)
-    };
-    const position = findFreeDrawerPosition(
-      bounds,
-      size,
-      activeDrawers.map(drawerRect),
-      grid
-    );
-    if (!position) {
-      setServerMessage(t`Insufficient free space to add a drawer.`);
-      return;
-    }
-    setServerMessage(null);
-    const display_numbers = activeDrawers.map(
-      (drawer) => drawer.display_number
-    );
-    const next = display_numbers.length ? Math.max(...display_numbers) + 1 : 1;
-    const drawer: DrawerDraft = {
-      id: newId(),
-      label: `D${next}`,
-      display_number: next,
-      location: null,
-      x: position.x,
-      y: position.y,
-      width: size.width,
-      height: size.height,
-      interior_width: size.width,
-      interior_height: size.height,
-      archived: false,
-      allocation: null
-    };
-    editor.apply({ type: 'add_drawer', drawer });
-    editor.setSelection([drawer.id]);
-  }, [activeDrawers, editor, grid]);
+  const addDrawer = useCallback(
+    (drawn?: Rect) => {
+      const bounds = {
+        width: editor.draft.cabinet.width_units,
+        height: editor.draft.cabinet.height_units
+      };
+      const size = drawn
+        ? { width: drawn.width, height: drawn.height }
+        : {
+            width: Math.min(grid * 6, bounds.width),
+            height: Math.min(grid * 4, bounds.height)
+          };
+      const position = drawn
+        ? drawn
+        : findFreeDrawerPosition(
+            bounds,
+            size,
+            activeDrawers.map(drawerRect),
+            grid
+          );
+      if (!position) {
+        setServerMessage(t`Insufficient free space to add a drawer.`);
+        return;
+      }
+      if (
+        drawn &&
+        (drawn.x < 0 ||
+          drawn.y < 0 ||
+          drawn.width < 1 ||
+          drawn.height < 1 ||
+          drawn.x + drawn.width > bounds.width ||
+          drawn.y + drawn.height > bounds.height ||
+          activeDrawers.some((drawer) =>
+            rectsOverlap(drawn, drawerRect(drawer))
+          ))
+      ) {
+        setServerMessage(
+          t`The drawn drawer must fit inside the cabinet without overlapping another drawer.`
+        );
+        return;
+      }
+      setServerMessage(null);
+      const display_numbers = activeDrawers.map(
+        (drawer) => drawer.display_number
+      );
+      const next = display_numbers.length
+        ? Math.max(...display_numbers) + 1
+        : 1;
+      const drawer: DrawerDraft = {
+        id: newId(),
+        is_new: true,
+        label: `D${next}`,
+        display_number: next,
+        location: null,
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        interior_width: size.width,
+        interior_height: size.height,
+        archived: false,
+        allocation: null
+      };
+      editor.apply({ type: 'add_drawer', drawer });
+      editor.setSelection([drawer.id]);
+    },
+    [activeDrawers, editor, grid]
+  );
 
   const duplicateSelection = useCallback(() => {
     // Only active drawers can be duplicated; archived or missing selections are
@@ -356,6 +384,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
       const copy: DrawerDraft = {
         ...drawer,
         id: newId(),
+        is_new: true,
         label: `${drawer.label} copy`,
         display_number: next,
         // Duplicate copies geometry/style only: no native location, no LEDs.
@@ -603,7 +632,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         grid={grid}
         onToggleSnap={setSnap}
         onGridChange={setGrid}
-        onAdd={addDrawer}
+        onAdd={() => addDrawer()}
         addLabel={t`Add drawer`}
         onDuplicate={duplicateSelection}
         duplicateDisabled={selected.length === 0}
@@ -826,6 +855,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                 grid={grid}
                 snap={snap}
                 ariaLabel={t`Cabinet front view`}
+                onDraw={(rect) => addDrawer(rect)}
                 onSelect={editor.toggleSelection}
                 onClearSelection={() => editor.setSelection([])}
                 onMove={(ids, dx, dy) => onMove(ids, dx, dy)}

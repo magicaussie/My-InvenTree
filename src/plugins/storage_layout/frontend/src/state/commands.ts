@@ -28,8 +28,8 @@ export interface DraftCabinet {
   height_units: number;
 }
 
-export type DrawerDraft = DrawerInput & { id: string };
-export type BinDraft = BinInput & { id: string };
+export type DrawerDraft = DrawerInput & { id: string; is_new?: boolean };
+export type BinDraft = BinInput & { id: string; is_new?: boolean };
 
 export interface LayoutDraft {
   cabinet: DraftCabinet;
