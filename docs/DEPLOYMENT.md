@@ -6,10 +6,17 @@
 
 - Checkout: `/media/spetchal/New Volume1/My-InvenTree-development-002JD/`
 - Branch: `development/my-inventree`
-- At inspection, `HEAD` and `origin/development/my-inventree` both resolved to `130a76913d2059099c6da908c0c88b519a418a4c`.
+- The implementation checkpoint `130a76913d2059099c6da908c0c88b519a418a4c` exists and remains the inspected `origin/development/my-inventree`. On the 2026-10-19 recheck, local `HEAD` was `eb3b1d313` (SSH prerequisite documentation), one commit ahead of origin. Untracked `ZED_ACTIVE_TASK.md` and `dev_browser_settings.py` were left untouched.
 - The workstation SSH config contains entries `Ai-Ubuntu` (`192.168.1.204`) and `Home_Assistant` (`192.168.1.103`), both with user `spetchal`; it contains no `mainserver` entry. These entries do not establish mainserver access.
 - `getent` resolves `mainserver` to `100.105.131.56 mainserver.taila2e6fe.ts.net`.
 - The attempted read-only SSH probe, `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=8 mainserver 'hostname; id'`, timed out connecting to port 22 before authentication. No server account, host fingerprint, SSH service status, Docker/CasaOS resources, ports, storage, or deployment was verified.
+
+### Reachability recheck: 2026-10-19
+
+- The original `mainserver` endpoint still times out on SSH port 22. Tailscale reports it offline, last seen 101 days ago.
+- Tailscale also lists `mainserver-1` at `100.98.254.48`; DNS resolves it to `mainserver-1.taila2e6fe.ts.net`.
+- A strict, batch-mode SSH probe to `mainserver-1` reached host-key verification and stopped with `No ED25519 host key is known`. No host key was accepted, authentication completed, or remote command executed. This establishes an SSH endpoint is reachable, **not** that it is the intended CasaOS server.
+- Owner confirmation of this node and its Ed25519 fingerprint is now the next prerequisite. No SSH configuration, account, key authorization, or server configuration was changed.
 
 ## Owner: read-only server diagnostics
 
@@ -17,12 +24,15 @@ Run these locally on the Ubuntu mainserver (console or an already trusted admini
 
 ```sh
 hostname
+hostnamectl --static
 ip -brief address
 systemctl status ssh --no-pager
 ss -ltn
 if command -v tailscale >/dev/null 2>&1; then tailscale status; else echo 'tailscale not installed'; fi
 ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 ```
+
+Confirm whether this machine is the intended Ubuntu CasaOS host and whether its Tailscale address is `100.98.254.48` (`mainserver-1`). These commands identify the host, show network addresses, inspect the SSH listener, and print only the public host-key fingerprint; they do not authorize deployment or reveal private keys. Do not run account/key authorization commands until the endpoint is confirmed and an exact dedicated-account plan is reviewed.
 
 Share the output needed to diagnose reachability and the host key through a trusted channel; review it for sensitive information first. The server host-key fingerprint must be compared and explicitly confirmed by the owner before it is trusted. Do not disable `StrictHostKeyChecking` or accept an unknown key just to proceed. A port-22 timeout alone does not show whether the cause is routing, firewall, SSH service state, or another condition.
 
