@@ -42,6 +42,10 @@ msgid "Insufficient free space to duplicate the selected drawers."
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "Cannot arrange selection: the result would overlap another drawer or exceed cabinet bounds."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 msgid "Loading cabinet layout…"
 msgstr ""
 
@@ -88,6 +92,18 @@ msgid "Archive"
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "Save failed"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Check your connection and sign-in, then retry. Your draft remains unsaved."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Your draft remains unsaved. Check the response above, correct the issue if needed, then retry or copy the error for your administrator."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 #: src/components/DrawerDesigner.tsx
 msgid "Layout"
 msgstr ""
@@ -113,6 +129,40 @@ msgid "Diagnostics"
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "Hide cabinet properties"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Show cabinet properties"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Cabinet properties"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/CabinetList.tsx
+msgid "Width (units)"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Cabinet width in units"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/CabinetList.tsx
+msgid "Height (units)"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Cabinet height in units"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "One or more drawers extend beyond these cabinet bounds. Their saved positions were not changed."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 msgid "Drawers"
 msgstr ""
 
@@ -123,11 +173,39 @@ msgid "Drawer {0}"
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "Arrange selection"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Distribute horizontally"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Distribute vertically"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Align {mode}"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 msgid "Cabinet front view"
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "Hide properties"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Show properties"
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 msgid "Select a drawer to edit its properties, native binding and logical allocation. Arrow keys move the selection by one grid unit; Shift+arrows use a larger step."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
+msgid "Design drawer interior and bins"
 msgstr ""
 
 #. placeholder {0}: editor.serverValidation.errors.length
@@ -207,14 +285,6 @@ msgid "Existing structural StockLocation that anchors the cabinet."
 msgstr ""
 
 #: src/components/CabinetList.tsx
-msgid "Width (units)"
-msgstr ""
-
-#: src/components/CabinetList.tsx
-msgid "Height (units)"
-msgstr ""
-
-#: src/components/CabinetList.tsx
 #: src/components/editor/Modals.tsx
 #: src/components/editor/Modals.tsx
 #: src/components/editor/Modals.tsx
@@ -224,6 +294,14 @@ msgstr ""
 #: src/components/CabinetList.tsx
 #: src/components/editor/FunctionColorsPanel.tsx
 msgid "Create"
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "No clear space is available for a new bin. Move or resize an existing bin first."
+msgstr ""
+
+#: src/components/DrawerDesigner.tsx
+msgid "Drawer layout saved."
 msgstr ""
 
 #: src/components/DrawerDesigner.tsx
@@ -531,6 +609,10 @@ msgstr ""
 #: src/components/editor/EditorCanvas.tsx
 #: src/components/editor/EditorCanvas.tsx
 msgid "Reset view"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Grid"
 msgstr ""
 
 #. placeholder {0}: entities.length
