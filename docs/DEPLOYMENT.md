@@ -1,147 +1,147 @@
-# My-InvenTree deployment status — checkpoint 002J-L
+# My-InvenTree deployment — checkpoint 002J-L
 
-**Status: SSH verified; Development access/runtime installation package prepared; exact privileged execution approval pending.** No remote writes or deployments have been made. Development/Main remain planned installations: no deployed URLs, image digests, application storage, backups, plugin state, or browser save/reload results are verified.
+## Verified result (2026-10-19)
 
-## Verified connection and inventory — 2026-10-19
+**Development is operational:** <http://192.168.1.108:18081/web/>. Project `myinventree-dev` on the owner-confirmed CasaOS host `mainserver-1` (hostname `mainserver`, LAN `192.168.1.108`, SSH Tailscale `100.98.254.48`). PostgreSQL, Redis, backend and nginx are healthy; bootstrap exited 0. No manually launched Django/Vite service is required. Docker is enabled at boot and the four long-running services use `restart: unless-stopped`. Host reboot was deliberately **not** performed because it would interrupt unrelated CasaOS workloads.
 
-The owner confirmed console hostname `mainserver`, Tailscale IP `100.98.254.48`, and Ed25519 fingerprint `SHA256:H+aUvO7OlOktdTKU9EpVWjtC4uEBMLAWqwNAVAiJ2RI`. A newly scanned public host key matched this fingerprint before it was pinned in the workstation's `~/.ssh/known_hosts` for `mainserver-1` and its IP. The obsolete `mainserver` DNS endpoint was not changed.
+**Main is forbidden and undeployed.** `http://192.168.1.108:18082` is reserved, not a working installation. No Main containers, credentials or policy were created or accessed. Cross-environment browser/data-isolation testing cannot be claimed when Main is absent. The non-installed `contrib/remote-development/compose.main.yml.example` remains an example requiring separate immutable-release, bootstrap and deployment approval.
 
-Verified key-only command (existing workstation credentials; no password requested):
+The owner explicitly approved privileged build/install/start execution from base `68bc70189`, minimum account-wide SSH tightening and diagnosis of Dev deployment blockers. No additional deployment-account privileges were granted. No old SQLite database or original Django-Q queue was copied/imported. No worker/qcluster, hardware watchdog or dispatcher was started. No WLED writes were performed.
 
-```sh
-ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=8 spetchal@mainserver-1 'hostname; id'
-```
+## Source and image evidence
 
-Returned hostname `mainserver`, uid/gid 1000 `spetchal`. This existing account has `sudo`, `docker`, and `lxd` group membership. No membership was added. This is **not** the desired constrained deployment identity; use it only for approved read-only diagnostics until a dedicated mechanism is reviewed. Docker inventory used existing socket access for read-only commands only.
+Source staging is an exact `git archive`, not a copy of the workstation working tree. Only the dedicated **public** key was transferred; private keys, untracked `ZED_ACTIVE_TASK.md`, `dev_browser_settings.py`, local databases and `.env` files were excluded.
 
-- Ubuntu 26.04 LTS; Docker client/server 29.5.2; Compose v5.1.4.
-- 32 CPUs; approximately 60 GiB RAM, 35 GiB available; 8 GiB swap.
-- `/`, `/DATA`, and `/srv` share the root ext4 filesystem: 1.9 TiB total, approximately 1011 GiB available. These paths are not independent disks.
-- Docker data root `/var/lib/docker`; `/DATA/AppData` exists and is world-writable, so it must not hold trusted deployment policy/wrappers.
-- Inventory observed 66 containers, 54 running. No container name matched `inventree`. Existing containers/networks/volumes were listed without reading environment secrets or altering resources.
-- Port 8081 belongs to `router-qwen3-1.7b`; port 8082 belongs to `searxng`. Neither may be reused. TCP ports 18081 and 18082 had no listeners at inspection; recheck before any deployment.
-- Existing unrelated unhealthy/restarting services were observed and left untouched.
+- Application build source: `c3bf19c72a16bfc2f172ed1a35c17c0f0ac157f3`, descended from approved `68bc70189` with the documented deployment fixes.
+- Build archive SHA256: `dc333f2be8b43f9400c0c5811c7b66cd4b252b8d3b239536857a990b7927b772`.
+- Installed lifecycle wrapper source: `a3ef232c1` (only wrapper/test changes after the application build).
+- Server staging: `/home/spetchal/myinventree-development-review`; archive `/home/spetchal/myinventree-access-review/source.tar`.
+- Final staged archive SHA256: `1015280c93f50d024102432044ff6191f2e7a0f943d1cb44ac3fb940d248ec80`. Byte-by-byte comparison of archive files against staging passed. Later documentation/verification-script commits are not represented as rebuilt application code.
 
-### Proposed access/privilege plan — approval required
+| Image | Verified image ID / local repo digest |
+| --- | --- |
+| `localhost/myinventree-dev-backend:review` | `sha256:380462d9fda1d944232f0641b7832fc4883c87ecf5ec1dd68979f3cfc4903609` |
+| `localhost/myinventree-dev-frontend:review` | `sha256:4be7bdb685bbb21f89cd6487cee0fab1d877d024502c806fe90b3ba777c1c2ee` |
+| PostgreSQL | `postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24` |
+| Redis | `redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499` |
 
-- Host: confirmed `mainserver-1` / `100.98.254.48`.
-- New identity: proposed `inventree-deploy`, dedicated Ed25519 key, restricted authorized-key options, no Docker/LXD group, no unrestricted sudo.
-- Proposed Development project: `myinventree-dev`, trusted policy under `/etc/myinventree-dev`, application endpoint `http://192.168.1.108:18081`, bound only to LAN address `192.168.1.108`. SSH continues over `mainserver-1`; web services are not Tailscale-only.
-- Permit only fixed Development status/deploy/test/backup operations via an owner-reviewed root-owned wrapper (or equivalent controlled CI). No arbitrary shell, Compose arguments, mounts, build contexts, or Docker commands. Agent-controlled application containers must not receive host credentials, privileged mode, host networking, or Docker sockets. Final wrapper and configuration must be reviewed before any sudo authorization is installed.
-- Main: separately controlled project `myinventree-main`, required endpoint `http://192.168.1.108:18082`, bound only to `192.168.1.108`. No agent access to Main credentials/storage or deployment actions without specific release approval.
-- Initial impact, if approved: create dedicated identity/key authorization and reviewed policy/storage for Development only; later create isolated Dev containers/networks/volumes. Do not modify CasaOS services, firewall, existing containers, Main, or WLED devices.
+These local application tags are administrator-controlled, not immutable release tags. Runtime uses `pull_policy: never`; the deployment identity cannot build, pull or replace images. The integration Dockerfile pins its base image digests and locks core/frontend requirements, but some supplemental Python/system packages are not fully hash-locked; do not describe this as a bit-for-bit reproducible release build.
 
-The owner has approved **preparation** of the account and constrained Development mechanism. The exact implementation is now in `contrib/remote-development/`; approval to execute it is still required. No remote files, privileges, services or keys have been changed.
-
-## Exact installation proposal awaiting owner review
-
-Reviewed files: [package instructions](../contrib/remote-development/README.md), [access installer](../contrib/remote-development/install-access.sh), [runtime installer](../contrib/remote-development/install-runtime.sh), [Compose policy](../contrib/remote-development/compose.yml), [SSH dispatcher](../contrib/remote-development/ssh-dispatcher), [privileged wrapper](../contrib/remote-development/deploy-wrapper), [sudoers](../contrib/remote-development/sudoers.example).
-
-The planned server staging checkout is `/home/spetchal/myinventree-development-review`; the public key is staged at `/home/spetchal/myinventree-access-review/myinventree-development-deploy_ed25519.pub`. Neither directory has been created. After approval, transfer the reviewed committed source there; verify its commit before building. Do not copy the disposable database, queues, `.env` files or private keys. Generate a dedicated workstation Ed25519 key using the package instructions and transfer **only its public key**. If a passphrase is used, unlock it through the workstation SSH agent, never through chat.
-
-These are the exact privileged commands proposed, run in the verified server session **after approval and source staging**, not through the deployment identity:
+The approved build commands ran successfully on the server, with the exact reviewed archive as context:
 
 ```sh
-# Verify the reviewed commit matches the approved package before running these.
-cd /home/spetchal/myinventree-development-review
 sudo -n docker build --pull=false -f contrib/storage-layout-integration/Dockerfile --target backend -t localhost/myinventree-dev-backend:review .
 sudo -n docker build --pull=false -f contrib/storage-layout-integration/Dockerfile --target frontend -t localhost/myinventree-dev-frontend:review .
-sudo -n docker pull postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
-sudo -n docker pull redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
-sudo -n docker image inspect --format '{{.Id}}' localhost/myinventree-dev-backend:review localhost/myinventree-dev-frontend:review
+# Pull the exact PostgreSQL and Redis references in contrib/remote-development/compose.yml.
 sudo -n sh contrib/remote-development/install-access.sh /home/spetchal/myinventree-access-review/myinventree-development-deploy_ed25519.pub
 sudo -n sh contrib/remote-development/install-runtime.sh
-sudo -n visudo -c
-id inventree-deploy
-sudo -n -l -U inventree-deploy
-sudo -n /usr/sbin/sshd -T -C user=inventree-deploy,host=mainserver-1,addr=100.98.254.48
-sudo -n /usr/local/sbin/inventree-deploy up
-sudo -n /usr/local/sbin/inventree-deploy status
 ```
 
-`sudo -n` fails rather than prompting for a password. If the administrative session cannot execute these, the owner runs the same reviewed commands in their trusted terminal; do not request their password or expand the deployment account's privileges. Verify effective SSH settings before `up`; a custom `AuthorizedKeysFile`, account allowlist or PAM restriction could require an individually reviewed correction. No SSH daemon configuration/reload is proposed. `--pull=false` preserves pinned build inputs but Docker may fetch missing pinned base images; network downloads are expected.
+Installers deliberately refuse existing accounts/policy; **do not rerun them on this installed host**. Future policy/image changes remain separately administrator-reviewed. The fixed Dev wrapper handles ordinary lifecycle, not unattended source/image updates.
 
-### Permissions and impact
+## Access boundary: installed and checked
 
-- Locked-password `inventree-deploy`, home `/var/lib/inventree-deploy`, `/bin/sh` only to permit OpenSSH forced-command dispatch. No interactive shell, PTY, forwarding, agent forwarding, arbitrary exec or Docker arguments are accepted by its authorized key.
-- Home and `.ssh`: `root:root 0755`; public `authorized_keys`: `root:root 0644`, with `restrict,command="/usr/local/libexec/myinventree-dev-ssh"`. These public files must be readable by sshd after dropping privileges, but remain unwritable by the account.
-- Dispatcher and wrapper: `root:root 0755`; `/etc/sudoers.d/myinventree-deploy`: `root:root 0440`, exact six-command allowance only. Candidate sudoers is validated before installation. No Docker, sudo or LXD group membership.
-- `/etc/myinventree-dev`: `root:root 0700`; `compose.yml` and randomly generated `runtime.env`: `root:root 0600`. Installers refuse existing targets instead of overwriting data or policy.
-- The only Development publication is `192.168.1.108:18081:80`, not `0.0.0.0` or the Tailscale address. Intended URL **not yet deployed**: `http://192.168.1.108:18081`. No firewall/CasaOS changes. DB/backend/Redis have internal-only networking; only nginx joins ingress. The installer requires the LAN address and checks both TCP ports 18081/18082, failing closed on inspection errors or any listener. Recheck immediately before startup as port availability can change.
-- `INVENTREE_ALLOWED_HOSTS` includes `192.168.1.108` (without port), localhost and loopback for health checks. `INVENTREE_SITE_URL` is the exact LAN origin including port; existing Django settings derive `CSRF_TRUSTED_ORIGINS` from this URL. The production nginx frontend routes API requests to the backend on the same browser origin, without a Vite server or cross-origin API endpoint. Live CSRF/routing verification remains pending deployment.
-- Project `myinventree-dev`; persistent named volumes `myinventree-dev_postgres`, `myinventree-dev_redis`, `myinventree-dev_app-data`, stored under Docker's `/var/lib/docker/volumes` (confirm actual mountpoints after creation). No volume deletion command is granted.
-- Existing production build and plugin bootstrap are reused. Bootstrap creates only fresh representative test locations/accounts, activates the plugin, migrates and collects assets, and forces hardware/dispatcher settings off. No old database or queue is imported. No qcluster/unsafe worker starts. Any essential asynchronous feature requiring a worker remains pending safety review.
-- Runtime image policy uses local fixed tags and `pull_policy: never`; record actual image IDs after building. The account cannot build, import or replace images. **Lifecycle automation is provided; unattended source/image updates are not yet provided.** That limitation must not be described as full deployment automation.
-
-After installation, workstation commands use the dedicated key (never print it):
+SSH identity remains pinned with strict checking. The owner independently confirmed host Ed25519 fingerprint `SHA256:H+aUvO7OlOktdTKU9EpVWjtC4uEBMLAWqwNAVAiJ2RI`. Use `mainserver-1`; bare `mainserver` resolves to an obsolete endpoint.
 
 ```sh
-ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy status'
-ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy up'
-ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy restart'
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes spetchal@mainserver-1 'hostname; id'
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy status'
 ```
 
-Ordinary fixed Development lifecycle operations need no repeated approval after installation is approved. Privileged policy/image changes and all Main actions retain their gates. Do not print `runtime.env`, rendered Compose configuration or container environment inspections: they contain credentials. The `logs` operation is bounded but application logs must still be reviewed for accidental sensitive output.
+The dedicated workstation Ed25519 private key stays in `/home/spetchal/.ssh/myinventree-development-deploy_ed25519`, protected by filesystem permissions; it has no passphrase for batch lifecycle use. Do not read, print, commit or transfer it. Public-key staging is `/home/spetchal/myinventree-access-review/myinventree-development-deploy_ed25519.pub`.
 
-### Verification recorded for this package
+- `inventree-deploy` uid 999, sole group `inventree-deploy` gid 981; **no docker/sudo/lxd groups**. Password status `L` (locked).
+- Root-owned home `/var/lib/inventree-deploy` and `.ssh` mode 0755; root-owned public `authorized_keys` mode 0644. Key has `restrict,command="/usr/local/libexec/myinventree-dev-ssh"`.
+- Account-wide `/etc/ssh/sshd_config.d/00-myinventree-deploy.conf`: `Match User inventree-deploy`, `ForceCommand` to the same dispatcher, `AuthenticationMethods publickey`, password/keyboard-interactive/GSSAPI/hostbased authentication disabled, one fixed authorized-keys file, no authorized-keys command or trusted user CA, no forwarding/PTY/tunnel/user rc. This is **in addition to** the key restriction.
+- `PermitUserEnvironment` is global-only on this OpenSSH version. It is not placed inside `Match`; installer validates its effective value is `no` before reloading. Existing global policy was already `no`.
+- `sshd -t`, account-specific `sshd -T -C ...`, `visudo -c` passed. Only `systemctl reload ssh` was used; no daemon restart. Administrative SSH still works afterward. Effective policy was checked from both the Tailscale and workstation-LAN address contexts.
+- `/etc/sudoers.d/myinventree-deploy` root-owned 0440 permits exactly `/usr/local/sbin/inventree-deploy {up|stop|start|restart|status|logs}` with no arbitrary args. Wrapper/dispatcher root-owned 0755. No Docker/socket, generic sudo, shell, exec, volume deletion, build or Main command is granted.
+- Real dedicated SSH `status`/`up`/`restart` succeeded. Arbitrary `id` and `inventree-deploy status; id` returned `rejected SSH command`; `ssh -W 127.0.0.1:18081` returned `administratively prohibited` (expected exit 255).
 
-- Latest read-only strict SSH LAN recheck: hostname `mainserver`, existing account `spetchal`; `enp3s0` has `192.168.1.108/22`; `ss -H -ltn '( sport = :18081 or sport = :18082 )'` returned no listeners. Docker 29.5.2 / Compose v5.1.4 and existing container port mappings were rechecked without changes. Earlier inspection confirmed deployment account absent and policy path unused; these must still be checked by installers.
-- Local package policy/dispatcher/installer tests: **13 passed**; both installer syntax checks passed. These are policy tests, not actual account installation or Docker execution tests.
-- Application source `src/backend/InvenTree/InvenTree/config.py:get_secret_key` explicitly creates a missing `INVENTREE_SECRET_KEY_FILE` using Django's cryptographic generator; the persistent `/data` key path is supported. Live first boot remains untested.
-- No image builds, remote installation, plugin state, authenticated browser Save → refresh persistence, backups or container restart persistence have been verified. Do not report this checkpoint complete.
+Use the dedicated command above with `up`, `stop`, `start`, `restart` or bounded `logs` in place of `status`. Routine approved lifecycle needs no repeated approval. `restart` explicitly excludes bootstrap; `up` may rerun seed/migrations and rehash seeded passwords, invalidating existing sessions. Do not use `up` merely to restart services.
 
-### Main preparation boundary
+## Runtime, secrets and safety
 
-Main remains undeployed and has no credentials or agent-accessible policy. The non-installed template `contrib/remote-development/compose.main.yml.example` prepares LAN binding `192.168.1.108:18082`, allowed hosts/site URL, independent PostgreSQL/Redis/app-data volumes and required separate secret/image-digest inputs. Future use must explicitly select project `myinventree-main`; neither installer nor Development wrapper consumes this template. Never reuse Development credentials, test accounts, seed or data. Main requires an owner-approved immutable release/digest and separately reviewed bootstrap, hardware-off settings, backups and deployment commands. There is deliberately no Dev bootstrap/seed or queue worker in the template. The template is not release-ready and must not be started before separate approval and bootstrap review. Tested backup/restore remains pending; this is preparation, not a completed deployment.
+Trusted policy `/etc/myinventree-dev` is root:root 0700; `compose.yml` and `runtime.env` are root:root 0600. Credentials are generated randomly and were never output. Bootstrap accounts are `sl_admin` and `sl_readonly`; use an owner-approved secure credential retrieval channel, never chat/logs or a committed env file. Browser automation reads only the needed Dev password into process memory, with no trace, screenshot of login, persisted auth state, or printed secret.
 
-## Earlier workstation and repository observations (historical)
+Development instance name is persisted as `My-InvenTree DEVELOPMENT` with instance-title enabled. The harmless browser fixture is named `DEVELOPMENT 002J-L persistence`.
 
-- Checkout: `/media/spetchal/New Volume1/My-InvenTree-development-002JD/`
-- Branch: `development/my-inventree`
-- The implementation checkpoint `130a76913d2059099c6da908c0c88b519a418a4c` exists and remains the inspected `origin/development/my-inventree`. On the 2026-10-19 recheck, local `HEAD` was `eb3b1d313` (SSH prerequisite documentation), one commit ahead of origin. Untracked `ZED_ACTIVE_TASK.md` and `dev_browser_settings.py` were left untouched.
-- The workstation SSH config contains entries `Ai-Ubuntu` (`192.168.1.204`) and `Home_Assistant` (`192.168.1.103`), both with user `spetchal`; it contains no `mainserver` entry. These entries do not establish mainserver access.
-- `getent` resolves `mainserver` to `100.105.131.56 mainserver.taila2e6fe.ts.net`.
-- The attempted read-only SSH probe, `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=8 mainserver 'hostname; id'`, timed out connecting to port 22 before authentication. No server account, host fingerprint, SSH service status, Docker/CasaOS resources, ports, storage, or deployment was verified.
+Verified runtime controls:
 
-### Reachability recheck: 2026-10-19
+- Only proxy publishes `192.168.1.108:18081:80`. Port 18082 has no listener. No `0.0.0.0` or Tailscale-only web binding.
+- PostgreSQL/Redis/backend/bootstrap use the internal private network; only nginx also joins ingress. DB and Redis have no host-published ports.
+- All actual container mounts are Dev named volumes, with no host bind mounts, sockets, devices, host networking, privileged mode or added capabilities. All five containers use `no-new-privileges`; backend/bootstrap drop all capabilities. Backend and proxy retain read-only root filesystems and tmpfs scratch storage.
+- Built frontend, static/plugin assets and backend API are same-origin via nginx. Actual browser CSRF/authenticated designer PUT succeeded, not merely an API-only test.
+- Plugin `storage-layout` is installed/active; persisted plugin settings `ENABLE_HARDWARE=False`, `DISPATCHER_ENABLED=False`. No live-controller records or actions were needed for the browser test. Internal backend networking also prevents ordinary outbound controller access. UI/API tests used a new isolated temporary SQLite test database and mocks, not the old disposable database/queue.
+- Four services have health checks and `unless-stopped`; bootstrap is one-shot. Logs are bounded (`local`, 10m × 3); memory limits are installed.
 
-- The original `mainserver` endpoint still times out on SSH port 22. Tailscale reports it offline, last seen 101 days ago.
-- Tailscale also lists `mainserver-1` at `100.98.254.48`; DNS resolves it to `mainserver-1.taila2e6fe.ts.net`.
-- A strict, batch-mode SSH probe to `mainserver-1` reached host-key verification and stopped with `No ED25519 host key is known`. No host key was accepted, authentication completed, or remote command executed. This establishes an SSH endpoint is reachable, **not** that it is the intended CasaOS server.
-- Owner confirmation of this node and its Ed25519 fingerprint is now the next prerequisite. No SSH configuration, account, key authorization, or server configuration was changed.
+Persistent volume mountpoints verified:
 
-## Owner: read-only server diagnostics
+```text
+myinventree-dev_postgres  /var/lib/docker/volumes/myinventree-dev_postgres/_data
+myinventree-dev_redis     /var/lib/docker/volumes/myinventree-dev_redis/_data
+myinventree-dev_app-data  /var/lib/docker/volumes/myinventree-dev_app-data/_data
+```
 
-Run these locally on the Ubuntu mainserver (console or an already trusted administrative session). They inspect state only; do not change configuration or enable services as part of this checkpoint:
+`/data` holds media/static/plugin files and persistent Django/OIDC keys. Never print/read those keys. Never run `down -v`, volume prune, import old SQLite/queue data or promote Dev data into Main.
+
+## Actual acceptance evidence
+
+`contrib/remote-development/browser-smoke.cjs` uses the installed frontend Playwright dependency and an existing Chromium binary. It creates at most one safe Dev cabinet and invokes only real same-origin requests. The final run:
+
+```text
+PASS authenticated browser login
+PASS plugin discovery/navigation/list
+PUT /plugin/storage-layout/api/v1/cabinets/de2fcca3-6946-42e7-9ae3-b80b6c914d0b/layout/ -> HTTP 200
+PASS save-refresh persistence: dimensions=640x840 revision=6
+PASS container-restart persistence: dimensions=640x840 revision=6
+PASS container-replacement persistence: dimensions=640x840 revision=6
+```
+
+Exact workstation command (repository root):
 
 ```sh
-hostname
-hostnamectl --static
-ip -brief address
-systemctl status ssh --no-pager
-ss -ltn
-if command -v tailscale >/dev/null 2>&1; then tailscale status; else echo 'tailscale not installed'; fi
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+SL_VERIFY_RECREATE=1 SL_CHROMIUM_PATH=/home/spetchal/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell node contrib/remote-development/browser-smoke.cjs
 ```
 
-Confirm whether this machine is the intended Ubuntu CasaOS host and whether its Tailscale address is `100.98.254.48` (`mainserver-1`). These commands identify the host, show network addresses, inspect the SSH listener, and print only the public host-key fingerprint; they do not authorize deployment or reveal private keys. Do not run account/key authorization commands until the endpoint is confirmed and an exact dedicated-account plan is reviewed.
+Without `SL_VERIFY_RECREATE=1`, the script uses only dedicated lifecycle for restart. The optional replacement proof requires approved administrator SSH for the fixed Dev backend/proxy `up --no-deps --force-recreate --wait`, without deleting volumes or starting workers. No new sudo grant is installed for testing.
 
-Share the output needed to diagnose reachability and the host key through a trusted channel; review it for sensitive information first. The server host-key fingerprint must be compared and explicitly confirmed by the owner before it is trusted. Do not disable `StrictHostKeyChecking` or accept an unknown key just to proceed. A port-22 timeout alone does not show whether the cause is routing, firewall, SSH service state, or another condition.
+Focused validation:
 
-## Access plan — proposed, not authorized or installed
+- Deployment-policy unit tests: 15 passed; installer POSIX syntax checks passed.
+- Plugin frontend: `npm test -- --reporter=dot`: 303 passed / 16 files; `npm run typecheck` passed.
+- Backend plugin UI/validation/API: 164 tests passed. Ran in backend with `INVENTREE_PLUGIN_TESTING_SETUP=true`, new `/tmp/002jl-test.sqlite3`, temporary media/static/backup paths, site URL localhost, `--settings=storage_layout.test_settings --testrunner=django.test.runner.DiscoverRunner --noinput`. No live Dev database tests ran. Initial attempts without plugin test settings and with the default read-only-filesystem-incompatible slow-test report writer failed; corrected invocation passed.
+- `verify-host.py`: archive/staging byte comparison, actual container mount/privilege/port inspection, Main absence, and exact set comparison of all **66 unrelated CasaOS container IDs/names** passed. No unrelated container was recreated/stopped by deployment; pre-existing health/restart issues were left alone. Baseline is `/home/spetchal/myinventree-access-review/containers-before.txt`.
+- Host `sshd -t`, effective account policy, locked password, group membership and exact sudo allowlist verified; real SSH rejection/forwarding tests passed.
 
-Once connectivity is diagnosable and the owner explicitly approves access:
+### Defects found and corrected during execution
 
-1. Agree the precise host identity, account name, reachable SSH endpoint, and host fingerprint with the owner. Do not infer an account or privilege level from the workstation's unrelated SSH entries.
-2. Generate a dedicated Ed25519 key pair on the workstation, using a protected private key and passphrase where practical. Keep the private key local; never paste, print, commit, or log it. Have the owner authorize its public key for a dedicated non-root account through their trusted server-side process. No key or account has been created as part of this checkpoint.
-3. Verify key-only access and the confirmed host key with strict checking, then test only the approved read-only commands. Do not grant Docker group/socket access or unrestricted sudo.
-4. Before any remote write, present an exact owner-reviewed privilege and impact plan. Use a constrained mechanism that prevents the agent from changing deployment configuration, build contexts, mounts, or commands beyond its approved scope. A root-owned Compose file by itself is not sufficient isolation if those inputs remain agent-editable.
-5. Scope any eventual Development capability to Development only. Keep Main independently gated and read-only to agents unless the owner explicitly approves a particular promotion, database operation, or credential access. Main deployment always requires individual owner approval.
+1. Invalid `PermitUserEnvironment` in `Match` caused sshd validation failure. Candidate policy/key were removed without reload. Only this installer's partial account/files were cleaned before corrected installation; existing SSH/CasaOS files were not removed. Effective global `no` is now required.
+2. Backend tried writing OIDC key under read-only `/app/config`: fixed supported `INVENTREE_OIDC_PRIVATE_KEY_FILE=/data/oidc.pem`, retaining read-only root.
+3. Proxy health check used loopback Host against strict `SITE_URL`: fixed canonical Host header, retaining site-URL validation.
+4. Stale plugin translation catalogs rendered new designer control labels as message IDs: refreshed catalogs and rebuilt images.
+5. Routine restart reran bootstrap/password rehash and could invalidate a session: wrapper restart now targets only db/redis/backend/proxy, with regression test.
 
-No privileged changes or deployment have been approved or performed. Do not disturb existing CasaOS services/containers. Never log or expose secrets. Do not import the old disposable SQLite database or original Django-Q queue, or start its workers. Physical WLED writes (including controller POST/PUT, test, locate, or clear operations) are not authorized.
+## Backups, restore and recovery
 
-## Work required after the blocker is cleared
+Administrator-only `backup-verify.py` creates `/var/backups/myinventree-dev/<UTC timestamp>/` mode 0700, writes PostgreSQL custom-format dump, complete app-data tar, and private runtime/policy copies with restrictive umask. These contain secrets and must stay private. It restores the dump into **only** scratch DB `dev_002jl_restore_verify`, verifies the persisted cabinet, drops that scratch DB, and fully reads the app tar without extracting or printing secrets. This grants no deployment-identity backup/exec privileges.
 
-Continue from checkpoint `002J-L` and perform the required read-only inventory before proposing any write: inspect existing containers/services, free ports, storage/capacity, networking and supported InvenTree deployment approach without disturbing existing resources. Confirm a scoped access plan and obtain specific approval before creating or changing anything. Preserve each environment's independent database, cache, media/static data, secrets, and queues. Keep hardware writes disabled by default. Never promote Development data to Main or import the old database/queue.
+Verified initial backup `/var/backups/myinventree-dev/20261019T121755Z` restored cabinet `660|860|3`; final backup `/var/backups/myinventree-dev/20261019T122606Z` restored `640|840|6`. The app archive contained readable media/static data and both persistent key files. PostgreSQL restore was actually exercised; an end-to-end media restore into a replacement stack and off-host retention are not yet exercised. For application-consistent future backups, pause Dev writes during the DB/app snapshots; the test had no concurrent user writes.
 
-Only report a deployment as complete after checking the actual server and recording verified URLs, immutable source/image identity, project names and storage locations, service/health status, plugin/frontend/API behavior, authenticated save-and-reload persistence, backups, and safety checks. Record tests actually run and distinguish verified observations from proposed design and pending owner actions. No tests or deployment checks were run for this documentation-only checkpoint.
+Approved administrator verification commands from the workstation repository root:
+
+```sh
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes spetchal@mainserver-1 'sudo -n python3 -' < contrib/remote-development/verify-host.py
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes spetchal@mainserver-1 'sudo -n python3 -' < contrib/remote-development/backup-verify.py
+```
+
+Recovery: use dedicated `status` then `restart` for transient Dev failures. Do not delete volumes. Before an approved image update, take a private backup and record current image IDs; administrator installs reviewed images/policy then uses fixed `up`. Schema rollback is not guaranteed by an older image: validate the backup in a separate isolated Dev restore target first, then obtain specific approval before replacing live data. Never restore over Main or automatically promote Dev.
+
+## Remaining limits, not false completion claims
+
+- Main remains intentionally forbidden; dual-stack acceptance and cross-stack isolation tests await separate Main authorization.
+- No unsafe queue worker runs; asynchronous features report the worker unavailable. Email is not configured. Do not enable a worker merely to clear health warnings.
+- HTTP is LAN-only but **not encrypted**. Use only the trusted LAN; no public ingress/firewall/TLS changes were authorized. Do not reuse important external credentials.
+- Application emits read-only font-cache/Gunicorn-control-directory warnings and default report-template initialization warnings; login/designer persistence and service health passed despite these. Full reporting/background-task acceptance was not performed.
+- Restart/replacement durability is proven; host reboot is not. No automatic image/source updater, scheduled/off-host backup, or tested full disaster-recovery stack is claimed.
+- Local untracked owner files remain untouched. No push or pull request was requested or performed.
