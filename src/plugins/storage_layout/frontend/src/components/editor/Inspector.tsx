@@ -19,9 +19,11 @@ import {
   Text,
   TextInput
 } from '@mantine/core';
+import type { AxiosInstance } from 'axios';
 
 import type { BinDraft, DrawerDraft } from '../../state/commands';
 import { formatRange, rangeCount } from '../../utils';
+import { NativeLocationPicker } from './NativeLocationPicker';
 
 export interface FieldChange {
   field: string;
@@ -29,7 +31,9 @@ export interface FieldChange {
 }
 
 export interface DrawerInspectorProps {
+  api?: AxiosInstance;
   drawer: DrawerDraft;
+  parentId?: number | null;
   totalPixels: number;
   readOnly: boolean;
   locationPath?: string;
@@ -62,7 +66,9 @@ function numericField(
 }
 
 export function DrawerInspector({
+  api,
   drawer,
+  parentId,
   totalPixels,
   readOnly,
   locationPath,
@@ -101,7 +107,10 @@ export function DrawerInspector({
         { min: 1, readOnly }
       )}
 
-      <Divider label={t`Front rectangle`} labelPosition='center' />
+      <Divider
+        label={t`Front rectangle (logical units)`}
+        labelPosition='center'
+      />
       <Group grow>
         {numericField(
           t`X`,
@@ -135,7 +144,10 @@ export function DrawerInspector({
         )}
       </Group>
 
-      <Divider label={t`Interior (top-down plane)`} labelPosition='center' />
+      <Divider
+        label={t`Interior (top-down logical units)`}
+        labelPosition='center'
+      />
       <Group grow>
         {numericField(
           t`Interior width`,
@@ -153,18 +165,14 @@ export function DrawerInspector({
 
       <Divider label={t`Native location`} labelPosition='center' />
       <Group grow align='flex-end'>
-        <NumberInput
-          label={t`Location ID`}
-          size='xs'
-          min={1}
-          value={drawer.location ?? ''}
-          readOnly={readOnly}
-          onChange={(value) =>
-            onField({
-              field: 'location',
-              value: value === '' ? null : Number(value) || null
-            })
-          }
+        <NativeLocationPicker
+          api={api}
+          label={t`Stock location`}
+          value={drawer.location}
+          structural
+          parentId={parentId}
+          disabled={readOnly}
+          onChange={(value) => onField({ field: 'location', value })}
         />
         {onEditLocation ? (
           <Button
@@ -268,7 +276,9 @@ export function DrawerInspector({
 }
 
 export interface BinInspectorProps {
+  api?: AxiosInstance;
   bin: BinDraft;
+  parentId?: number | null;
   inheritedRange: { logical_start: number; logical_end: number } | null;
   readOnly: boolean;
   locationPath?: string;
@@ -279,7 +289,9 @@ export interface BinInspectorProps {
 }
 
 export function BinInspector({
+  api,
   bin,
+  parentId,
   inheritedRange,
   readOnly,
   locationPath,
@@ -309,7 +321,7 @@ export function BinInspector({
         }
       />
 
-      <Divider label={t`Rectangle`} labelPosition='center' />
+      <Divider label={t`Rectangle (logical units)`} labelPosition='center' />
       <Group grow>
         {numericField(t`X`, bin.x, (value) => onField({ field: 'x', value }), {
           readOnly
@@ -338,18 +350,14 @@ export function BinInspector({
 
       <Divider label={t`Native location`} labelPosition='center' />
       <Group grow align='flex-end'>
-        <NumberInput
-          label={t`Location ID`}
-          size='xs'
-          min={1}
-          value={bin.location ?? ''}
-          readOnly={readOnly}
-          onChange={(value) =>
-            onField({
-              field: 'location',
-              value: value === '' ? null : Number(value) || null
-            })
-          }
+        <NativeLocationPicker
+          api={api}
+          label={t`Stock location`}
+          value={bin.location}
+          structural={false}
+          parentId={parentId}
+          disabled={readOnly}
+          onChange={(value) => onField({ field: 'location', value })}
         />
         {onEditLocation ? (
           <Button

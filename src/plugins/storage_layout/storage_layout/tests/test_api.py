@@ -59,6 +59,11 @@ class ApiTestCase(InvenTreeAPITestCase):
             'operate_hardware',
             'emergency_stop',
         )
+        self.user.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label='stock', codename='add_stocklocation'
+            )
+        )
 
         self.root = StockLocation.objects.create(name='Warehouse', structural=True)
         self.cabinet_location = StockLocation.objects.create(
@@ -247,6 +252,95 @@ class CabinetApiTests(ApiTestCase):
         self.assertEqual(response.data['revision'], 1)
         self.assertTrue(Cabinet.objects.filter(slug='cabinet-2').exists())
 
+    def test_create_with_root_location_name_is_atomic(self):
+        """Creating a root location and cabinet is one authorized operation."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label='stock', codename='add_stocklocation'
+            )
+        )
+        response = self.post(
+            f'{BASE}cabinets/',
+            {
+                'name': 'New cabinet',
+                'slug': 'new-cabinet',
+                'root_location_name': 'New cabinet root',
+                'width_units': 100,
+                'height_units': 200,
+            },
+            expected_code=201,
+        )
+        cabinet = Cabinet.objects.get(pk=response.data['id'])
+        self.assertEqual(cabinet.location.name, 'New cabinet root')
+        self.assertTrue(cabinet.location.structural)
+
+    def test_create_root_location_requires_native_permission(self):
+        """Plugin change permission alone cannot create native locations."""
+        add_location_permission = Permission.objects.get(
+            content_type__app_label='stock', codename='add_stocklocation'
+        )
+        self.user.user_permissions.remove(add_location_permission)
+        self.user._perm_cache = None
+        self.user._user_perm_cache = None
+        count = StockLocation.objects.count()
+        self.post(
+            f'{BASE}cabinets/',
+            {
+                'name': 'Denied cabinet',
+                'slug': 'denied-cabinet',
+                'root_location_name': 'Denied root',
+                'width_units': 100,
+                'height_units': 200,
+            },
+            expected_code=403,
+        )
+        self.assertEqual(StockLocation.objects.count(), count)
+        self.assertFalse(Cabinet.objects.filter(slug='denied-cabinet').exists())
+
+    def test_create_root_location_rolls_back_on_cabinet_validation_failure(self):
+        """A native location is not orphaned when the cabinet cannot be saved."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label='stock', codename='add_stocklocation'
+            )
+        )
+        count = StockLocation.objects.count()
+        self.post(
+            f'{BASE}cabinets/',
+            {
+                'name': 'Invalid cabinet',
+                'slug': 'cabinet-1',
+                'root_location_name': 'Rolled back root',
+                'width_units': 100,
+                'height_units': 200,
+            },
+            expected_code=400,
+        )
+        self.assertEqual(StockLocation.objects.count(), count)
+        self.assertFalse(StockLocation.objects.filter(name='Rolled back root').exists())
+
+    def test_create_root_location_rejects_name_collision(self):
+        """A collision never binds the cabinet to an unrelated native location."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label='stock', codename='add_stocklocation'
+            )
+        )
+        original = StockLocation.objects.create(name='Collision root', structural=True)
+        self.post(
+            f'{BASE}cabinets/',
+            {
+                'name': 'Collision cabinet',
+                'slug': 'collision-cabinet',
+                'root_location_name': original.name,
+                'width_units': 100,
+                'height_units': 200,
+            },
+            expected_code=400,
+        )
+        self.assertFalse(Cabinet.objects.filter(slug='collision-cabinet').exists())
+        self.assertEqual(StockLocation.objects.filter(name=original.name).count(), 1)
+
     def test_detail_has_etag(self):
         """The detail response carries a revision ETag."""
         response = self.get(f'{BASE}cabinets/{self.cabinet.pk}/', expected_code=200)
@@ -334,16 +428,18 @@ class LayoutApiTests(ApiTestCase):
         """A layout write advances the revision."""
         document = self.get(self.cabinet_url('layout/'), expected_code=200).data
         document.pop('diagnostics', None)
-        document['bins'].append({
-            'id': None,
-            'drawer': str(self.drawer.pk),
-            'label': 'A1-01',
-            'location': self.bin_location.pk,
-            'x': 0,
-            'y': 0,
-            'width': 70,
-            'height': 100,
-        })
+        document['bins'].append(
+            {
+                'id': None,
+                'drawer': str(self.drawer.pk),
+                'label': 'A1-01',
+                'location': self.bin_location.pk,
+                'x': 0,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+            }
+        )
 
         response = self.put(
             self.cabinet_url('layout/'),
@@ -361,21 +457,23 @@ class LayoutApiTests(ApiTestCase):
         new_drawer_location = StockLocation.objects.create(
             name='Drawer A2', parent=self.cabinet_location, structural=True
         )
-        document['drawers'].append({
-            'id': str(client_id),
-            'is_new': True,
-            'label': 'A2',
-            'display_number': 2,
-            'location': new_drawer_location.pk,
-            'x': 0,
-            'y': 120,
-            'width': 300,
-            'height': 100,
-            'interior_width': 280,
-            'interior_height': 400,
-            'archived': False,
-            'allocation': None,
-        })
+        document['drawers'].append(
+            {
+                'id': str(client_id),
+                'is_new': True,
+                'label': 'A2',
+                'display_number': 2,
+                'location': new_drawer_location.pk,
+                'x': 0,
+                'y': 120,
+                'width': 300,
+                'height': 100,
+                'interior_width': 280,
+                'interior_height': 400,
+                'archived': False,
+                'allocation': None,
+            }
+        )
 
         response = self.put(
             self.cabinet_url('layout/'),
@@ -415,23 +513,27 @@ class LayoutApiTests(ApiTestCase):
         new_drawer_location = StockLocation.objects.create(
             name='Drawer A2', parent=self.cabinet_location, structural=True
         )
-        document['drawers'].append({
-            'id': None,
-            'label': 'A2',
-            'display_number': 2,
-            'location': new_drawer_location.pk,
-            'x': 0,
-            'y': 120,
-            'width': 300,
-            'height': 100,
-            'interior_width': 280,
-            'interior_height': 400,
-            'archived': False,
-            'allocation': None,
-        })
+        document['drawers'].append(
+            {
+                'id': None,
+                'label': 'A2',
+                'display_number': 2,
+                'location': new_drawer_location.pk,
+                'x': 0,
+                'y': 120,
+                'width': 300,
+                'height': 100,
+                'interior_width': 280,
+                'interior_height': 400,
+                'archived': False,
+                'allocation': None,
+            }
+        )
 
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=200,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
 
@@ -444,21 +546,25 @@ class LayoutApiTests(ApiTestCase):
         """A newly generated bin UUID is stored and remains addressable."""
         document = self.layout_document()
         bin_id = uuid.uuid4()
-        document['bins'].append({
-            'id': str(bin_id),
-            'is_new': True,
-            'drawer': str(self.drawer.pk),
-            'label': 'A1-02',
-            'location': None,
-            'x': 80,
-            'y': 0,
-            'width': 70,
-            'height': 100,
-            'archived': False,
-        })
+        document['bins'].append(
+            {
+                'id': str(bin_id),
+                'is_new': True,
+                'drawer': str(self.drawer.pk),
+                'label': 'A1-02',
+                'location': None,
+                'x': 80,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+                'archived': False,
+            }
+        )
 
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=200,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
 
@@ -467,12 +573,16 @@ class LayoutApiTests(ApiTestCase):
         self.cabinet.refresh_from_db()
 
         self.put(
-            self.cabinet_url('layout/'), document, expected_code=412,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=412,
             HTTP_IF_MATCH=f'"{self.cabinet.revision - 1}"',
         )
         self.assertEqual(Bin.objects.filter(drawer=self.drawer).count(), 1)
         retried = self.put(
-            self.cabinet_url('layout/'), document, expected_code=200,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=200,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
         self.assertEqual(Bin.objects.filter(drawer=self.drawer).count(), 1)
@@ -484,27 +594,49 @@ class LayoutApiTests(ApiTestCase):
         new_drawer_location = StockLocation.objects.create(
             name='Drawer A2', parent=self.cabinet_location, structural=True
         )
-        document['drawers'].append({
-            'id': str(uuid.uuid4()), 'label': 'A2', 'display_number': 2,
-            'location': new_drawer_location.pk, 'x': 0, 'y': 120,
-            'width': 300, 'height': 100, 'interior_width': 280,
-            'interior_height': 400, 'archived': False, 'allocation': None,
-        })
+        document['drawers'].append(
+            {
+                'id': str(uuid.uuid4()),
+                'label': 'A2',
+                'display_number': 2,
+                'location': new_drawer_location.pk,
+                'x': 0,
+                'y': 120,
+                'width': 300,
+                'height': 100,
+                'interior_width': 280,
+                'interior_height': 400,
+                'archived': False,
+                'allocation': None,
+            }
+        )
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=400,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
         self.assertEqual(response.data['code'], 'invalid_reference')
         self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
 
         document = self.layout_document()
-        document['bins'].append({
-            'id': str(uuid.uuid4()), 'drawer': str(self.drawer.pk),
-            'label': 'A1-02', 'location': None, 'x': 80, 'y': 0,
-            'width': 70, 'height': 100, 'archived': False,
-        })
+        document['bins'].append(
+            {
+                'id': str(uuid.uuid4()),
+                'drawer': str(self.drawer.pk),
+                'label': 'A1-02',
+                'location': None,
+                'x': 80,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+                'archived': False,
+            }
+        )
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=400,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
         self.assertEqual(response.data['code'], 'invalid_reference')
@@ -519,7 +651,9 @@ class LayoutApiTests(ApiTestCase):
         document['drawers'].append(duplicate)
 
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=400,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
 
@@ -531,15 +665,23 @@ class LayoutApiTests(ApiTestCase):
         document = self.layout_document()
         bin_id = uuid.uuid4()
         row = {
-            'id': str(bin_id), 'is_new': True,
-            'drawer': str(self.drawer.pk), 'label': 'A1-02',
-            'location': None, 'x': 80, 'y': 0, 'width': 70, 'height': 100,
+            'id': str(bin_id),
+            'is_new': True,
+            'drawer': str(self.drawer.pk),
+            'label': 'A1-02',
+            'location': None,
+            'x': 80,
+            'y': 0,
+            'width': 70,
+            'height': 100,
             'archived': False,
         }
         document['bins'].extend([row, {**row, 'label': 'A1-03', 'x': 160}])
 
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=400,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
 
@@ -549,15 +691,25 @@ class LayoutApiTests(ApiTestCase):
     def test_put_layout_rejects_uuid_reused_between_drawer_and_bin(self):
         """Archive IDs stay unambiguous across drawer and bin namespaces."""
         document = self.layout_document()
-        document['bins'].append({
-            'id': str(self.drawer.pk), 'is_new': True,
-            'drawer': str(self.drawer.pk), 'label': 'A1-02',
-            'location': None, 'x': 80, 'y': 0, 'width': 70, 'height': 100,
-            'archived': False,
-        })
+        document['bins'].append(
+            {
+                'id': str(self.drawer.pk),
+                'is_new': True,
+                'drawer': str(self.drawer.pk),
+                'label': 'A1-02',
+                'location': None,
+                'x': 80,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+                'archived': False,
+            }
+        )
 
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=400,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
 
@@ -568,8 +720,11 @@ class LayoutApiTests(ApiTestCase):
         """A concurrent foreign claim returns a safe reference error, not 500."""
         other_location = StockLocation.objects.create(name='Cabinet 2', structural=True)
         other_cabinet = Cabinet.objects.create(
-            name='Cabinet 2', slug='cabinet-2', location=other_location,
-            width_units=600, height_units=800,
+            name='Cabinet 2',
+            slug='cabinet-2',
+            location=other_location,
+            width_units=600,
+            height_units=800,
         )
         other_drawer_location = StockLocation.objects.create(
             name='Drawer B1', parent=other_location, structural=True
@@ -579,13 +734,23 @@ class LayoutApiTests(ApiTestCase):
         )
         client_id = uuid.uuid4()
         document = self.layout_document()
-        document['drawers'].append({
-            'id': str(client_id), 'is_new': True, 'label': 'A2',
-            'display_number': 2, 'location': new_drawer_location.pk,
-            'x': 0, 'y': 120, 'width': 300, 'height': 100,
-            'interior_width': 280, 'interior_height': 400,
-            'archived': False, 'allocation': None,
-        })
+        document['drawers'].append(
+            {
+                'id': str(client_id),
+                'is_new': True,
+                'label': 'A2',
+                'display_number': 2,
+                'location': new_drawer_location.pk,
+                'x': 0,
+                'y': 120,
+                'width': 300,
+                'height': 100,
+                'interior_width': 280,
+                'interior_height': 400,
+                'archived': False,
+                'allocation': None,
+            }
+        )
 
         def claim_uuid(**kwargs):
             values = dict(kwargs['defaults'])
@@ -595,7 +760,9 @@ class LayoutApiTests(ApiTestCase):
 
         with mock.patch.object(Drawer.objects, 'get_or_create', side_effect=claim_uuid):
             response = self.put(
-                self.cabinet_url('layout/'), document, expected_code=400,
+                self.cabinet_url('layout/'),
+                document,
+                expected_code=400,
                 HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
             )
 
@@ -606,22 +773,34 @@ class LayoutApiTests(ApiTestCase):
         """A real UUID owned by another cabinet is never treated as new."""
         other_location = StockLocation.objects.create(name='Cabinet 2', structural=True)
         other_cabinet = Cabinet.objects.create(
-            name='Cabinet 2', slug='cabinet-2', location=other_location,
-            width_units=600, height_units=800,
+            name='Cabinet 2',
+            slug='cabinet-2',
+            location=other_location,
+            width_units=600,
+            height_units=800,
         )
         other_drawer_location = StockLocation.objects.create(
             name='Drawer B1', parent=other_location, structural=True
         )
         other_drawer = Drawer.objects.create(
-            cabinet=other_cabinet, label='B1', display_number=1,
-            location=other_drawer_location, x=0, y=0, width=300, height=100,
-            interior_width=280, interior_height=400,
+            cabinet=other_cabinet,
+            label='B1',
+            display_number=1,
+            location=other_drawer_location,
+            x=0,
+            y=0,
+            width=300,
+            height=100,
+            interior_width=280,
+            interior_height=400,
         )
         document = self.layout_document()
         document['drawers'][0]['id'] = str(other_drawer.pk)
 
         response = self.put(
-            self.cabinet_url('layout/'), document, expected_code=400,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=400,
             HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
         )
 
@@ -637,18 +816,30 @@ class LayoutApiTests(ApiTestCase):
         new_drawer_location = StockLocation.objects.create(
             name='Drawer A2', parent=self.cabinet_location, structural=True
         )
-        document['drawers'].append({
-            'id': str(uuid.uuid4()), 'is_new': True,
-            'label': 'A2', 'display_number': 2,
-            'location': new_drawer_location.pk, 'x': 0, 'y': 120, 'width': 300, 'height': 100,
-            'interior_width': 280, 'interior_height': 400, 'archived': False,
-            'allocation': None,
-        })
+        document['drawers'].append(
+            {
+                'id': str(uuid.uuid4()),
+                'is_new': True,
+                'label': 'A2',
+                'display_number': 2,
+                'location': new_drawer_location.pk,
+                'x': 0,
+                'y': 120,
+                'width': 300,
+                'height': 100,
+                'interior_width': 280,
+                'interior_height': 400,
+                'archived': False,
+                'allocation': None,
+            }
+        )
         self.cabinet.revision += 1
         self.cabinet.save(update_fields=['revision'])
 
         self.put(
-            self.cabinet_url('layout/'), document, expected_code=412,
+            self.cabinet_url('layout/'),
+            document,
+            expected_code=412,
             HTTP_IF_MATCH=f'"{stale_revision}"',
         )
         self.assertEqual(Drawer.objects.filter(cabinet=self.cabinet).count(), 1)
@@ -695,6 +886,94 @@ class LayoutApiTests(ApiTestCase):
 
         self.assertEqual(response.data['drawer']['label'], 'A1')
 
+    def test_drawer_layout_saves_location_binding(self):
+        """Drawer projection writes preserve a valid cabinet child binding."""
+        location = StockLocation.objects.create(
+            name='Drawer A1 replacement', parent=self.cabinet_location, structural=True
+        )
+        response = self.get(
+            f'{BASE}drawers/{self.drawer.pk}/layout/', expected_code=200
+        )
+        response.data['drawer']['location'] = location.pk
+
+        result = self.put(
+            f'{BASE}drawers/{self.drawer.pk}/layout/',
+            response.data,
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        self.drawer.refresh_from_db()
+        self.assertEqual(self.drawer.location_id, location.pk)
+        self.assertEqual(result.data['drawers'][0]['location'], location.pk)
+
+    def test_drawer_layout_rejects_foreign_location_binding(self):
+        """Drawer projection cannot bind a location owned by another user."""
+        from users.models import Owner
+
+        foreign = StockLocation.objects.create(
+            name='Foreign drawer', parent=self.cabinet_location, structural=True
+        )
+        foreign.owner = Owner.get_owner(
+            User.objects.create_user(username='foreign-location-owner', password='x')
+        )
+        foreign.save()
+        response = self.get(
+            f'{BASE}drawers/{self.drawer.pk}/layout/', expected_code=200
+        )
+        response.data['drawer']['location'] = foreign.pk
+
+        import importlib
+
+        services = importlib.import_module('storage_layout.services')
+        with mock.patch.object(
+            services,
+            'user_owns_location',
+            side_effect=lambda user, location: location.pk != foreign.pk,
+        ):
+            result = self.put(
+                f'{BASE}drawers/{self.drawer.pk}/layout/',
+                response.data,
+                expected_code=403,
+                HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+            )
+
+        self.assertEqual(result.data['code'], 'forbidden')
+        self.drawer.refresh_from_db()
+        self.assertEqual(self.drawer.location_id, self.drawer_location.pk)
+
+    def test_drawer_layout_auto_creates_bin_location(self):
+        """A drawer projection can request native bin creation on save."""
+        response = self.get(
+            f'{BASE}drawers/{self.drawer.pk}/layout/', expected_code=200
+        )
+        response.data['bins'].append(
+            {
+                'id': None,
+                'drawer': str(self.drawer.pk),
+                'label': 'A1-01',
+                'location': None,
+                'auto_create_location': True,
+                'x': 0,
+                'y': 0,
+                'width': 70,
+                'height': 100,
+                'archived': False,
+            }
+        )
+
+        result = self.put(
+            f'{BASE}drawers/{self.drawer.pk}/layout/',
+            response.data,
+            expected_code=200,
+            HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+
+        bin_row = Bin.objects.get(drawer=self.drawer, label='A1-01')
+        self.assertEqual(bin_row.location.name, 'A1-01')
+        self.assertEqual(bin_row.location.parent_id, self.drawer_location.pk)
+        self.assertEqual(result.data['bins'][0]['location'], bin_row.location_id)
+
     def layout_document(self):
         """Return the current layout document without diagnostics."""
         document = self.get(self.cabinet_url('layout/'), expected_code=200).data
@@ -728,18 +1007,20 @@ class LayoutApiTests(ApiTestCase):
             name='Drawer A2', parent=self.cabinet_location, structural=True
         )
         document = self.layout_document()
-        document['drawers'].append({
-            'id': None,
-            'label': 'A1',
-            'display_number': 2,
-            'location': second_location.pk,
-            'x': 0,
-            'y': 100,
-            'width': 300,
-            'height': 100,
-            'interior_width': 280,
-            'interior_height': 400,
-        })
+        document['drawers'].append(
+            {
+                'id': None,
+                'label': 'A1',
+                'display_number': 2,
+                'location': second_location.pk,
+                'x': 0,
+                'y': 100,
+                'width': 300,
+                'height': 100,
+                'interior_width': 280,
+                'interior_height': 400,
+            }
+        )
 
         response = self.put(
             self.cabinet_url('layout/'),
@@ -758,16 +1039,18 @@ class LayoutApiTests(ApiTestCase):
         document = self.layout_document()
 
         for x in (0, 70):
-            document['bins'].append({
-                'id': None,
-                'drawer': str(self.drawer.pk),
-                'label': 'B1',
-                'location': None,
-                'x': x,
-                'y': 0,
-                'width': 70,
-                'height': 100,
-            })
+            document['bins'].append(
+                {
+                    'id': None,
+                    'drawer': str(self.drawer.pk),
+                    'label': 'B1',
+                    'location': None,
+                    'x': x,
+                    'y': 0,
+                    'width': 70,
+                    'height': 100,
+                }
+            )
 
         response = self.put(
             self.cabinet_url('layout/'),

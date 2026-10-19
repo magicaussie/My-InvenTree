@@ -1,9 +1,8 @@
 /**
  * Cabinet list / landing route (`cabinets`).
  *
- * Simple, authenticated list of plugin cabinets with a link into the graphical
- * designer. Cabinet creation references an existing native location; it never
- * creates one implicitly (design section 5).
+ * Authenticated cabinet list and creation flow. Root location creation and
+ * cabinet creation are submitted atomically through the plugin API.
  */
 
 import type { InvenTreePluginContext } from '@inventreedb/ui';
@@ -24,6 +23,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { StorageLayoutClient } from '../api/client';
 import { type CabinetSummary, StorageLayoutApiError } from '../api/types';
+import { NativeLocationPicker } from './editor/NativeLocationPicker';
 
 export interface CabinetListProps {
   context: InvenTreePluginContext;
@@ -47,6 +47,9 @@ export function CabinetList({ context }: CabinetListProps) {
 
   const [name, setName] = useState('');
   const [location, setLocation] = useState<number | ''>('');
+  const [createRootLocation, setCreateRootLocation] = useState(false);
+  const [rootLocationName, setRootLocationName] = useState('');
+  const [creating, setCreating] = useState(false);
   const [width, setWidth] = useState(600);
   const [height, setHeight] = useState(800);
 
@@ -71,18 +74,23 @@ export function CabinetList({ context }: CabinetListProps) {
   }, [load]);
 
   const create = async () => {
-    if (location === '') return;
+    if (!createRootLocation && location === '') return;
     try {
+      setCreating(true);
       await client.createCabinet({
         name,
         slug: slugify(name),
-        location: Number(location),
+        ...(createRootLocation
+          ? { root_location_name: rootLocationName.trim() }
+          : { location: Number(location) }),
         width_units: width,
         height_units: height
       });
       setCreateOpen(false);
       setName('');
       setLocation('');
+      setCreateRootLocation(false);
+      setRootLocationName('');
       await load();
     } catch (err) {
       const apiError =
@@ -90,6 +98,8 @@ export function CabinetList({ context }: CabinetListProps) {
           ? err
           : new StorageLayoutApiError(String(err), 0);
       setError(apiError.message);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -116,7 +126,7 @@ export function CabinetList({ context }: CabinetListProps) {
 
       {status === 'ready' && cabinets.length === 0 ? (
         <Alert color='blue' title={t`No cabinets yet`}>
-          {t`Create a cabinet to start designing its drawers and bins. Cabinets are bound to existing native stock locations.`}
+          {t`Create a cabinet to start designing its drawers and bins. Cabinets can be bound to an existing native stock location or a new root location.`}
         </Alert>
       ) : null}
 
@@ -140,7 +150,7 @@ export function CabinetList({ context }: CabinetListProps) {
                 </Text>
               </Table.Td>
               <Table.Td>
-                {cabinet.width_units}x{cabinet.height_units}
+                {cabinet.width_units} × {cabinet.height_units} logical units
               </Table.Td>
               <Table.Td>
                 <Badge variant='light'>{cabinet.revision}</Badge>
@@ -184,24 +194,46 @@ export function CabinetList({ context }: CabinetListProps) {
             value={name}
             onChange={(event) => setName(event.currentTarget.value)}
           />
-          <NumberInput
-            label={t`Native location ID`}
-            description={t`Existing structural StockLocation that anchors the cabinet.`}
-            min={1}
-            value={location}
-            onChange={(value) =>
-              setLocation(value === '' ? '' : Number(value) || '')
-            }
-          />
+          <Group gap='xs'>
+            <Button
+              size='compact-xs'
+              variant={!createRootLocation ? 'filled' : 'default'}
+              onClick={() => setCreateRootLocation(false)}
+            >{t`Choose existing`}</Button>
+            <Button
+              size='compact-xs'
+              variant={createRootLocation ? 'filled' : 'default'}
+              onClick={() => setCreateRootLocation(true)}
+            >{t`Create root location`}</Button>
+          </Group>
+          {createRootLocation ? (
+            <TextInput
+              label={t`New root StockLocation name`}
+              value={rootLocationName}
+              onChange={(event) =>
+                setRootLocationName(event.currentTarget.value)
+              }
+            />
+          ) : (
+            <NativeLocationPicker
+              api={context.api}
+              label={t`Cabinet StockLocation`}
+              description={t`Select the existing structural location that anchors this cabinet.`}
+              value={location === '' ? null : location}
+              clearable={false}
+              structural
+              onChange={(value) => setLocation(value ?? '')}
+            />
+          )}
           <Group grow>
             <NumberInput
-              label={t`Width (units)`}
+              label={t`Width (logical units)`}
               min={1}
               value={width}
               onChange={(value) => setWidth(Number(value) || 1)}
             />
             <NumberInput
-              label={t`Height (units)`}
+              label={t`Height (logical units)`}
               min={1}
               value={height}
               onChange={(value) => setHeight(Number(value) || 1)}
@@ -213,7 +245,14 @@ export function CabinetList({ context }: CabinetListProps) {
             </Button>
             <Button
               onClick={() => void create()}
-              disabled={!name || location === ''}
+              loading={creating}
+              disabled={
+                creating ||
+                !name.trim() ||
+                (createRootLocation
+                  ? !rootLocationName.trim()
+                  : location === '')
+              }
             >
               {t`Create`}
             </Button>

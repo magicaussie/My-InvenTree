@@ -26,13 +26,13 @@ For every Storage Layout plugin change, review [the graphical user guide](docs/s
 - Private backups live under `/var/backups/myinventree-dev`; a PostgreSQL dump restored successfully into an isolated scratch DB. Do not expose backup contents or restore over live data without explicit approval. See docs for tested versus pending media/off-host recovery.
 - Preserve owner untracked `ZED_ACTIVE_TASK.md` and `dev_browser_settings.py`. HTTP endpoint is trusted-LAN-only, not TLS-protected. Do not claim dual-environment completion while Main remains forbidden.
 
-## Deployment checkpoint 002J-M — deployed designer repair (supersedes pending notes below)
+## Deployment checkpoint 002J-M — prior deployed designer build
 
 - Deployed application source is `2bb7375ed` (includes identity fix `4616314ea`). Verified Development browser regression completed successfully, including refresh and container restart, using isolated cabinet `53ac7a4f-a093-480e-830c-143dc7aa2ddf`.
 - Backend image `sha256:a99974b2f6c86fc2f0db609e85c5128bd4d06805b705e0e0a8de87640951de54`; frontend image `sha256:0796bd4cd2a1612a7419ca1e0aac7784b14bf0ceb8bdfb1bd95f610a8c5e5c9c`. Both running containers matched these IDs. Fixed Compose matched the reviewed archive byte-for-byte.
 - The production build must extract Lingui messages before compilation; otherwise new controls display message IDs. `npm run build` now enforces this.
 - Run `SL_CHROMIUM_PATH=/bin/chromium node contrib/remote-development/live-layout-regression.cjs` for authenticated isolated browser acceptance. It creates fixture data and restarts only Development through the dedicated restricted account. Never use against Main. Credentials stay in memory, never logs.
-- New drawers (including duplicates/drawn drawers) require distinct structural child native Location IDs; bins require nonstructural children. No automatic native-location creation is provided by the designer. Preserve ownership/binding checks.
+- At checkpoint 002J-M, new drawers/bins required native child Location IDs; this is superseded for current source behavior by checkpoint 002J-N in `docs/DEPLOYMENT.md`. Do not infer that source-tested changes are deployed.
 - Actual passing checks: Add, Duplicate and Draw with separate saves/refresh; move/resize; adjustable grid/snap; zoom/pan/fit/reset; undo/redo; inspector geometry; bin creation/editing; archive; cabinet dimensions; identical cabinet/drawer/bin geometry and identities after PostgreSQL/container restart. Multi-selection/alignment/distribution were not browser-tested in this run.
 - Hardware gates were re-read from the running plugin: both False. No worker, Main, policy expansion or unrelated service change was performed. Rollback tags `localhost/myinventree-dev-{backend,frontend}:rollback-002jm` preserve pre-update images; restoring review tags is admin-only, not allowed through the restricted account.
 

@@ -19,8 +19,10 @@ cabinet revision.
 
 from __future__ import annotations
 
+import hashlib
+
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils.translation import gettext_lazy as _
 
 from drf_spectacular.utils import extend_schema
@@ -332,30 +334,69 @@ class CabinetList(StorageLayoutBaseMixin, generics.ListAPIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        location = StockLocation.objects.filter(pk=data['location']).first()
+        with transaction.atomic():
+            if data.get('location') is not None:
+                location = StockLocation.objects.filter(pk=data['location']).first()
 
-        if location is None or not services.user_owns_location(request.user, location):
-            raise services.NotFoundError(
-                _('Native location not found'), code='not_found'
+                if location is None or not services.user_owns_location(
+                    request.user, location
+                ):
+                    raise services.NotFoundError(
+                        _('Native location not found'), code='not_found'
+                    )
+            else:
+                if not request.user.has_perm('stock.add_stocklocation'):
+                    raise services.StorageLayoutError(
+                        _('Permission to create native stock locations is required'),
+                        code='permission_denied',
+                        status_code=status.HTTP_403_FORBIDDEN,
+                    )
+
+                root_name = data['root_location_name']
+                if connection.vendor == 'postgresql':
+                    # A missing row cannot be protected by SELECT FOR UPDATE.
+                    # Serialize same-name root creation until this transaction ends.
+                    name_key = int.from_bytes(
+                        hashlib.sha256(root_name.encode('utf-8')).digest()[:4],
+                        byteorder='big',
+                        signed=True,
+                    )
+                    with connection.cursor() as cursor:
+                        cursor.execute(
+                            'SELECT pg_advisory_xact_lock(%s, %s)', [0x534C, name_key]
+                        )
+
+                if (
+                    StockLocation.objects
+                    .select_for_update()
+                    .filter(name=root_name, parent__isnull=True)
+                    .exists()
+                ):
+                    raise services.StorageLayoutError(
+                        _('A native root location with this name already exists'),
+                        code='conflict',
+                    )
+
+                location = StockLocation(name=root_name, structural=True)
+                location.save()
+
+            cabinet = Cabinet(
+                name=data['name'],
+                slug=data['slug'],
+                location=location,
+                width_units=data['width_units'],
+                height_units=data['height_units'],
+                created_by=request.user if request.user.is_authenticated else None,
             )
+            _save(cabinet)
 
-        cabinet = Cabinet(
-            name=data['name'],
-            slug=data['slug'],
-            location=location,
-            width_units=data['width_units'],
-            height_units=data['height_units'],
-            created_by=request.user if request.user.is_authenticated else None,
-        )
-        _save(cabinet)
-
-        services.record_audit(
-            cabinet,
-            request.user,
-            'cabinet.create',
-            after_revision=cabinet.revision,
-            details={'location': location.pk},
-        )
+            services.record_audit(
+                cabinet,
+                request.user,
+                'cabinet.create',
+                after_revision=cabinet.revision,
+                details={'location': location.pk},
+            )
 
         return Response(
             s.CabinetSerializer(cabinet).data, status=status.HTTP_201_CREATED

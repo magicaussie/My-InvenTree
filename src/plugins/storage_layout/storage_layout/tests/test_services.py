@@ -287,6 +287,139 @@ class LayoutServiceTests(ServiceTestCase):
         self.cabinet.refresh_from_db()
         self.assertEqual(self.cabinet.revision, before)
 
+    def test_apply_layout_auto_creates_native_hierarchy(self):
+        """Explicit auto-create saves create native children under their parents."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(content_type__app_label='stock', codename='add_stocklocation')
+        )
+        self.user = User.objects.get(pk=self.user.pk)
+        document = services.layout_document(self.cabinet)
+        drawer_id = 'a8f17c03-5741-4507-9848-c66e32df0021'
+        document['drawers'].append({
+            'id': drawer_id,
+            'is_new': True,
+            'label': 'Auto drawer',
+            'display_number': 2,
+            'location': None,
+            'auto_create_location': True,
+            'x': 350,
+            'y': 0,
+            'width': 100,
+            'height': 100,
+            'interior_width': 100,
+            'interior_height': 100,
+        })
+        document['bins'].append({
+            'id': None,
+            'drawer': drawer_id,
+            'label': 'Auto bin',
+            'location': None,
+            'auto_create_location': True,
+            'x': 0,
+            'y': 0,
+            'width': 50,
+            'height': 50,
+        })
+
+        result = services.apply_layout(
+            self.cabinet, document, self.user, self.cabinet.revision
+        )
+
+        drawer = Drawer.objects.get(cabinet=self.cabinet, label='Auto drawer')
+        bin_row = Bin.objects.get(drawer=drawer, label='Auto bin')
+        self.assertEqual(drawer.location.parent_id, self.cabinet.location_id)
+        self.assertTrue(drawer.location.structural)
+        self.assertEqual(bin_row.location.parent_id, drawer.location_id)
+        self.assertFalse(bin_row.location.structural)
+        self.assertEqual(result['drawers'][1]['location'], drawer.location_id)
+
+        location_count = StockLocation.objects.count()
+        revision = self.cabinet.revision
+        services.apply_layout(self.cabinet, result, self.user, revision)
+        self.assertEqual(StockLocation.objects.count(), location_count)
+
+    def test_auto_create_stale_revision_creates_no_locations(self):
+        """A stale write fails before native locations can be created."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(content_type__app_label='stock', codename='add_stocklocation')
+        )
+        self.user = User.objects.get(pk=self.user.pk)
+        document = services.layout_document(self.cabinet)
+        document['drawers'].append({
+            'id': 'a8f17c03-5741-4507-9848-c66e32df0021', 'is_new': True,
+            'label': 'Stale drawer', 'display_number': 2, 'location': None,
+            'auto_create_location': True, 'x': 350, 'y': 0, 'width': 100,
+            'height': 100, 'interior_width': 100, 'interior_height': 100,
+        })
+        before_count = StockLocation.objects.count()
+        with self.assertRaises(services.StaleRevisionError):
+            services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision + 1)
+        self.assertEqual(StockLocation.objects.count(), before_count)
+
+    def test_auto_create_requires_native_location_permission(self):
+        """Plugin editing permission alone cannot create native stock locations."""
+        document = services.layout_document(self.cabinet)
+        document['drawers'].append({
+            'id': 'a8f17c03-5741-4507-9848-c66e32df0021', 'is_new': True,
+            'label': 'Permission drawer', 'display_number': 2, 'location': None,
+            'auto_create_location': True, 'x': 350, 'y': 0, 'width': 100,
+            'height': 100, 'interior_width': 100, 'interior_height': 100,
+        })
+        before_count = StockLocation.objects.count()
+        with self.assertRaises(services.ForbiddenError):
+            services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision)
+        self.assertEqual(StockLocation.objects.count(), before_count)
+        self.assertFalse(Drawer.objects.filter(label='Permission drawer').exists())
+
+    def test_auto_create_rejects_blank_labels_and_rolls_back(self):
+        """Blank auto-created bin labels fail before any native locations persist."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(content_type__app_label='stock', codename='add_stocklocation')
+        )
+        self.user = User.objects.get(pk=self.user.pk)
+        document = services.layout_document(self.cabinet)
+        drawer_id = 'a8f17c03-5741-4507-9848-c66e32df0021'
+        document['drawers'].append({
+            'id': drawer_id, 'is_new': True, 'label': 'New drawer',
+            'display_number': 2, 'location': None, 'auto_create_location': True,
+            'x': 350, 'y': 0, 'width': 100, 'height': 100,
+            'interior_width': 100, 'interior_height': 100,
+        })
+        document['bins'].append({
+            'id': None, 'drawer': drawer_id, 'label': ' ', 'location': None,
+            'auto_create_location': True, 'x': 0, 'y': 0, 'width': 20, 'height': 20,
+        })
+        before_count = StockLocation.objects.count()
+        with self.assertRaises(services.StorageLayoutError):
+            services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision)
+        self.assertEqual(StockLocation.objects.count(), before_count)
+        self.assertFalse(Drawer.objects.filter(label='New drawer').exists())
+
+    def test_auto_create_does_not_adopt_populated_same_name_location(self):
+        """Name collisions receive a fresh child; existing inventory remains bound."""
+        self.user.user_permissions.add(
+            *Permission.objects.filter(content_type__app_label='stock', codename='add_stocklocation')
+        )
+        self.user = User.objects.get(pk=self.user.pk)
+        existing = StockLocation.objects.create(
+            name='Collision drawer', parent=self.cabinet_location, structural=False
+        )
+        part = Part.objects.create(name='Collision part', IPN='COLLISION')
+        item = StockItem.objects.create(part=part, location=existing)
+        document = services.layout_document(self.cabinet)
+        document['drawers'].append({
+            'id': 'a8f17c03-5741-4507-9848-c66e32df0021', 'is_new': True,
+            'label': 'Collision drawer', 'display_number': 2, 'location': None,
+            'auto_create_location': True, 'x': 350, 'y': 0, 'width': 100,
+            'height': 100, 'interior_width': 100, 'interior_height': 100,
+        })
+        services.apply_layout(self.cabinet, document, self.user, self.cabinet.revision)
+        created = Drawer.objects.get(label='Collision drawer').location
+        self.assertNotEqual(created.pk, existing.pk)
+        self.assertEqual(item.location_id, existing.pk)
+        self.assertEqual(existing.name, 'Collision drawer')
+        self.assertEqual(created.name, 'Collision drawer (2)')
+
     def test_apply_layout_creates_bin(self):
         """A new bin is created and the revision advances."""
         before = self.cabinet.revision

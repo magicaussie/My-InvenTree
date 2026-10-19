@@ -63,6 +63,35 @@ function fakeApi() {
 }
 
 describe('StorageLayoutClient compare-and-swap', () => {
+  it('creates a cabinet with an atomically created root location name', async () => {
+    const api = fakeApi();
+    api.post.mockResolvedValue({ data: { id: 'cabinet' } });
+    const client = new StorageLayoutClient(api as never);
+    await client.createCabinet({
+      name: 'Workbench',
+      slug: 'workbench',
+      root_location_name: 'Workbench',
+      width_units: 600,
+      height_units: 800
+    });
+    expect(api.post).toHaveBeenCalledWith(
+      '/plugin/storage-layout/api/v1/cabinets/',
+      expect.objectContaining({ root_location_name: 'Workbench' }),
+      { headers: {} }
+    );
+  });
+
+  it('rejects cabinet creation without exactly one location source', async () => {
+    const client = new StorageLayoutClient(fakeApi() as never);
+    await expect(
+      client.createCabinet({
+        name: 'x',
+        slug: 'x',
+        width_units: 1,
+        height_units: 1
+      })
+    ).rejects.toThrow('Provide exactly one');
+  });
   it('sends If-Match on layout save and returns the new ETag', async () => {
     const api = fakeApi();
     api.put.mockResolvedValue({
@@ -91,9 +120,97 @@ describe('StorageLayoutClient compare-and-swap', () => {
     expect(api.put).toHaveBeenCalledTimes(1);
     const [url, body, config] = api.put.mock.calls[0];
     expect(url).toBe('/plugin/storage-layout/api/v1/cabinets/abc/layout/');
-    expect(body).toBe(document);
+    expect(body).not.toBe(document);
+    expect(body.drawers).toEqual([]);
+    expect(body.bins).toEqual([]);
     expect(config.headers['If-Match']).toBe('"7"');
     expect(result.etag).toBe('"8"');
+  });
+
+  it('requests transactional location creation only for new unbound rows', async () => {
+    const api = fakeApi();
+    api.put.mockResolvedValue({
+      data: { cabinet: {}, drawers: [], bins: [] },
+      headers: {}
+    });
+    const client = new StorageLayoutClient(api as never);
+    await client.saveLayout(
+      'abc',
+      {
+        schema_version: 1,
+        cabinet: {},
+        drawers: [
+          {
+            id: null,
+            is_new: true,
+            label: 'D1',
+            display_number: 1,
+            location: null,
+            x: 0,
+            y: 0,
+            width: 10,
+            height: 10,
+            interior_width: 10,
+            interior_height: 10,
+            archived: false,
+            allocation: null
+          },
+          {
+            id: 'existing',
+            label: 'Existing',
+            display_number: 2,
+            location: null,
+            x: 0,
+            y: 0,
+            width: 10,
+            height: 10,
+            interior_width: 10,
+            interior_height: 10,
+            archived: false,
+            allocation: null
+          }
+        ],
+        bins: [
+          {
+            id: null,
+            is_new: true,
+            drawer: 'd1',
+            label: 'Bin',
+            location: null,
+            x: 0,
+            y: 0,
+            width: 5,
+            height: 5,
+            archived: false
+          },
+          {
+            id: null,
+            is_new: true,
+            drawer: 'd1',
+            label: 'Mapped',
+            location: 42,
+            x: 0,
+            y: 0,
+            width: 5,
+            height: 5,
+            archived: false
+          }
+        ],
+        archive_ids: []
+      },
+      null
+    );
+    const body = api.put.mock.calls[0][1];
+    expect(body.drawers[0]).toMatchObject({
+      location: null,
+      auto_create_location: true
+    });
+    expect(body.drawers[1]).not.toHaveProperty('auto_create_location');
+    expect(body.bins[0]).toMatchObject({
+      location: null,
+      auto_create_location: true
+    });
+    expect(body.bins[1]).not.toHaveProperty('auto_create_location');
   });
 
   it('throws a typed error when the save is stale', async () => {

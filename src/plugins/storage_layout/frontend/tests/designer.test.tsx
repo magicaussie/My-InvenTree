@@ -92,8 +92,10 @@ describe('CabinetDesigner dimensions', () => {
       </MantineProvider>
     );
 
-    const width = await screen.findByLabelText('Cabinet width in units');
-    const height = screen.getByLabelText('Cabinet height in units');
+    const width = await screen.findByLabelText(
+      'Cabinet width in logical units'
+    );
+    const height = screen.getByLabelText('Cabinet height in logical units');
     fireEvent.change(width, { target: { value: '720' } });
     fireEvent.change(height, { target: { value: '960' } });
 
@@ -152,6 +154,39 @@ describe('DrawerDesigner', () => {
 });
 
 describe('CabinetList', () => {
+  it('creates a cabinet and root StockLocation in one atomic plugin request', async () => {
+    const context = fakeContext();
+    context.api.post = vi.fn(async () => ({
+      data: CABINET
+    })) as typeof context.api.post;
+    render(
+      <MantineProvider>
+        <CabinetList context={context} />
+      </MantineProvider>
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'New cabinet' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getAllByRole('textbox')[0], {
+      target: { value: 'Workbench' }
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Create root location' })
+    );
+    fireEvent.change(screen.getByLabelText('New root StockLocation name'), {
+      target: { value: 'Workbench' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Create$/ }));
+    await waitFor(() => expect(context.api.post).toHaveBeenCalledTimes(1));
+    expect(context.api.post).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/cabinets/'),
+      expect.objectContaining({
+        name: 'Workbench',
+        root_location_name: 'Workbench'
+      }),
+      expect.anything()
+    );
+  });
+
   it('lists cabinets returned by the API', async () => {
     render(
       <MantineProvider>
@@ -204,7 +239,9 @@ describe('CabinetDesigner practical tools', () => {
         <CabinetDesigner context={context} cabinetId='cabinet-1' />
       </MantineProvider>
     );
-    const width = await screen.findByLabelText('Cabinet width in units');
+    const width = await screen.findByLabelText(
+      'Cabinet width in logical units'
+    );
     fireEvent.change(width, { target: { value: '620' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
     await waitFor(() =>

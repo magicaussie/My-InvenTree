@@ -1,4 +1,4 @@
-# My-InvenTree deployment — checkpoint 002J-L
+# My-InvenTree deployment — status and checkpoints
 
 For day-to-day cabinet and drawer/bin editing, see the
 [Storage Layout graphical user guide](storage-layout/README.md). Its screenshots
@@ -126,7 +126,7 @@ Focused validation:
 4. Stale plugin translation catalogs rendered new designer control labels as message IDs: refreshed catalogs and rebuilt images.
 5. Routine restart reran bootstrap/password rehash and could invalidate a session: wrapper restart now targets only db/redis/backend/proxy, with regression test.
 
-## Checkpoint 002J-M — verified Development update
+## Checkpoint 002J-M — prior verified Development update
 
 The previously pending proposal below was approved and executed. **Current deployed application source: `2bb7375ed`**, including `4616314ea`. Development remains **http://192.168.1.108:18081/web/**; Main remains undeployed.
 
@@ -171,7 +171,7 @@ Remaining limitations: numeric native-location binding is still required for new
 
 ### Historical pre-deployment notes (superseded)
 
-## Checkpoint 002J-M — original pending record
+## Historical checkpoint 002J-M — original pending record (superseded)
 
 - Origin synchronization reports commit `6669a0fff` synced. This is a local checkpoint; it is not evidence that the current application images contain the changes.
 - In isolated live Development testing, Add+Duplicate save failure was reproduced: PUT returned HTTP 400 for a new UUID lacking the explicit new-drawer identity marker, and a subsequent GET returned an empty result. The local changes distinguish newly created drawers from persisted identities; this is not a live repair verification.
@@ -221,6 +221,22 @@ sudo -n /usr/local/sbin/inventree-deploy status
 ```
 
 No sudoers or deployment-wrapper changes are proposed. This proposal has not been executed; image construction, activation and live acceptance remain pending.
+
+## Checkpoint 002J-N — Storage Layout source-tested update; not deployed
+
+**Status: source-tested only.** The current local source includes the named native-location picker and atomic native-child creation described in [the graphical guide](storage-layout/README.md). This checkpoint does not assert that the feature is present in Development. The deployed application source remains `2bb7375ed`; deployed backend/frontend image IDs remain the IDs listed under checkpoint 002J-M. Documentation commits are not application image builds.
+
+A fresh live Development audit of cabinet `de2fcca3-6946-42e7-9ae3-b80b6c914d0b` found zero layout rows. This is an empty-owner-cabinet audit, not acceptance of the new create/picker workflow and not evidence that the new source was deployed. Live verification also confirmed left-side layout controls and horizontal distribution behavior; these observations do not change the source-versus-deployment distinction. The guide diagrams are illustrative, not live screenshots.
+
+Source-focused checks reported for this update: backend services suite 117 passed and focused suite 31 passed; frontend 313 tests passed and typecheck passed. These are source test results only, not deployment acceptance.
+
+### Bounded admin proposal — Development application image rebuild
+
+**Pending supervisor approval; nothing below has been executed.** Request approval only to build and activate the backend and frontend images from the proposed reviewed commit/archive. Supervisor must fill in and approve the exact commit, archive SHA-256, transfer path, fresh extraction directory, target tags, and any build-specific review before execution. Do not reuse the earlier `002JM` archive/hash or infer a commit hash. Capture the proposed commit/hash here after supervisor approval; until then the build input is intentionally unspecified.
+
+Scope is limited to the fixed Development image targets and existing fixed lifecycle wrapper. No sudo grant, sudoers/policy, SSH, wrapper, deployment-account, Compose, or host policy changes are requested. Do not target Main or any hardware, start workers, modify hardware gates, or alter the existing persistent volumes. Do not change the fixed image target names/tags. Create a new, empty archive extraction directory; verify archive SHA-256 before extraction and verify the extracted source corresponds exactly to the approved commit. Before activation, review the fixed Compose file and confirm it is unchanged and uses only the expected named Dev volumes, with no host mounts, devices, privileged mode, added capabilities, socket mounts, or unexpected published ports. Do not print secrets or container environments.
+
+Before replacing image tags, record the currently running backend and frontend image IDs and create/record rollback tags for those exact IDs. Build only the approved backend and frontend targets to the existing fixed `localhost/myinventree-dev-{backend,frontend}:review` tags. Record resulting IDs and build logs without secrets. After explicit approval, activate only through the existing fixed `inventree-deploy up` wrapper and verify status plus focused authenticated Development acceptance. Roll back only through an administrator restoring the recorded prior IDs to the fixed tags and invoking the same wrapper. Preserve every named volume; never use `down -v`, volume pruning, or data imports. This proposal authorizes no execution until the supervisor supplies and approves the missing commit/archive identity and scope.
 
 ## Backups, restore and recovery
 

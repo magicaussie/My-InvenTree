@@ -139,7 +139,9 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const spaceHeldRef = useRef(false);
   const pointerIdRef = useRef<number | null>(null);
   const [gridVisible, setGridVisible] = useState(true);
-  const [drawMode, setDrawMode] = useState(false);
+  const [interactionMode, setInteractionMode] = useState<
+    'select' | 'draw' | 'pan'
+  >('select');
   const [drawPreview, setDrawPreview] = useState<Rect | null>(null);
   const drawPreviewRef = useRef<Rect | null>(null);
   const drawStart = useRef<{ x: number; y: number } | null>(null);
@@ -230,7 +232,13 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const handlePanStart = useCallback(
     (event: React.PointerEvent<SVGSVGElement>) => {
       if (pointerIdRef.current !== null) return;
-      if (event.button !== 1 && !(event.button === 0 && spaceHeldRef.current))
+      if (
+        event.button !== 1 &&
+        !(
+          event.button === 0 &&
+          (spaceHeldRef.current || interactionMode === 'pan')
+        )
+      )
         return;
       event.preventDefault();
       event.stopPropagation();
@@ -246,7 +254,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
       pointerIdRef.current = event.pointerId;
       svg?.setPointerCapture?.(event.pointerId);
     },
-    []
+    [interactionMode]
   );
 
   const handlePointerDown = useCallback(
@@ -618,7 +626,11 @@ export function EditorCanvas(props: EditorCanvasProps) {
     };
   }, []);
 
-  const panCursor = pan ? 'grabbing' : spaceHeld ? 'grab' : undefined;
+  const panCursor = pan
+    ? 'grabbing'
+    : spaceHeld || interactionMode === 'pan'
+      ? 'grab'
+      : undefined;
 
   const handleSize = 8 / viewport.zoom;
   const transform = `translate(${viewport.offsetX} ${viewport.offsetY}) scale(${viewport.zoom})`;
@@ -663,16 +675,32 @@ export function EditorCanvas(props: EditorCanvasProps) {
               o
             </ActionIcon>
           </Tooltip>
-          {onDraw ? (
+          {(
+            ['select', ...(onDraw ? ['draw' as const] : []), 'pan'] as const
+          ).map((mode) => (
             <Button
+              key={mode}
               size='compact-xs'
-              variant={drawMode ? 'filled' : 'default'}
-              aria-pressed={drawMode}
-              onClick={() => setDrawMode((mode) => !mode)}
+              variant={interactionMode === mode ? 'filled' : 'default'}
+              aria-pressed={interactionMode === mode}
+              onClick={() => setInteractionMode(mode)}
+              aria-label={
+                mode === 'select'
+                  ? t`Select mode`
+                  : mode === 'draw'
+                    ? t`Draw mode`
+                    : t`Pan mode`
+              }
             >
-              {drawMode ? t`Drawing — drag on cabinet` : t`Draw drawer`}
+              {mode === 'select'
+                ? t`Select`
+                : mode === 'draw'
+                  ? interactionMode === 'draw'
+                    ? t`Drawing — drag to create`
+                    : t`Draw`
+                  : t`Pan`}
             </Button>
-          ) : null}
+          ))}
           <Button
             size='compact-xs'
             variant={gridVisible ? 'light' : 'default'}
@@ -708,7 +736,13 @@ export function EditorCanvas(props: EditorCanvasProps) {
             display: 'block',
             touchAction: 'none',
             outline: 'none',
-            cursor: panCursor ?? (drawMode ? 'crosshair' : undefined)
+            cursor:
+              panCursor ??
+              (interactionMode === 'draw'
+                ? 'crosshair'
+                : interactionMode === 'pan'
+                  ? 'grab'
+                  : undefined)
           }}
           onKeyDown={handleKeyDown}
           onBlur={() => updateSpace(false)}
@@ -730,7 +764,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
               pointerIdRef.current === null &&
               event.target === svgRef.current
             ) {
-              if (drawMode && onDraw) {
+              if (interactionMode === 'draw' && onDraw) {
                 const point = toCanvas(event.clientX, event.clientY);
                 drawStart.current = point;
                 const preview = { x: point.x, y: point.y, width: 0, height: 0 };

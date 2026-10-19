@@ -29,6 +29,8 @@ a real Development UI capture from 2026-10-19 using the application build
 recorded in [DEPLOYMENT.md](../DEPLOYMENT.md). No cabinet, topology or mapping
 changes were submitted for this guide. All other diagrams in this guide are
 illustrative Mermaid diagrams, not screenshots or evidence of a live workflow.
+The deployed app remains `2bb7375ed`; the newer picker and automatic native-child
+creation described below are source-tested, not deployed or browser-verified.
 A live browser suite passed on the deployed app `2bb7375ed`. It verified cabinet
 dimensions (641 × 841) through Save, refresh and restart; Add and Duplicate through
 Save and refresh; drawing a 100 × 80 drawer at (200, 200) through Save and refresh;
@@ -55,11 +57,14 @@ flowchart LR
 1. Open the **Storage Layout** tab in InvenTree.
 2. Open an existing cabinet's designer, or choose **New cabinet** when you intend
    to create a new one. Do not experiment on someone else's cabinet.
-3. In the creation dialog, supply the requested identity, native location and
-   layout values. Use an existing native location; create it through InvenTree's
-   normal stock-location workflow first if necessary.
-4. Review the values before submitting. Closing the dialog without submitting
-   avoids creating a cabinet.
+3. In the creation dialog, supply the requested identity, select the cabinet's
+   parent native location by name in the hierarchy picker, and enter layout values.
+   The picker represents native stock locations; it is not a free-text ID field.
+4. Review the values before submitting. Cabinet creation uses the selected
+   `root_location_name` atomically with cabinet creation; it does not adopt an
+   existing location by ID or delete/modify native locations. Closing the dialog
+   without submitting avoids creating a cabinet. This updated picker/create flow
+   is source-tested only, not verified in the deployed browser.
 
 ### New cabinet setup — illustrative workflow, not a screenshot
 
@@ -94,7 +99,7 @@ Read the screen from left to right:
 | Properties, right | Edit the selected drawer's numeric values precisely. Expand **Show properties** if needed. |
 | Toolbar, top | Add, duplicate, archive, undo/redo, set snapping/grid, validate, revert or save. |
 
-The UI uses **layout units**, not an enforced millimetre scale. Pick a consistent
+The UI uses **logical layout units**, not an enforced millimetre scale. Pick a consistent
 scale for your drawing. A cabinet's width/height describe its **front**, not its
 depth. Changing the cabinet bounds is not an instruction to proportionally scale
 all drawers: check their positions and sizes afterwards.
@@ -135,13 +140,18 @@ the live browser suite, but the illustration itself is not evidence or a screens
 7. Choose **Validate** and address reported conflicts before **Save**. Duplicate
    and archive affect the layout; do not use them casually on shared data.
 
-Newly added, duplicated and drawn drawers need a structural native child Location
-ID. Bins are nonstructural children and do not have that requirement. The editor
-does not automatically create native locations for these items: create the native
-child through InvenTree first, then enter its numeric Location ID in the relevant
-binding field. This numeric-ID workflow is a practical limitation; labels or
-layout IDs are not substitutes. The live browser suite verified Add, Duplicate
-and Draw persistence as described above. See [deployment checkpoint 002J-M](../DEPLOYMENT.md#checkpoint-002j-m--designer-persistence-and-drawing-tools).
+The named hierarchy picker selects native StockLocations by name, rather than
+asking users to type numeric IDs. When a cabinet is created, its selected
+`root_location_name` is created atomically with the cabinet; the source does not
+adopt an existing location. When saving a layout, a row with `location: null` and
+`auto_create_location: true` creates a native child location: a structural child
+for a drawer, or a nonstructural child for a bin. These creation operations are
+transactional with their respective cabinet/layout saves. They do not rename,
+reparent, or delete native locations. Existing explicit bindings are retained;
+there is no native stock-location deletion or adoption feature in this workflow.
+A drawer requires a native cabinet location as its parent. This behavior is
+source-tested only and has not been browser-verified or deployed. The live
+Development app remains at source `2bb7375ed`; see [checkpoint 002J-N](../DEPLOYMENT.md#checkpoint-002j-n--storage-layout-source-tested-update-not-deployed).
 
 ### Front versus interior — illustrative diagram, not a screenshot
 

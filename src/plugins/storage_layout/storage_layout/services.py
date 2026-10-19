@@ -890,6 +890,7 @@ class DrawerSpec:
     label: str
     display_number: int
     location_id: int | None
+    auto_create_location: bool
     x: int
     y: int
     width: int
@@ -923,6 +924,7 @@ class BinSpec:
     drawer_doc_id: str
     label: str
     location_id: int | None
+    auto_create_location: bool
     x: int
     y: int
     width: int
@@ -952,6 +954,15 @@ class LayoutPlan:
     bins: list[BinSpec] = field(default_factory=list)
     archive_ids: list[str] = field(default_factory=list)
     report: v.ValidationReport = field(default_factory=v.ValidationReport)
+
+
+def _as_bool(value: Any, field: str) -> bool:
+    """Parse a strict boolean from a layout document."""
+    if not isinstance(value, bool):
+        raise StorageLayoutError(
+            _('%(field)s must be a boolean') % {'field': field}, code='invalid_value'
+        )
+    return value
 
 
 def _parse_drawer_specs(
@@ -1031,6 +1042,10 @@ def _parse_drawer_specs(
                     entry.get('display_number'), 'display_number', 1
                 ),
                 location_id=entry.get('location'),
+                auto_create_location=_as_bool(
+                    entry.get('auto_create_location', False),
+                    'drawer.auto_create_location',
+                ),
                 x=_as_int(entry.get('x', 0), 'x', 0),
                 y=_as_int(entry.get('y', 0), 'y', 0),
                 width=_as_int(entry.get('width'), 'width', 1),
@@ -1120,6 +1135,9 @@ def _parse_bin_specs(
                 drawer_doc_id=str(drawer_ref),
                 label=str(entry.get('label', '')),
                 location_id=entry.get('location'),
+                auto_create_location=_as_bool(
+                    entry.get('auto_create_location', False), 'bin.auto_create_location'
+                ),
                 x=_as_int(entry.get('x', 0), 'x', 0),
                 y=_as_int(entry.get('y', 0), 'y', 0),
                 width=_as_int(entry.get('width'), 'width', 1),
@@ -1142,6 +1160,14 @@ def _validate_bindings(
     bin_locations: list[StockLocation] = []
 
     for spec in drawers:
+        if spec.location_id is None and spec.auto_create_location:
+            if not spec.label.strip():
+                report.add_error(
+                    v.CODE_BINDING_INVALID,
+                    _('A location label is required for automatic creation'),
+                    path=f'drawers[{spec.doc_id}].label',
+                )
+            continue
         if spec.location_id is None:
             report.add_error(
                 v.CODE_BINDING_INVALID,
@@ -1171,6 +1197,12 @@ def _validate_bindings(
 
     for spec in bins:
         if spec.location_id is None:
+            if spec.auto_create_location and not spec.label.strip():
+                report.add_error(
+                    v.CODE_BINDING_INVALID,
+                    _('A location label is required for automatic creation'),
+                    path=f'bins[{spec.doc_id}].label',
+                )
             continue
 
         location = StockLocation.objects.filter(pk=spec.location_id).first()
@@ -1244,6 +1276,15 @@ def prepare_layout(cabinet: Cabinet, document: dict[str, Any]) -> LayoutPlan:
 
     drawers = _parse_drawer_specs(cabinet, document.get('drawers') or [], report)
     bins = _parse_bin_specs(cabinet, document.get('bins') or [], report)
+
+    # Omitted binding fields on persisted rows mean "retain current binding".
+    # Restore before validation so ownership and hierarchy checks always run.
+    for spec in drawers:
+        if spec.location_id is None and spec.instance is not None:
+            spec.location_id = spec.instance.location_id
+    for spec in bins:
+        if spec.location_id is None and spec.instance is not None:
+            spec.location_id = spec.instance.location_id
 
     drawer_ids = {spec.doc_id for spec in drawers}
 
@@ -1391,12 +1432,44 @@ def apply_layout(
 
         drawer_map: dict[str, Drawer] = {}
 
+        def resolve_or_create_location(
+            parent: StockLocation, name: str, structural: bool
+        ) -> StockLocation:
+            """Create a uniquely named child without adopting unrelated locations."""
+            base_name = name.strip()[:100]
+            candidate = base_name
+            suffix = 2
+            # Serialize sibling name allocation across concurrent saves. Locking
+            # the parent row coordinates all writers using this service.
+            StockLocation.objects.select_for_update().get(pk=parent.pk)
+            while StockLocation.objects.filter(parent=parent, name=candidate).exists():
+                candidate = f'{base_name[:90]} ({suffix})'
+                suffix += 1
+            if not actor.has_perm('stock.add_stocklocation'):
+                raise ForbiddenError(
+                    _('You do not have permission to create native stock locations'),
+                    code='forbidden',
+                )
+            return StockLocation.objects.create(
+                parent=parent, name=candidate, structural=structural
+            )
+
         # Park changing rows on temporary unique values first: a single write may
         # legitimately swap two drawers' labels or display numbers, which would
         # otherwise transiently violate the cabinet-scoped unique constraints.
         _park_drawers(cabinet, plan.drawers)
 
         for spec in plan.drawers:
+            if (
+                spec.location_id is None
+                and spec.instance is not None
+                and spec.instance.location_id
+            ):
+                spec.location_id = spec.instance.location_id
+            if spec.auto_create_location and spec.location_id is None:
+                spec.location_id = resolve_or_create_location(
+                    cabinet.location, spec.label, True
+                ).pk
             if spec.instance is None:
                 drawer_values = {
                     'cabinet': cabinet,
@@ -1456,6 +1529,21 @@ def apply_layout(
 
         for spec in plan.bins:
             drawer = drawer_map[spec.drawer_doc_id]
+            if (
+                spec.location_id is None
+                and spec.instance is not None
+                and spec.instance.location_id
+            ):
+                spec.location_id = spec.instance.location_id
+            if spec.auto_create_location and spec.location_id is None:
+                if drawer.location_id is None:
+                    raise StorageLayoutError(
+                        _('A bin location requires a drawer location'),
+                        code='invalid_value',
+                    )
+                spec.location_id = resolve_or_create_location(
+                    drawer.location, spec.label, False
+                ).pk
 
             if spec.instance is None:
                 bin_values = {
@@ -1665,6 +1753,8 @@ def apply_drawer_layout(
         'interior_width',
         'interior_height',
         'archived',
+        'location',
+        'auto_create_location',
     ):
         if key in drawer_block:
             target[key] = drawer_block[key]

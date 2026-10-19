@@ -610,6 +610,15 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
           {editor.status === 'readonly' ? (
             <Badge color='orange'>{t`Read-only`}</Badge>
           ) : null}
+          <Badge
+            color={editor.cabinet?.location ? 'green' : 'yellow'}
+            variant='light'
+            aria-label={t`Native stock location status`}
+          >
+            {editor.cabinet?.location
+              ? t`Stock location linked`
+              : t`No stock location`}
+          </Badge>
           {editor.activeMapping ? (
             <Badge color='teal' variant='light'>
               {t`mapping N=${editor.totalPixels}`}
@@ -702,7 +711,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                     </Text>
                     <Group grow gap='xs'>
                       <NumberInput
-                        label={t`Width (units)`}
+                        label={t`Width (logical units)`}
                         min={1}
                         max={100000}
                         value={editor.draft.cabinet.width_units}
@@ -725,10 +734,10 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                             'cabinet-dimensions'
                           );
                         }}
-                        aria-label={t`Cabinet width in units`}
+                        aria-label={t`Cabinet width in logical units`}
                       />
                       <NumberInput
-                        label={t`Height (units)`}
+                        label={t`Height (logical units)`}
                         min={1}
                         max={100000}
                         value={editor.draft.cabinet.height_units}
@@ -751,7 +760,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                             'cabinet-dimensions'
                           );
                         }}
-                        aria-label={t`Cabinet height in units`}
+                        aria-label={t`Cabinet height in logical units`}
                       />
                     </Group>
                     {activeDrawers.some(
@@ -896,7 +905,9 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                   <Stack gap='sm'>
                     {selectedDrawer ? (
                       <DrawerInspector
+                        api={context.api}
                         drawer={selectedDrawer}
+                        parentId={editor.cabinet?.location}
                         totalPixels={editor.totalPixels}
                         readOnly={editor.status !== 'ready'}
                         onField={(change) =>

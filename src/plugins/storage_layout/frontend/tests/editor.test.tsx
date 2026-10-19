@@ -20,6 +20,7 @@ import {
   BinInspector,
   DrawerInspector
 } from '../src/components/editor/Inspector';
+import { NativeLocationPicker } from '../src/components/editor/NativeLocationPicker';
 import { ValidationPanel } from '../src/components/editor/Panels';
 import { EditorToolbar } from '../src/components/editor/Toolbar';
 import { useLayoutEditor } from '../src/state/layoutDraft';
@@ -1416,11 +1417,69 @@ describe('DrawerDesigner bin workflow', () => {
   });
 });
 
+describe('NativeLocationPicker', () => {
+  it('loads every page, filters by parent/type, and retains an existing binding', async () => {
+    const api = {
+      defaults: { baseURL: 'http://localhost' },
+      get: vi
+        .fn()
+        .mockResolvedValueOnce({
+          data: {
+            results: [
+              { pk: 1, name: 'Cabinet', structural: true, parent: null },
+              { pk: 2, name: 'Drawer', structural: true, parent: 1 },
+              { pk: 3, name: 'Other drawer', structural: true, parent: 9 },
+              { pk: 4, name: 'Bin', structural: false, parent: 2 }
+            ],
+            next: 'http://localhost/api/stock/location/?limit=1000&offset=4'
+          }
+        })
+        .mockResolvedValueOnce({
+          data: {
+            results: [
+              { pk: 5, name: 'Legacy bin', structural: true, parent: 9 }
+            ],
+            next: null
+          }
+        })
+    };
+    wrap(
+      <NativeLocationPicker
+        api={api as never}
+        label='Location'
+        value={5}
+        parentId={2}
+        structural={false}
+        onChange={vi.fn()}
+      />
+    );
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(api.get).toHaveBeenLastCalledWith(
+      '/api/stock/location/?limit=1000&offset=4',
+      { params: undefined }
+    );
+    expect(await screen.findByText('Legacy bin')).toBeInTheDocument();
+    expect(screen.getByText('Bin')).toBeInTheDocument();
+    expect(screen.queryByText('Other drawer')).not.toBeInTheDocument();
+  });
+});
+
 describe('BinInspector', () => {
-  it('edits the native location and shows the inherited LED allocation', () => {
+  it('selects a named native location and shows the inherited LED allocation', async () => {
     const onField = vi.fn();
+    const api = {
+      get: vi.fn().mockResolvedValue({
+        data: {
+          results: [
+            { pk: 45, name: 'Bin 45' },
+            { pk: 46, name: 'Bin 46' }
+          ]
+        }
+      })
+    };
     wrap(
       <BinInspector
+        api={api as never}
         bin={{
           id: 'bin-1',
           drawer: 'd1',
@@ -1437,10 +1496,14 @@ describe('BinInspector', () => {
         onField={onField}
       />
     );
-    fireEvent.change(screen.getByLabelText('Location ID'), {
-      target: { value: '46' }
-    });
-    expect(onField).toHaveBeenCalledWith({ field: 'location', value: 46 });
+    expect(screen.getAllByLabelText('Stock location').length).toBeGreaterThan(
+      0
+    );
+    await waitFor(() =>
+      expect(api.get).toHaveBeenCalledWith('/api/stock/location/', {
+        params: { limit: 1000 }
+      })
+    );
     expect(screen.getByTestId('inherited-range')).toHaveTextContent('8–19');
   });
 });

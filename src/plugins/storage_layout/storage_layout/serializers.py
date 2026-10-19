@@ -391,9 +391,24 @@ class CabinetCreateSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=100)
     slug = serializers.SlugField(max_length=100)
-    location = serializers.IntegerField()
+    location = serializers.IntegerField(required=False, allow_null=True)
+    root_location_name = serializers.CharField(
+        max_length=100, required=False, allow_blank=False, trim_whitespace=True
+    )
     width_units = serializers.IntegerField(min_value=1)
     height_units = serializers.IntegerField(min_value=1)
+
+    def validate(self, attrs):
+        """Require exactly one existing root binding or root name to create."""
+        has_location = attrs.get('location') is not None
+        has_name = bool(attrs.get('root_location_name'))
+
+        if has_location == has_name:
+            raise serializers.ValidationError(
+                'Provide exactly one of location or root_location_name.'
+            )
+
+        return attrs
 
 
 class CabinetUpdateSerializer(serializers.Serializer):
@@ -426,6 +441,7 @@ class DrawerInputSerializer(serializers.Serializer):
     label = serializers.CharField(max_length=64)
     display_number = serializers.IntegerField(min_value=1)
     location = serializers.IntegerField(required=False, allow_null=True)
+    auto_create_location = serializers.BooleanField(required=False, default=False)
     x = serializers.IntegerField(min_value=0, default=0)
     y = serializers.IntegerField(min_value=0, default=0)
     width = serializers.IntegerField(min_value=1)
@@ -444,6 +460,7 @@ class BinInputSerializer(serializers.Serializer):
     drawer = serializers.CharField()
     label = serializers.CharField(max_length=64)
     location = serializers.IntegerField(required=False, allow_null=True)
+    auto_create_location = serializers.BooleanField(required=False, default=False)
     x = serializers.IntegerField(min_value=0, default=0)
     y = serializers.IntegerField(min_value=0, default=0)
     width = serializers.IntegerField(min_value=1)

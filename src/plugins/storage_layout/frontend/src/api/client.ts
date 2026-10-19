@@ -194,10 +194,17 @@ export class StorageLayoutClient {
   async createCabinet(body: {
     name: string;
     slug: string;
-    location: number;
+    location?: number;
+    root_location_name?: string;
     width_units: number;
     height_units: number;
   }): Promise<CabinetSummary> {
+    if (
+      (body.location === undefined) ===
+      (body.root_location_name === undefined)
+    ) {
+      throw new Error('Provide exactly one of location or root_location_name.');
+    }
     return this.post<CabinetSummary>(Endpoints.cabinets(), body);
   }
 
@@ -231,9 +238,22 @@ export class StorageLayoutClient {
   }
 
   async saveLayout(id: string, document: LayoutDocument, etag: string | null) {
+    const withAutoCreatedLocations: LayoutDocument = {
+      ...document,
+      drawers: document.drawers.map((drawer) =>
+        drawer.is_new && drawer.location === null
+          ? { ...drawer, auto_create_location: true }
+          : drawer
+      ),
+      bins: document.bins.map((bin) =>
+        bin.is_new && bin.location === null
+          ? { ...bin, auto_create_location: true }
+          : bin
+      )
+    };
     return this.put<LayoutResponse>(
       Endpoints.cabinetLayout(id),
-      document,
+      withAutoCreatedLocations,
       etag
     );
   }
@@ -255,9 +275,21 @@ export class StorageLayoutClient {
     document: DrawerLayoutDocument,
     etag: string | null
   ) {
+    const withAutoCreatedLocations: DrawerLayoutDocument = {
+      ...document,
+      drawer:
+        document.drawer.is_new && document.drawer.location === null
+          ? { ...document.drawer, auto_create_location: true }
+          : document.drawer,
+      bins: document.bins.map((bin) =>
+        bin.is_new && bin.location === null
+          ? { ...bin, auto_create_location: true }
+          : bin
+      )
+    };
     return this.put<DrawerLayoutResponse>(
       Endpoints.drawerLayout(id),
-      document,
+      withAutoCreatedLocations,
       etag
     );
   }

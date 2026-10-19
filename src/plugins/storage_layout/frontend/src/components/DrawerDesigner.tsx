@@ -582,7 +582,9 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
                 <Stack gap='sm'>
                   {selectedBin ? (
                     <BinInspector
+                      api={context.api}
                       bin={selectedBin}
+                      parentId={drawer?.location}
                       inheritedRange={inheritedRange}
                       readOnly={status !== 'ready'}
                       onField={(change) =>

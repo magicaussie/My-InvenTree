@@ -59,7 +59,7 @@ describe('EditorCanvas', () => {
       height: 800,
       toJSON: () => ({})
     } as DOMRect);
-    fireEvent.click(screen.getByRole('button', { name: 'Draw drawer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Draw mode' }));
     fireEvent.pointerDown(svg, {
       button: 0,
       pointerId: 1,
@@ -97,7 +97,7 @@ describe('EditorCanvas', () => {
       </MantineProvider>
     );
     const svg = screen.getByRole('application', { name: 'Cabinet canvas' });
-    fireEvent.click(screen.getByRole('button', { name: 'Draw drawer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Draw mode' }));
     expect(svg).toHaveStyle({ cursor: 'crosshair' });
     fireEvent.pointerDown(svg, {
       button: 0,
@@ -118,6 +118,20 @@ describe('EditorCanvas', () => {
     expect(
       container.querySelector('rect[stroke="var(--mantine-color-blue-7)"]')
     ).not.toBeInTheDocument();
+  });
+
+  it('exposes explicit select, draw and pan modes', () => {
+    render(
+      <MantineProvider>
+        <EditorCanvas {...props} selection={[]} onDraw={vi.fn()} />
+      </MantineProvider>
+    );
+    const select = screen.getByRole('button', { name: 'Select mode' });
+    const pan = screen.getByRole('button', { name: 'Pan mode' });
+    fireEvent.click(pan);
+    expect(pan).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(select);
+    expect(select).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('renders safely when canvas bounds are infinite', () => {

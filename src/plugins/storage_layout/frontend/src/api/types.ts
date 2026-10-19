@@ -34,6 +34,8 @@ export interface DrawerInput {
   label: string;
   display_number: number;
   location: number | null;
+  /** Create a native child location transactionally when this new row is saved. */
+  auto_create_location?: boolean;
   x: number;
   y: number;
   width: number;
@@ -52,6 +54,8 @@ export interface BinInput {
   drawer: string;
   label: string;
   location: number | null;
+  /** Create a native child location transactionally when this new row is saved. */
+  auto_create_location?: boolean;
   x: number;
   y: number;
   width: number;
