@@ -22,6 +22,16 @@ duplicated.
 > GO/NO-GO assessment. Live hardware readiness is **NO-GO** until a person
 > performs commissioning.
 
+## User guide and contributor documentation requirement
+
+See the [graphical Storage Layout guide](../../../docs/storage-layout/README.md)
+for cabinet, drawer/bin, dimensions, save/refresh and configuration instructions.
+Every plugin change must review that guide in the same change: update affected
+steps, labels, diagrams and screenshots for UI/workflow or behavioural changes.
+If no update is needed, record the review and reason. Follow the durable rule in
+[AGENTS.md](../../../AGENTS.md). Use approved Development-only, credential-free
+captures; never perform hardware operations or alter shared data for screenshots.
+
 ## Layout
 
 ```

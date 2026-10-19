@@ -1,5 +1,9 @@
 # My-InvenTree deployment — checkpoint 002J-L
 
+For day-to-day cabinet and drawer/bin editing, see the
+[Storage Layout graphical user guide](storage-layout/README.md). Its screenshots
+are read-only Development captures, not additional commissioning evidence.
+
 ## Verified result (2026-10-19)
 
 **Development is operational:** <http://192.168.1.108:18081/web/>. Project `myinventree-dev` on the owner-confirmed CasaOS host `mainserver-1` (hostname `mainserver`, LAN `192.168.1.108`, SSH Tailscale `100.98.254.48`). PostgreSQL, Redis, backend and nginx are healthy; bootstrap exited 0. No manually launched Django/Vite service is required. Docker is enabled at boot and the four long-running services use `restart: unless-stopped`. Host reboot was deliberately **not** performed because it would interrupt unrelated CasaOS workloads.
@@ -121,6 +125,57 @@ Focused validation:
 3. Proxy health check used loopback Host against strict `SITE_URL`: fixed canonical Host header, retaining site-URL validation.
 4. Stale plugin translation catalogs rendered new designer control labels as message IDs: refreshed catalogs and rebuilt images.
 5. Routine restart reran bootstrap/password rehash and could invalidate a session: wrapper restart now targets only db/redis/backend/proxy, with regression test.
+
+## Checkpoint 002J-M — designer persistence and drawing tools
+
+- Origin synchronization reports commit `6669a0fff` synced. This is a local checkpoint; it is not evidence that the current application images contain the changes.
+- In isolated live Development testing, Add+Duplicate save failure was reproduced: PUT returned HTTP 400 for a new UUID lacking the explicit new-drawer identity marker, and a subsequent GET returned an empty result. The local changes distinguish newly created drawers from persisted identities; this is not a live repair verification.
+- The graphical guide now documents the canvas **Draw drawer** button and click-drag interaction. Both drawing and new-identity behavior are checked against source, not confirmed in the live UI. See [the guide](storage-layout/README.md).
+- Local verification reported 79 backend tests plus one wiring check passing with a `/tmp` harness, and 306 frontend tests plus typecheck passing. These checks are not deployment or live acceptance evidence.
+- Updated application images have **not** been deployed. A narrow admin-only image-build gate remains pending; do not bypass it or broaden deployment privileges. Main and physical hardware were untouched. This checkpoint is not task completion.
+
+### Pending approval proposal — build Development review images
+
+**Not executed.** This is a narrowly scoped request for administrator approval to build and activate only the Development application images. It does not authorize Main, hardware, policy changes, or broader privilege changes.
+
+The application source is commit `4616314ea`. A Git archive was generated at `/tmp/myinventree-dev-4616314ea.tar` with SHA-256 `f1142bce35bb730976860a0e272d0d7d859e4b81354cbe0edd55a8e42005b125`. After approval, the proposed workstation transfer and server-side verification are:
+
+Workstation transfer:
+
+```sh
+scp /tmp/myinventree-dev-4616314ea.tar spetchal@mainserver-1:/home/spetchal/myinventree-dev-4616314ea.tar
+```
+
+In the approved server administrator session, verify the archive, create a fresh build directory (intentionally no `-p`), extract it, then work from that directory:
+
+```sh
+echo f1142bce35bb730976860a0e272d0d7d859e4b81354cbe0edd55a8e42005b125 /home/spetchal/myinventree-dev-4616314ea.tar | sha256sum -c -
+mkdir /home/spetchal/myinventree-dev-build-4616314ea
+tar xf /home/spetchal/myinventree-dev-4616314ea.tar -C /home/spetchal/myinventree-dev-build-4616314ea
+cd /home/spetchal/myinventree-dev-build-4616314ea
+```
+
+Proposed builds from the extracted directory:
+
+```sh
+docker build --pull=false -f contrib/storage-layout-integration/Dockerfile --target backend -t localhost/myinventree-dev-backend:review .
+docker build --pull=false -f contrib/storage-layout-integration/Dockerfile --target frontend -t localhost/myinventree-dev-frontend:review .
+```
+
+`--pull=false` avoids pulling a newer base image, but does **not** pin package inputs: Dockerfile package-manager steps may still access the network. Before activation, inspect the non-secret Compose invariants and confirm that the fixed Development policy still isolates the service on the intended ports and volumes, with hardware disabled. Do not print secrets or container environments. The exact review-image inspection is limited to image tags and IDs:
+
+```sh
+docker image inspect localhost/myinventree-dev-backend:review localhost/myinventree-dev-frontend:review --format '{{.RepoTags}} {{.Id}}'
+```
+
+Before any schema or data migration, take and verify a private Development backup. **No schema/data migration is required by this proposal.** Only after explicit administrator approval to build and activate these Development images, the proposed fixed lifecycle commands are:
+
+```sh
+sudo -n /usr/local/sbin/inventree-deploy up
+sudo -n /usr/local/sbin/inventree-deploy status
+```
+
+No sudoers or deployment-wrapper changes are proposed. This proposal has not been executed; image construction, activation and live acceptance remain pending.
 
 ## Backups, restore and recovery
 
