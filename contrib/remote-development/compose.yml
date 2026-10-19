@@ -112,7 +112,7 @@ services:
     read_only: true
     tmpfs: [/var/cache/nginx, /var/run]
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      test: [CMD, wget, -q, '--header=Host: 192.168.1.108:18081', -O, /dev/null, http://127.0.0.1/web/]
       interval: 15s
       timeout: 5s
       retries: 5
