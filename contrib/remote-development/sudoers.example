@@ -1,0 +1,3 @@
+# Install as /etc/sudoers.d/inventree-deploy (mode 0440), validate with visudo.
+# Exact argv matching: no wildcard command, options, or user-supplied arguments.
+inventree-deploy ALL=(root) NOPASSWD: /usr/local/sbin/inventree-deploy up, /usr/local/sbin/inventree-deploy stop, /usr/local/sbin/inventree-deploy start, /usr/local/sbin/inventree-deploy restart, /usr/local/sbin/inventree-deploy status, /usr/local/sbin/inventree-deploy logs

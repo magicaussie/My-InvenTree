@@ -1,0 +1,31 @@
+#!/usr/bin/python3
+"""Forced-command SSH entry point; only dispatches fixed lifecycle verbs."""
+
+import os
+import subprocess
+import sys
+
+WRAPPER = '/usr/local/sbin/inventree-deploy'
+VERBS = {'up', 'stop', 'start', 'restart', 'status', 'logs'}
+
+
+def main():
+    """Reject noncanonical SSH commands before invoking the fixed wrapper."""
+    original = os.environ.get('SSH_ORIGINAL_COMMAND', '')
+    # Require byte-for-byte canonical command text: no quoting, whitespace,
+    # shell syntax, service names, flags, or additional arguments.
+    prefix = 'inventree-deploy '
+    if not original.startswith(prefix):
+        print('rejected SSH command', file=sys.stderr)
+        return 2
+    verb = original[len(prefix) :]
+    if verb not in VERBS:
+        print('rejected SSH command', file=sys.stderr)
+        return 2
+    return subprocess.run(
+        ['/usr/bin/sudo', '-n', WRAPPER, verb], check=False
+    ).returncode
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

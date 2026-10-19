@@ -1,0 +1,127 @@
+# Fixed owner-reviewed policy installed at /etc/myinventree-dev/compose.yml.
+# Owner builds/imports both application images; deployment user cannot alter this file.
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventree
+      POSTGRES_USER: inventree
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?runtime.env is required}
+    volumes: [postgres:/var/lib/postgresql/data]
+    networks: [private]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U inventree -d inventree]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    logging: &bounded-logs
+      driver: local
+      options: {max-size: 10m, max-file: '3'}
+
+  redis:
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    pull_policy: never
+    command: [redis-server, --appendonly, 'yes', --appendfsync, everysec]
+    restart: unless-stopped
+    volumes: [redis:/data]
+    networks: [private]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    logging: *bounded-logs
+
+  bootstrap:
+    image: localhost/myinventree-dev-backend:review
+    pull_policy: never
+    environment: &app-env
+      INVENTREE_DB_PASSWORD: ${INVENTREE_DB_PASSWORD:?runtime.env is required}
+      SL_ADMIN_PASSWORD: ${SL_ADMIN_PASSWORD:?runtime.env is required}
+      SL_READONLY_PASSWORD: ${SL_READONLY_PASSWORD:?runtime.env is required}
+      INVENTREE_DB_ENGINE: postgresql
+      INVENTREE_DB_HOST: db
+      INVENTREE_DB_PORT: '5432'
+      INVENTREE_DB_NAME: inventree
+      INVENTREE_DB_USER: inventree
+      INVENTREE_CACHE_ENABLED: 'True'
+      INVENTREE_CACHE_HOST: redis
+      INVENTREE_CACHE_PORT: '6379'
+      INVENTREE_PLUGINS_ENABLED: 'True'
+      INVENTREE_DEBUG: 'False'
+      INVENTREE_ALLOWED_HOSTS: '100.98.254.48,localhost,127.0.0.1'
+      INVENTREE_SITE_URL: http://100.98.254.48:18081
+      INVENTREE_CONFIG_FILE: /data/config.yaml
+      INVENTREE_SECRET_KEY_FILE: /data/secret_key.txt
+      INVENTREE_STATIC_ROOT: /data/static
+      INVENTREE_MEDIA_ROOT: /data/media
+      INVENTREE_BACKGROUND_WORKERS: '2'
+
+    command: [python, /app/contrib/storage-layout-integration/bootstrap.py]
+    volumes: [app-data:/data]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [private]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    mem_limit: 2g
+    logging: *bounded-logs
+
+  backend:
+    image: localhost/myinventree-dev-backend:review
+    pull_policy: never
+    restart: unless-stopped
+    environment: *app-env
+    volumes: [app-data:/data]
+    depends_on:
+      bootstrap: {condition: service_completed_successfully}
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [private]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/', timeout=5)"]
+      interval: 10s
+      timeout: 8s
+      retries: 12
+      start_period: 60s
+    mem_limit: 2g
+    logging: *bounded-logs
+
+  proxy:
+    image: localhost/myinventree-dev-frontend:review
+    pull_policy: never
+    restart: unless-stopped
+    ports: ['100.98.254.48:18081:80']
+    volumes: [app-data:/data:ro]
+    depends_on:
+      backend: {condition: service_healthy}
+    networks: [private, ingress]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 256m
+    logging: *bounded-logs
+
+volumes:
+  postgres: {}
+  redis: {}
+  app-data: {}
+networks:
+  private: {internal: true}
+  ingress: {}

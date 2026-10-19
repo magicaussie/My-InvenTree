@@ -1,0 +1,53 @@
+#!/usr/bin/python3
+"""Narrow sudo entry point for the fixed Development Compose project."""
+
+import subprocess
+import sys
+
+COMPOSE = '/etc/myinventree-dev/compose.yml'
+PROJECT = 'myinventree-dev'
+ALLOWED = {'up', 'stop', 'start', 'restart', 'status', 'logs'}
+
+
+def main(argv):
+    """Run one exact lifecycle operation against the trusted Dev policy."""
+    if len(argv) != 1 or argv[0] not in ALLOWED:
+        print(
+            'usage: inventree-deploy {up|stop|start|restart|status|logs}',
+            file=sys.stderr,
+        )
+        return 2
+    action = argv[0]
+    if action == 'up':
+        args = ['up', '-d', '--wait', '--wait-timeout', '300']
+    elif action == 'stop':
+        args = ['stop', '--timeout', '30']
+    elif action == 'start':
+        args = ['start']
+    elif action == 'restart':
+        args = ['restart']
+    elif action == 'status':
+        args = ['ps', '--all']
+    else:
+        args = ['logs', '--no-color', '--tail', '200']
+    env = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'HOME': '/root'}
+    return subprocess.run(
+        [
+            '/usr/bin/docker',
+            'compose',
+            '--project-name',
+            PROJECT,
+            '--file',
+            COMPOSE,
+            '--env-file',
+            '/etc/myinventree-dev/runtime.env',
+            *args,
+        ],
+        cwd='/etc/myinventree-dev',
+        env=env,
+        check=False,
+    ).returncode
+
+
+if __name__ == '__main__':
+    raise SystemExit(main(sys.argv[1:]))

@@ -1,6 +1,6 @@
 # My-InvenTree deployment status — checkpoint 002J-L
 
-**Status: SSH verified; read-only server inventory complete; deployment privilege approval pending.** No remote writes or deployments have been made. Development/Main remain planned installations: no deployed URLs, image digests, application storage, backups, plugin state, or browser save/reload results are verified.
+**Status: SSH verified; Development access/runtime installation package prepared; exact privileged execution approval pending.** No remote writes or deployments have been made. Development/Main remain planned installations: no deployed URLs, image digests, application storage, backups, plugin state, or browser save/reload results are verified.
 
 ## Verified connection and inventory — 2026-10-19
 
@@ -31,7 +31,67 @@ Returned hostname `mainserver`, uid/gid 1000 `spetchal`. This existing account h
 - Main: separately controlled project `myinventree-main`, proposed port 18082. No agent access to Main credentials/storage or deployment actions without specific release approval.
 - Initial impact, if approved: create dedicated identity/key authorization and reviewed policy/storage for Development only; later create isolated Dev containers/networks/volumes. Do not modify CasaOS services, firewall, existing containers, Main, or WLED devices.
 
-No account creation or sudoers commands are provided as ready to execute yet: the wrapper and exact permissions must first be implemented and reviewed. Owner approval is required before privileged installation. The inventory does not authorize deployment.
+The owner has approved **preparation** of the account and constrained Development mechanism. The exact implementation is now in `contrib/remote-development/`; approval to execute it is still required. No remote files, privileges, services or keys have been changed.
+
+## Exact installation proposal awaiting owner review
+
+Reviewed files: [package instructions](../contrib/remote-development/README.md), [access installer](../contrib/remote-development/install-access.sh), [runtime installer](../contrib/remote-development/install-runtime.sh), [Compose policy](../contrib/remote-development/compose.yml), [SSH dispatcher](../contrib/remote-development/ssh-dispatcher), [privileged wrapper](../contrib/remote-development/deploy-wrapper), [sudoers](../contrib/remote-development/sudoers.example).
+
+The planned server staging checkout is `/home/spetchal/myinventree-development-review`; the public key is staged at `/home/spetchal/myinventree-access-review/myinventree-development-deploy_ed25519.pub`. Neither directory has been created. After approval, transfer the reviewed committed source there; verify its commit before building. Do not copy the disposable database, queues, `.env` files or private keys. Generate a dedicated workstation Ed25519 key using the package instructions and transfer **only its public key**. If a passphrase is used, unlock it through the workstation SSH agent, never through chat.
+
+These are the exact privileged commands proposed, run in the verified server session **after approval and source staging**, not through the deployment identity:
+
+```sh
+# Verify the reviewed commit matches the approved package before running these.
+cd /home/spetchal/myinventree-development-review
+sudo -n docker build --pull=false -f contrib/storage-layout-integration/Dockerfile --target backend -t localhost/myinventree-dev-backend:review .
+sudo -n docker build --pull=false -f contrib/storage-layout-integration/Dockerfile --target frontend -t localhost/myinventree-dev-frontend:review .
+sudo -n docker pull postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+sudo -n docker pull redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+sudo -n docker image inspect --format '{{.Id}}' localhost/myinventree-dev-backend:review localhost/myinventree-dev-frontend:review
+sudo -n sh contrib/remote-development/install-access.sh /home/spetchal/myinventree-access-review/myinventree-development-deploy_ed25519.pub
+sudo -n sh contrib/remote-development/install-runtime.sh
+sudo -n visudo -c
+id inventree-deploy
+sudo -n -l -U inventree-deploy
+sudo -n /usr/sbin/sshd -T -C user=inventree-deploy,host=mainserver-1,addr=100.98.254.48
+sudo -n /usr/local/sbin/inventree-deploy up
+sudo -n /usr/local/sbin/inventree-deploy status
+```
+
+`sudo -n` fails rather than prompting for a password. If the administrative session cannot execute these, the owner runs the same reviewed commands in their trusted terminal; do not request their password or expand the deployment account's privileges. Verify effective SSH settings before `up`; a custom `AuthorizedKeysFile`, account allowlist or PAM restriction could require an individually reviewed correction. No SSH daemon configuration/reload is proposed. `--pull=false` preserves pinned build inputs but Docker may fetch missing pinned base images; network downloads are expected.
+
+### Permissions and impact
+
+- Locked-password `inventree-deploy`, home `/var/lib/inventree-deploy`, `/bin/sh` only to permit OpenSSH forced-command dispatch. No interactive shell, PTY, forwarding, agent forwarding, arbitrary exec or Docker arguments are accepted by its authorized key.
+- Home and `.ssh`: `root:root 0755`; public `authorized_keys`: `root:root 0644`, with `restrict,command="/usr/local/libexec/myinventree-dev-ssh"`. These public files must be readable by sshd after dropping privileges, but remain unwritable by the account.
+- Dispatcher and wrapper: `root:root 0755`; `/etc/sudoers.d/myinventree-deploy`: `root:root 0440`, exact six-command allowance only. Candidate sudoers is validated before installation. No Docker, sudo or LXD group membership.
+- `/etc/myinventree-dev`: `root:root 0700`; `compose.yml` and randomly generated `runtime.env`: `root:root 0600`. Installers refuse existing targets instead of overwriting data or policy.
+- The only publication is `100.98.254.48:18081` over Tailscale, not all LAN interfaces. Intended URL **not yet deployed**: `http://100.98.254.48:18081`. No firewall/CasaOS changes. DB/backend/Redis have internal-only networking; only nginx joins ingress.
+- Project `myinventree-dev`; persistent named volumes `myinventree-dev_postgres`, `myinventree-dev_redis`, `myinventree-dev_app-data`, stored under Docker's `/var/lib/docker/volumes` (confirm actual mountpoints after creation). No volume deletion command is granted.
+- Existing production build and plugin bootstrap are reused. Bootstrap creates only fresh representative test locations/accounts, activates the plugin, migrates and collects assets, and forces hardware/dispatcher settings off. No old database or queue is imported. No qcluster/unsafe worker starts. Any essential asynchronous feature requiring a worker remains pending safety review.
+- Runtime image policy uses local fixed tags and `pull_policy: never`; record actual image IDs after building. The account cannot build, import or replace images. **Lifecycle automation is provided; unattended source/image updates are not yet provided.** That limitation must not be described as full deployment automation.
+
+After installation, workstation commands use the dedicated key (never print it):
+
+```sh
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy status'
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy up'
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i /home/spetchal/.ssh/myinventree-development-deploy_ed25519 inventree-deploy@mainserver-1 'inventree-deploy restart'
+```
+
+Ordinary fixed Development lifecycle operations need no repeated approval after installation is approved. Privileged policy/image changes and all Main actions retain their gates. Do not print `runtime.env`, rendered Compose configuration or container environment inspections: they contain credentials. The `logs` operation is bounded but application logs must still be reviewed for accidental sensitive output.
+
+### Verification recorded for this package
+
+- Read-only strict SSH recheck: hostname `mainserver`, existing account `spetchal`; port 18081 still free, deployment account absent, policy path unused. `python3`, `ssh-keygen`, Docker are present.
+- Local package policy/dispatcher/installer tests: **12 passed**; both installer syntax checks passed. These are policy tests, not actual account installation or Docker execution tests.
+- Application source `src/backend/InvenTree/InvenTree/config.py:get_secret_key` explicitly creates a missing `INVENTREE_SECRET_KEY_FILE` using Django's cryptographic generator; the persistent `/data` key path is supported. Live first boot remains untested.
+- No image builds, remote installation, plugin state, authenticated browser Save → refresh persistence, backups or container restart persistence have been verified. Do not report this checkpoint complete.
+
+### Main preparation boundary
+
+Main remains undeployed and has no credentials or agent-accessible policy. Reserve a separate future project `myinventree-main`, Tailscale port 18082 (recheck), independent PostgreSQL/Redis/app-data volumes and independently generated secrets. Never reuse Development credentials, test accounts, seed or data. Main requires an owner-approved immutable release/digest and separately reviewed bootstrap, backups and deployment commands. The Development wrapper cannot target Main. An executable Main configuration and tested backup/restore procedure are still pending; this is an explicit limitation, not a completed deployment.
 
 ## Earlier workstation and repository observations (historical)
 
