@@ -29,6 +29,18 @@ class WrapperPolicyTests(unittest.TestCase):
                 self.assertEqual(MODULE.main(args), 2)
                 run.assert_not_called()
 
+    def test_restart_excludes_one_shot_bootstrap(self):
+        """Keep migration/seed out of routine restarts and preserve sessions."""
+        with patch.object(
+            MODULE.subprocess,
+            'run',
+            return_value=type('Result', (), {'returncode': 0})(),
+        ) as run:
+            self.assertEqual(MODULE.main(['restart']), 0)
+        self.assertEqual(
+            run.call_args.args[0][8:], ['restart', 'db', 'redis', 'backend', 'proxy']
+        )
+
     def test_up_uses_only_fixed_compose_policy(self):
         """Ensure up invokes Compose with only the root-owned policy paths."""
         with patch.object(

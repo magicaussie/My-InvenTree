@@ -25,7 +25,8 @@ def main(argv):
     elif action == 'start':
         args = ['start']
     elif action == 'restart':
-        args = ['restart']
+        # Do not rerun migrations/seed or invalidate sessions during a restart.
+        args = ['restart', 'db', 'redis', 'backend', 'proxy']
     elif action == 'status':
         args = ['ps', '--all']
     else:
