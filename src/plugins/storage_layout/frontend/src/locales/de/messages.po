@@ -38,6 +38,10 @@ msgid "Insufficient free space to add a drawer."
 msgstr ""
 
 #: src/components/CabinetDesigner.tsx
+msgid "The drawn drawer must fit inside the cabinet without overlapping another drawer."
+msgstr ""
+
+#: src/components/CabinetDesigner.tsx
 msgid "Insufficient free space to duplicate the selected drawers."
 msgstr ""
 
@@ -609,6 +613,14 @@ msgstr ""
 #: src/components/editor/EditorCanvas.tsx
 #: src/components/editor/EditorCanvas.tsx
 msgid "Reset view"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Drawing — drag on cabinet"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Draw drawer"
 msgstr ""
 
 #: src/components/editor/EditorCanvas.tsx

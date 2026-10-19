@@ -9,7 +9,7 @@
     "extract": "lingui extract",
     "compile": "lingui compile --typescript",
     "translate": "lingui extract && lingui compile --typescript",
-    "build": "npm run compile && tsc --noEmit && vite build --emptyOutDir",
+    "build": "npm run translate && tsc --noEmit && vite build --emptyOutDir",
     "typecheck": "tsc --noEmit",
     "lint": "biome check ./src ./tests",
     "lint:fix": "biome check ./src ./tests --write",
