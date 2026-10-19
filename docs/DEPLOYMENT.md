@@ -1,8 +1,39 @@
 # My-InvenTree deployment status — checkpoint 002J-L
 
-**Status: blocked before server inspection.** No deployment or server-side changes were made. The planned Development/Main Compose environments are requirements, not existing or verified installations. There are no verified deployment URLs, Compose project names, storage paths, container states, ports, backups, plugin state, or browser results.
+**Status: SSH verified; read-only server inventory complete; deployment privilege approval pending.** No remote writes or deployments have been made. Development/Main remain planned installations: no deployed URLs, image digests, application storage, backups, plugin state, or browser save/reload results are verified.
 
-## Verified workstation and repository facts
+## Verified connection and inventory — 2026-10-19
+
+The owner confirmed console hostname `mainserver`, Tailscale IP `100.98.254.48`, and Ed25519 fingerprint `SHA256:H+aUvO7OlOktdTKU9EpVWjtC4uEBMLAWqwNAVAiJ2RI`. A newly scanned public host key matched this fingerprint before it was pinned in the workstation's `~/.ssh/known_hosts` for `mainserver-1` and its IP. The obsolete `mainserver` DNS endpoint was not changed.
+
+Verified key-only command (existing workstation credentials; no password requested):
+
+```sh
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=8 spetchal@mainserver-1 'hostname; id'
+```
+
+Returned hostname `mainserver`, uid/gid 1000 `spetchal`. This existing account has `sudo`, `docker`, and `lxd` group membership. No membership was added. This is **not** the desired constrained deployment identity; use it only for approved read-only diagnostics until a dedicated mechanism is reviewed. Docker inventory used existing socket access for read-only commands only.
+
+- Ubuntu 26.04 LTS; Docker client/server 29.5.2; Compose v5.1.4.
+- 32 CPUs; approximately 60 GiB RAM, 35 GiB available; 8 GiB swap.
+- `/`, `/DATA`, and `/srv` share the root ext4 filesystem: 1.9 TiB total, approximately 1011 GiB available. These paths are not independent disks.
+- Docker data root `/var/lib/docker`; `/DATA/AppData` exists and is world-writable, so it must not hold trusted deployment policy/wrappers.
+- Inventory observed 66 containers, 54 running. No container name matched `inventree`. Existing containers/networks/volumes were listed without reading environment secrets or altering resources.
+- Port 8081 belongs to `router-qwen3-1.7b`; port 8082 belongs to `searxng`. Neither may be reused. TCP ports 18081 and 18082 had no listeners at inspection; recheck before any deployment.
+- Existing unrelated unhealthy/restarting services were observed and left untouched.
+
+### Proposed access/privilege plan — approval required
+
+- Host: confirmed `mainserver-1` / `100.98.254.48`.
+- New identity: proposed `inventree-deploy`, dedicated Ed25519 key, restricted authorized-key options, no Docker/LXD group, no unrestricted sudo.
+- Proposed Development project: `myinventree-dev`, trusted policy under `/srv/myinventree/dev`, application endpoint on port 18081; bind address and exact storage ownership require review before installation.
+- Permit only fixed Development status/deploy/test/backup operations via an owner-reviewed root-owned wrapper (or equivalent controlled CI). No arbitrary shell, Compose arguments, mounts, build contexts, or Docker commands. Agent-controlled application containers must not receive host credentials, privileged mode, host networking, or Docker sockets. Final wrapper and configuration must be reviewed before any sudo authorization is installed.
+- Main: separately controlled project `myinventree-main`, proposed port 18082. No agent access to Main credentials/storage or deployment actions without specific release approval.
+- Initial impact, if approved: create dedicated identity/key authorization and reviewed policy/storage for Development only; later create isolated Dev containers/networks/volumes. Do not modify CasaOS services, firewall, existing containers, Main, or WLED devices.
+
+No account creation or sudoers commands are provided as ready to execute yet: the wrapper and exact permissions must first be implemented and reviewed. Owner approval is required before privileged installation. The inventory does not authorize deployment.
+
+## Earlier workstation and repository observations (historical)
 
 - Checkout: `/media/spetchal/New Volume1/My-InvenTree-development-002JD/`
 - Branch: `development/my-inventree`
@@ -46,7 +77,7 @@ Once connectivity is diagnosable and the owner explicitly approves access:
 4. Before any remote write, present an exact owner-reviewed privilege and impact plan. Use a constrained mechanism that prevents the agent from changing deployment configuration, build contexts, mounts, or commands beyond its approved scope. A root-owned Compose file by itself is not sufficient isolation if those inputs remain agent-editable.
 5. Scope any eventual Development capability to Development only. Keep Main independently gated and read-only to agents unless the owner explicitly approves a particular promotion, database operation, or credential access. Main deployment always requires individual owner approval.
 
-No privileged changes or deployment are authorized now. Do not disturb existing CasaOS services/containers. Never log or expose secrets. Do not import the old disposable SQLite database or original Django-Q queue, or start its workers. Physical WLED writes (including controller POST/PUT, test, locate, or clear operations) are not authorized.
+No privileged changes or deployment have been approved or performed. Do not disturb existing CasaOS services/containers. Never log or expose secrets. Do not import the old disposable SQLite database or original Django-Q queue, or start its workers. Physical WLED writes (including controller POST/PUT, test, locate, or clear operations) are not authorized.
 
 ## Work required after the blocker is cleared
 
