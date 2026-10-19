@@ -55,8 +55,8 @@ services:
       INVENTREE_CACHE_PORT: '6379'
       INVENTREE_PLUGINS_ENABLED: 'True'
       INVENTREE_DEBUG: 'False'
-      INVENTREE_ALLOWED_HOSTS: '100.98.254.48,localhost,127.0.0.1'
-      INVENTREE_SITE_URL: http://100.98.254.48:18081
+      INVENTREE_ALLOWED_HOSTS: '192.168.1.108,localhost,127.0.0.1'
+      INVENTREE_SITE_URL: http://192.168.1.108:18081
       INVENTREE_CONFIG_FILE: /data/config.yaml
       INVENTREE_SECRET_KEY_FILE: /data/secret_key.txt
       INVENTREE_STATIC_ROOT: /data/static
@@ -102,7 +102,7 @@ services:
     image: localhost/myinventree-dev-frontend:review
     pull_policy: never
     restart: unless-stopped
-    ports: ['100.98.254.48:18081:80']
+    ports: ['192.168.1.108:18081:80']
     volumes: [app-data:/data:ro]
     depends_on:
       backend: {condition: service_healthy}

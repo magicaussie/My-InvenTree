@@ -7,6 +7,7 @@ from pathlib import Path
 PACKAGE = Path(__file__).parent
 INSTALLER = PACKAGE / 'install-runtime.sh'
 COMPOSE = (PACKAGE / 'compose.yml').read_text()
+MAIN_EXAMPLE = (PACKAGE / 'compose.main.yml.example').read_text()
 
 
 class RuntimePackageTests(unittest.TestCase):
@@ -54,9 +55,9 @@ class RuntimePackageTests(unittest.TestCase):
             'pull_policy: never',
             'POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?runtime.env is required}',
             'INVENTREE_SECRET_KEY_FILE: /data/secret_key.txt',
-            "INVENTREE_ALLOWED_HOSTS: '100.98.254.48,localhost,127.0.0.1'",
-            'INVENTREE_SITE_URL: http://100.98.254.48:18081',
-            "ports: ['100.98.254.48:18081:80']",
+            "INVENTREE_ALLOWED_HOSTS: '192.168.1.108,localhost,127.0.0.1'",
+            'INVENTREE_SITE_URL: http://192.168.1.108:18081',
+            "ports: ['192.168.1.108:18081:80']",
             "command: [redis-server, --appendonly, 'yes', --appendfsync, everysec]",
             'condition: service_completed_successfully',
             'ENABLE_HARDWARE: False',
@@ -72,6 +73,34 @@ class RuntimePackageTests(unittest.TestCase):
             else:
                 self.assertIn(item, COMPOSE)
         self.assertNotIn('\n  worker:', COMPOSE)
+        source = INSTALLER.read_text()
+        self.assertIn('LAN_IP=192.168.1.108', source)
+        self.assertIn('for port in 18081 18082', source)
+        self.assertIn('refusing deployment', source)
+        self.assertIn('[ -x /usr/bin/ss ] || fail', source)
+        self.assertIn('LISTENERS=$(/usr/bin/ss -H -ltn', source)
+        self.assertIn('could not inspect TCP port', source)
+
+    def test_main_example_is_separate_and_not_installer_managed(self):
+        """Keep Main isolated in an example with no Dev installer integration."""
+        self.assertIn('myinventree-main', (PACKAGE / 'README.md').read_text())
+        self.assertIn('main-postgres:', MAIN_EXAMPLE)
+        self.assertIn('main-redis:', MAIN_EXAMPLE)
+        self.assertIn('main-app-data:', MAIN_EXAMPLE)
+        self.assertIn("ports: ['192.168.1.108:18082:80']", MAIN_EXAMPLE)
+        self.assertIn('http://192.168.1.108:18082', MAIN_EXAMPLE)
+        self.assertIn('${MAIN_BACKEND_REPOSITORY:?', MAIN_EXAMPLE)
+        self.assertIn('${MAIN_BACKEND_DIGEST:?', MAIN_EXAMPLE)
+        self.assertIn('${MAIN_FRONTEND_REPOSITORY:?', MAIN_EXAMPLE)
+        self.assertIn('${MAIN_FRONTEND_DIGEST:?', MAIN_EXAMPLE)
+        self.assertIn('${MAIN_DB_PASSWORD:?', MAIN_EXAMPLE)
+        self.assertNotIn('bootstrap:', MAIN_EXAMPLE)
+        self.assertNotIn('SL_ADMIN_PASSWORD', MAIN_EXAMPLE)
+        self.assertNotIn('SL_READONLY_PASSWORD', MAIN_EXAMPLE)
+        self.assertNotIn('worker:', MAIN_EXAMPLE)
+        self.assertNotIn('compose.main.yml.example', INSTALLER.read_text())
+        self.assertNotIn('myinventree-main', INSTALLER.read_text())
+        self.assertIn('compose.main.yml.example', (PACKAGE / 'README.md').read_text())
         self.assertIn('postgres:/var/lib/postgresql/data', COMPOSE)
         self.assertIn('redis:/data', COMPOSE)
         self.assertIn('app-data:/data', COMPOSE)

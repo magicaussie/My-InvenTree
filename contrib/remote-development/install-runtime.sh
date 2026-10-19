@@ -20,6 +20,15 @@ getent passwd "$ACCOUNT" >/dev/null 2>&1 || fail "required account $ACCOUNT is a
 [ -x /usr/local/sbin/inventree-deploy ] || fail 'constrained wrapper is not installed'
 [ -x /usr/bin/docker ] || fail 'Docker CLI is missing'
 
+LAN_IP=192.168.1.108
+IP_ADDRESSES=$(/usr/sbin/ip -o -4 address show 2>/dev/null) || fail 'could not inspect local IPv4 addresses'
+printf '%s\n' "$IP_ADDRESSES" | grep -Fq " $LAN_IP/" || fail "required LAN address $LAN_IP is not configured"
+[ -x /usr/bin/ss ] || fail 'ss is required to inspect TCP ports'
+for port in 18081 18082; do
+    LISTENERS=$(/usr/bin/ss -H -ltn "sport = :$port" 2>/dev/null) || fail "could not inspect TCP port $port"
+    [ -z "$LISTENERS" ] || fail "TCP port $port is already listening; refusing deployment"
+done
+
 TMP=$(mktemp -d "$POLICY_DIR/.runtime.XXXXXX")
 cleanup() { rm -rf -- "$TMP"; }
 trap cleanup EXIT HUP INT TERM

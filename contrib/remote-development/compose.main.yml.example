@@ -1,0 +1,84 @@
+# EXAMPLE ONLY: never consumed by install-runtime.sh or inventree-deploy.
+# Main has no installer, wrapper, key, or deployment-account access in this package.
+# Before any separately approved use: replace repository/digest inputs with reviewed
+# immutable image references and provide a separate owner-managed env file (0600).
+# This intentionally has no bootstrap/seed/test accounts; migrations and any initial
+# administration setup must be completed separately with explicit owner approval.
+# Do not add background workers or hardware dispatch without separate review.
+name: myinventree-main
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventree
+      POSTGRES_USER: inventree
+      POSTGRES_PASSWORD: ${MAIN_DB_PASSWORD:?set in separate Main env file}
+    volumes: [main-postgres:/var/lib/postgresql/data]
+    networks: [private]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U inventree -d inventree]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    pull_policy: never
+    command: [redis-server, --appendonly, 'yes', --appendfsync, everysec]
+    restart: unless-stopped
+    volumes: [main-redis:/data]
+    networks: [private]
+
+  backend:
+    image: ${MAIN_BACKEND_REPOSITORY:?set reviewed repository}@sha256:${MAIN_BACKEND_DIGEST:?set reviewed immutable sha256 digest}
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      INVENTREE_DB_ENGINE: postgresql
+      INVENTREE_DB_HOST: db
+      INVENTREE_DB_PORT: '5432'
+      INVENTREE_DB_NAME: inventree
+      INVENTREE_DB_USER: inventree
+      INVENTREE_DB_PASSWORD: ${MAIN_DB_PASSWORD:?set in separate Main env file}
+      INVENTREE_CACHE_ENABLED: 'True'
+      INVENTREE_CACHE_HOST: redis
+      INVENTREE_CACHE_PORT: '6379'
+      INVENTREE_DEBUG: 'False'
+      INVENTREE_ALLOWED_HOSTS: '192.168.1.108,localhost,127.0.0.1'
+      INVENTREE_SITE_URL: http://192.168.1.108:18082
+      INVENTREE_CONFIG_FILE: /data/config.yaml
+      INVENTREE_SECRET_KEY_FILE: /data/secret_key.txt
+      INVENTREE_STATIC_ROOT: /data/static
+      INVENTREE_MEDIA_ROOT: /data/media
+
+    volumes: [main-app-data:/data]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+    networks: [private]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+
+  proxy:
+    image: ${MAIN_FRONTEND_REPOSITORY:?set reviewed repository}@sha256:${MAIN_FRONTEND_DIGEST:?set reviewed immutable sha256 digest}
+    pull_policy: never
+    restart: unless-stopped
+    ports: ['192.168.1.108:18082:80']
+    volumes: [main-app-data:/data:ro]
+    depends_on: [backend]
+    networks: [private, ingress]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+
+volumes:
+  main-postgres: {}
+  main-redis: {}
+  main-app-data: {}
+networks:
+  private: {internal: true}
+  ingress: {}
