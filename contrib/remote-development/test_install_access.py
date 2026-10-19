@@ -87,9 +87,10 @@ class InstallerSafetyTests(unittest.TestCase):
             'DisableForwarding yes',
             'PermitTTY no',
             'PermitUserRC no',
-            'PermitUserEnvironment no',
         ):
             self.assertIn(directive, policy)
+        self.assertNotIn('PermitUserEnvironment', policy)
+        self.assertIn("'permituserenvironment no'", source)
         self.assertTrue(policy.endswith('Match all\n'))
         self.assertIn('"$SSHD_POLICY"; do', source)
         self.assertLess(

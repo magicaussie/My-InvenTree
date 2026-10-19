@@ -87,7 +87,8 @@ for setting in \
     'trustedusercakeys none' \
     'disableforwarding yes' \
     'permittty no' \
-    'permituserrc no'; do
+    'permituserrc no' \
+    'permituserenvironment no'; do
     if ! printf '%s\n' "$EFFECTIVE" | grep -Fxq "$setting"; then
         rm -f -- "$SSHD_POLICY" "$AUTH_FILE"
         fail "effective SSH policy mismatch: $setting; daemon not reloaded"
