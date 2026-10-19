@@ -4,7 +4,26 @@ For day-to-day cabinet and drawer/bin editing, see the
 [Storage Layout graphical user guide](storage-layout/README.md). Its screenshots
 are read-only Development captures, not additional commissioning evidence.
 
-## Verified result (2026-10-19)
+## Current verified result — checkpoint 002J-N
+
+Development at <http://192.168.1.108:18081/web/> is running source `ec69b6e44d0fe1352e15f7586a9c4434caa35a5e`. The fixed Compose file and named volumes are unchanged; Main remains undeployed and forbidden. Deployment used the existing restricted `up` activation. No hardware operations or workers were started.
+
+### Source, Compose and image evidence
+
+- Archive SHA-256: `1dcce6dd24abb4bdf76febfc8d99863b4db30961d1b863a92ac9d2bbd17bcd47`; remote archive `/home/spetchal/myinventree-002jn-source.tar`; extraction `/home/spetchal/myinventree-dev-build-002jn`. All 2,893 archive entries matched.
+- `/etc/myinventree-dev/compose.yml` matched exactly. Backend image ID: `sha256:31b46f14f503280ee5e33775feb6beb281697da2eda315bacf3922ad81507696`; frontend image ID: `sha256:19e1c0071875fb9c2111f072f24bda903f2b537d4912e5d1bf9f952ba41db8c6`. Both running services were healthy.
+- Rollback tags `rollback-002jn` preserve the previous backend and frontend image IDs. Restoration is administrator-only; do not change tags or grant deployment privileges.
+- Development remains LAN-only on port `18081`; no Main, hardware, worker, or named-volume changes were made.
+
+### Current browser and API acceptance
+
+Live browser fixture: `c4d762a9-596f-47f4-9a3e-43ede200784c`. Verified cabinet/drawer interactions include Add, Duplicate, Draw drawer, move/resize, grid/snap, zoom, fit/reset, pan, select/multiselect, top alignment, horizontal distribution, undo/redo, bin Add/edit/move/resize/archive, save/refresh, and restricted restart. Persisted IDs and geometry were identical after restart.
+
+The API acceptance verified automatic native root, drawer and bin creation; hierarchy; stable identities without duplicates on repeated saves; collision rollback with unchanged revision and count; concurrent responses 200/412; stale revision 412; and anonymous 401. In the actual UI, Add drawer followed by Save returned 200 and automatically created the native parent. Anonymous 401 is the only reported permission test; no privileged-actor permission result is claimed. Existing stock data was not touched, so this does not establish stock-placement acceptance.
+
+**Deployed bin-drawing gap:** the live UI supports Add bin, but drawing bins was found absent in the deployed build. A local `DrawerDesigner` `onDraw` correction passed 42 focused tests and typecheck; it is not deployed and needs a new privileged approval before any build/activation. Do not describe Draw bin as deployed or browser-verified.
+
+## Historical verified result (2026-10-19; superseded by checkpoint 002J-N)
 
 **Development is operational:** <http://192.168.1.108:18081/web/>. Project `myinventree-dev` on the owner-confirmed CasaOS host `mainserver-1` (hostname `mainserver`, LAN `192.168.1.108`, SSH Tailscale `100.98.254.48`). PostgreSQL, Redis, backend and nginx are healthy; bootstrap exited 0. No manually launched Django/Vite service is required. Docker is enabled at boot and the four long-running services use `restart: unless-stopped`. Host reboot was deliberately **not** performed because it would interrupt unrelated CasaOS workloads.
 

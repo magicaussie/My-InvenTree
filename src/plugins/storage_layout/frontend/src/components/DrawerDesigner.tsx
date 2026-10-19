@@ -261,6 +261,24 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
     setSelection([bin.id]);
   }, [activeBins, apply, drawer, grid]);
 
+  const drawBin = useCallback(
+    (rect: { x: number; y: number; width: number; height: number }) => {
+      if (!drawer || status !== 'ready') return;
+      const bin: BinDraft = {
+        id: newId(),
+        is_new: true,
+        drawer: drawer.id,
+        label: `B${activeBins.length + 1}`,
+        location: null,
+        ...rect,
+        archived: false
+      };
+      apply({ type: 'add_bin', bin });
+      setSelection([bin.id]);
+    },
+    [activeBins.length, apply, drawer, status]
+  );
+
   const duplicateSelection = useCallback(() => {
     if (!drawer) return;
     const commands: Command[] = [];
@@ -574,6 +592,7 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
                 onClearSelection={() => setSelection([])}
                 onMove={onMove}
                 onResize={onResize}
+                onDraw={drawBin}
               />
             </Stack>
 

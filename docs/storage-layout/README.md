@@ -29,17 +29,17 @@ a real Development UI capture from 2026-10-19 using the application build
 recorded in [DEPLOYMENT.md](../DEPLOYMENT.md). No cabinet, topology or mapping
 changes were submitted for this guide. All other diagrams in this guide are
 illustrative Mermaid diagrams, not screenshots or evidence of a live workflow.
-The deployed app remains `2bb7375ed`; the newer picker and automatic native-child
-creation described below are source-tested, not deployed or browser-verified.
-A live browser suite passed on the deployed app `2bb7375ed`. It verified cabinet
-dimensions (641 × 841) through Save, refresh and restart; Add and Duplicate through
-Save and refresh; drawing a 100 × 80 drawer at (200, 200) through Save and refresh;
-snap-to-10 movement from (0, 0) to (30, 30); resizing from 60 × 40 to 80 × 60;
-undo/redo; inspector width 79; adding a bin bound to a native child (width 21)
-through Save and refresh; archive/duplicate; and snapshot identity/geometry across
-container restart. This is browser verification, not hardware testing. No screenshots
-from that suite are included or implied here. Multi-select, align and distribute are
-covered by source inspection only and were not acceptance-tested in this run.
+The current deployed app is source `ec69b6e44d0fe1352e15f7586a9c4434caa35a5e`;
+see [current deployment evidence](../DEPLOYMENT.md#current-verified-result--checkpoint-002j-n).
+The live browser suite verified cabinet and drawer editing, including Draw drawer,
+selection/multiselection, top alignment, horizontal distribution, geometry edits,
+undo/redo, and persistence across save, refresh and restricted restart. It verified
+bin Add/edit/move/resize/archive and persistence as well. This is browser verification,
+not hardware or stock-placement acceptance. The current deployed UI supports **Add
+bin**, but **Draw bin is absent**. Do not present bin drawing below as deployed or
+live-verified: a local `DrawerDesigner` `onDraw` correction passed 42 focused tests
+and typecheck, but has not been deployed and requires new privileged approval.
+No screenshots from that suite are included or implied here.
 
 ## 1. Find or create a cabinet
 
@@ -63,8 +63,11 @@ flowchart LR
 4. Review the values before submitting. Cabinet creation uses the selected
    `root_location_name` atomically with cabinet creation; it does not adopt an
    existing location by ID or delete/modify native locations. Closing the dialog
-   without submitting avoids creating a cabinet. This updated picker/create flow
-   is source-tested only, not verified in the deployed browser.
+   without submitting avoids creating a cabinet. The deployed UI's Add drawer then
+   Save flow was browser-verified to return 200 and automatically create its native
+   parent. API checks also verified native root/drawer/bin creation hierarchy,
+   stable IDs across repeated saves, and collision rollback without revision/count
+   change. These checks do not establish stock-placement acceptance.
 
 ### New cabinet setup — illustrative workflow, not a screenshot
 
@@ -141,17 +144,14 @@ the live browser suite, but the illustration itself is not evidence or a screens
    and archive affect the layout; do not use them casually on shared data.
 
 The named hierarchy picker selects native StockLocations by name, rather than
-asking users to type numeric IDs. When a cabinet is created, its selected
-`root_location_name` is created atomically with the cabinet; the source does not
-adopt an existing location. When saving a layout, a row with `location: null` and
-`auto_create_location: true` creates a native child location: a structural child
-for a drawer, or a nonstructural child for a bin. These creation operations are
-transactional with their respective cabinet/layout saves. They do not rename,
-reparent, or delete native locations. Existing explicit bindings are retained;
-there is no native stock-location deletion or adoption feature in this workflow.
-A drawer requires a native cabinet location as its parent. This behavior is
-source-tested only and has not been browser-verified or deployed. The live
-Development app remains at source `2bb7375ed`; see [checkpoint 002J-N](../DEPLOYMENT.md#checkpoint-002j-n--storage-layout-source-tested-update-not-deployed).
+asking users to type numeric IDs. The deployed API's automatic location creation
+was verified for root, drawer and bin hierarchy, stable IDs across repeated saves,
+and transactional collision rollback. The live UI specifically verified Add drawer
+then Save; do not infer that the UI's Add bin or an unimplemented Draw bin action
+has automatic location creation. Automatic creation does not rename, reparent, or
+delete native locations. Existing explicit bindings are retained; this workflow does
+not adopt existing locations by ID or delete native locations. Existing stock data
+was not touched, which is not stock-placement acceptance.
 
 ### Front versus interior — illustrative diagram, not a screenshot
 
@@ -165,10 +165,12 @@ flowchart TD
 
 ## 4. Design bins inside a drawer
 
-The live browser suite verified adding a bin, binding it to a native child, and
-saving/reloading its geometry. The diagram below remains illustrative, not a
-screenshot. Bins are nonstructural native children; they do not require the
-structural-child Location ID required by drawers.
+The live browser suite verified **Add bin**, editing its geometry and native
+binding, and saving/reloading. **Draw bin is not available in the deployed UI**;
+the local `onDraw` correction has passed focused tests and typecheck only and awaits
+new privileged approval before deployment. Do not treat the illustrative diagram as
+evidence of a Draw bin control. Bins are nonstructural native children; they do not
+require the structural-child Location ID required by drawers.
 
 ```mermaid
 flowchart TD
@@ -182,8 +184,9 @@ flowchart TD
 
 1. **Save the cabinet layout first**, select the drawer, then choose **Design
    drawer interior and bins** in its properties area (scroll down if necessary).
-2. In the drawer designer, use **Add bin**, or **Grid generator** for a regular
-   arrangement. Review generator settings before applying them.
+2. In the deployed drawer designer, use **Add bin**. Do not follow a Draw bin
+   interaction: that capability is not deployed. Use **Grid generator** for a
+   regular arrangement if available, reviewing generator settings before applying.
 3. Select a bin in the **Bins** list or top-down canvas. Use its inspector for
    label, position, size and native location binding. Here the plane is the
    drawer interior: bin height runs along the interior depth, not the cabinet's

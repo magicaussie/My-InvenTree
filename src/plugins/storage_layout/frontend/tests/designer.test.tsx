@@ -109,6 +109,45 @@ describe('CabinetDesigner dimensions', () => {
 });
 
 describe('DrawerDesigner', () => {
+  it('draws a new unmapped bin with undoable geometry', async () => {
+    const context = fakeContext();
+    const originalGet = context.api.get.bind(context.api);
+    context.api.get = vi.fn(async (url: string) => {
+      if (url.includes('/drawers/drawer-2/layout/'))
+        return {
+          data: {
+            schema_version: 1,
+            cabinet: { ...CABINET, total_pixels: 0 },
+            drawer: {
+              id: 'drawer-2', label: 'D2', display_number: 2, location: 42,
+              x: 0, y: 0, width: 600, height: 200,
+              interior_width: 560, interior_height: 160, archived: false,
+              allocation: null
+            },
+            bins: []
+          },
+          headers: { etag: '"3"' }
+        };
+      return originalGet(url);
+    }) as typeof context.api.get;
+
+    render(<MantineProvider><DrawerDesigner context={context} drawerId='drawer-2' /></MantineProvider>);
+    const canvas = await screen.findByRole('application', { name: 'Drawer top-down view' });
+    fireEvent.click(screen.getByRole('button', { name: 'Draw mode' }));
+    fireEvent.pointerDown(canvas, { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(canvas, { clientX: 110, clientY: 60, pointerId: 1 });
+    fireEvent.pointerUp(canvas, { pointerId: 1 });
+
+    expect(screen.getByTestId('entity-count')).toHaveTextContent('1 item');
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
+    const binButton = await screen.findByRole('button', { name: 'Bin B1' });
+    expect(binButton).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByTestId('entity-count')).toHaveTextContent('0 items');
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+    expect(await screen.findByRole('button', { name: 'Bin B1' })).toBeInTheDocument();
+  });
+
   it('validates a drawer front rectangle against cabinet dimensions, not its interior', async () => {
     const context = fakeContext();
     const originalGet = context.api.get.bind(context.api);
