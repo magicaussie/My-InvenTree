@@ -59,6 +59,7 @@ services:
       INVENTREE_SITE_URL: http://192.168.1.108:18081
       INVENTREE_CONFIG_FILE: /data/config.yaml
       INVENTREE_SECRET_KEY_FILE: /data/secret_key.txt
+      INVENTREE_OIDC_PRIVATE_KEY_FILE: /data/oidc.pem
       INVENTREE_STATIC_ROOT: /data/static
       INVENTREE_MEDIA_ROOT: /data/media
       INVENTREE_BACKGROUND_WORKERS: '2'

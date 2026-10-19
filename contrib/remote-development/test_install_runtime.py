@@ -55,6 +55,7 @@ class RuntimePackageTests(unittest.TestCase):
             'pull_policy: never',
             'POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?runtime.env is required}',
             'INVENTREE_SECRET_KEY_FILE: /data/secret_key.txt',
+            'INVENTREE_OIDC_PRIVATE_KEY_FILE: /data/oidc.pem',
             "INVENTREE_ALLOWED_HOSTS: '192.168.1.108,localhost,127.0.0.1'",
             'INVENTREE_SITE_URL: http://192.168.1.108:18081',
             "ports: ['192.168.1.108:18081:80']",
