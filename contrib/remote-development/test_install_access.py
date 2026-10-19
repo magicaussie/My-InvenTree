@@ -70,6 +70,37 @@ class InstallerSafetyTests(unittest.TestCase):
         self.assertIn('--shell /bin/sh --password \'!\' "$ACCOUNT"', source)
         self.assertIn('install -o root -g root -m 0440 "$TMP" "$SUDOERS"', source)
 
+    def test_account_wide_ssh_boundary_and_safe_reload(self):
+        """Require account-wide authentication restrictions before safe reload."""
+        source = INSTALLER.read_text()
+        policy = (PACKAGE / 'sshd-deploy.conf').read_text()
+        for directive in (
+            'Match User inventree-deploy',
+            'ForceCommand /usr/local/libexec/myinventree-dev-ssh',
+            'AuthenticationMethods publickey',
+            'PasswordAuthentication no',
+            'KbdInteractiveAuthentication no',
+            'HostbasedAuthentication no',
+            'GSSAPIAuthentication no',
+            'AuthorizedKeysCommand none',
+            'TrustedUserCAKeys none',
+            'DisableForwarding yes',
+            'PermitTTY no',
+            'PermitUserRC no',
+            'PermitUserEnvironment no',
+        ):
+            self.assertIn(directive, policy)
+        self.assertTrue(policy.endswith('Match all\n'))
+        self.assertIn('"$SSHD_POLICY"; do', source)
+        self.assertLess(
+            source.index('/usr/sbin/sshd -t'), source.index('systemctl reload ssh')
+        )
+        self.assertLess(
+            source.index('effective SSH policy mismatch'),
+            source.index('systemctl reload ssh'),
+        )
+        self.assertNotIn('systemctl restart', source)
+
 
 if __name__ == '__main__':
     unittest.main()
