@@ -126,7 +126,52 @@ Focused validation:
 4. Stale plugin translation catalogs rendered new designer control labels as message IDs: refreshed catalogs and rebuilt images.
 5. Routine restart reran bootstrap/password rehash and could invalidate a session: wrapper restart now targets only db/redis/backend/proxy, with regression test.
 
-## Checkpoint 002J-M — designer persistence and drawing tools
+## Checkpoint 002J-M — verified Development update
+
+The previously pending proposal below was approved and executed. **Current deployed application source: `2bb7375ed`**, including `4616314ea`. Development remains **http://192.168.1.108:18081/web/**; Main remains undeployed.
+
+### Executed build and activation
+
+1. Transferred the approved `4616314ea` Git archive using strict batch SCP to `spetchal@mainserver-1`; server SHA-256 matched `f1142bce35bb730976860a0e272d0d7d859e4b81354cbe0edd55a8e42005b125`. Extracted into fresh `/home/spetchal/myinventree-dev-build-4616314ea`.
+2. Recorded pre-update images and preserved local rollback tags:
+   - Backend: `sha256:380462d9fda1d944232f0641b7832fc4883c87ecf5ec1dd68979f3cfc4903609`, tag `localhost/myinventree-dev-backend:rollback-002jm`.
+   - Frontend: `sha256:4be7bdb685bbb21f89cd6487cee0fab1d877d024502c806fe90b3ba777c1c2ee`, tag `localhost/myinventree-dev-frontend:rollback-002jm`.
+3. Built both reviewed Docker targets with `sudo -n docker build --pull=false`, then used the unchanged fixed wrapper `sudo -n /usr/local/sbin/inventree-deploy up`. No schema/data migration was introduced. Named data volumes were preserved.
+4. Browser testing exposed untranslated new control labels (Draw displayed a Lingui message ID). Corrected the production build to extract source messages before compiling catalogs. Built the correction from Git archive `2bb7375ed`, SHA-256 `95fe2f062dd51236e10377f5d71060aac059c50ae398cd26e1319c3ce0dc8c88`, using fresh directory `/home/spetchal/myinventree-dev-build-2bb7375ed`, the same Dockerfile/targets/tags and fixed activation. No permission or policy change.
+5. Installed Compose compared byte-for-byte equal to the reviewed source, SHA-256 `f2d46709c2e01a6c724852842369867be2fe3e9743dde0f0e6c4c2a0c137f8b2`. Policy contains only named data volumes, no host paths, devices, privileged mode or Docker socket. Web binding remains LAN-only `192.168.1.108:18081`; PostgreSQL/Redis have no published host ports.
+
+Final image IDs, verified against both running containers:
+
+| Service | Image ID |
+| --- | --- |
+| backend | `sha256:a99974b2f6c86fc2f0db609e85c5128bd4d06805b705e0e0a8de87640951de54` |
+| proxy/frontend | `sha256:0796bd4cd2a1612a7419ca1e0aac7784b14bf0ceb8bdfb1bd95f610a8c5e5c9c` |
+
+Rollback, if required, is an administrator operation: restore the two preserved rollback image IDs to the fixed `:review` tags, then invoke the existing Development `up` wrapper. Do not delete volumes, downgrade a migrated database without review, or give the deployment account image-tagging privileges. This update required no schema migration.
+
+### Actual acceptance results
+
+Executed from the workstation:
+
+```sh
+SL_CHROMIUM_PATH=/bin/chromium node contrib/remote-development/live-layout-regression.cjs
+```
+
+This retrieves the existing admin credential into process memory (never logs it), uses real Chromium login and UI events, creates isolated native locations/cabinets, and compares API persistence. Its final successful cabinet was `53ac7a4f-a093-480e-830c-143dc7aa2ddf`.
+
+- Login and plugin designer loaded. Add, Duplicate and click-drag Draw each returned PUT 200 and survived refresh with stable identities.
+- Cabinet dimensions changed to `641 × 841`. Draw created `(200,200,100,80)`. Pointer move changed `(0,0)` to `(30,30)` on a 10-unit grid; undo/redo restored/reapplied it. South-east resize changed `60 × 40` to `80 × 60`; inspector edit then saved width `79`.
+- Zoom in/out, fit/reset, middle-button pan, grid and snap were exercised with state/geometry assertions.
+- Drawer interior opened; a native-bound bin was created and edited to `21 × 20`, saved with PUT 200 and reloaded. Duplicate drawer was archived and retained as an archived record.
+- Full cabinet/drawer/bin snapshots before and after the restricted `inventree-deploy restart` were equal, including IDs, locations, geometry and archive state. PostgreSQL, Redis, backend and proxy restarted healthy; bootstrap remained exited 0. Browser reload and API reads succeeded afterward.
+- Frontend: `npm run typecheck` passed; 307 tests across 16 files passed. Backend isolated SQLite identity/persistence suite: 22 tests passed. Broader backend run: 83 passed, two plugin-registry wiring setup errors (`get_plugin` returned None under isolated test settings); these are not claimed as passes. Historical 79+1 test results below were not reproduced exactly.
+- Running plugin was queried: `ENABLE_HARDWARE=False`, `DISPATCHER_ENABLED=False`. No hardware actions or queue worker were started. No Main deployment or unrelated container commands were performed.
+
+Remaining limitations: numeric native-location binding is still required for new drawers/bins; the UI does not automatically create locations. Multi-select/alignment/distribution were not included in this live acceptance run. Repeated failed test attempts left isolated regression fixtures for audit; existing user cabinet data was not changed. LAN HTTP is not encrypted. Fontconfig emitted cache-directory warnings during the diagnostic management command, without blocking application operation.
+
+### Historical pre-deployment notes (superseded)
+
+## Checkpoint 002J-M — original pending record
 
 - Origin synchronization reports commit `6669a0fff` synced. This is a local checkpoint; it is not evidence that the current application images contain the changes.
 - In isolated live Development testing, Add+Duplicate save failure was reproduced: PUT returned HTTP 400 for a new UUID lacking the explicit new-drawer identity marker, and a subsequent GET returned an empty result. The local changes distinguish newly created drawers from persisted identities; this is not a live repair verification.

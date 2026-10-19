@@ -21,7 +21,7 @@ const report = (label, status, passed) => console.log(`${passed ? 'PASS' : 'FAIL
   const browser = await chromium.launch({ headless: true, ...(process.env.SL_CHROMIUM_PATH ? { executablePath: process.env.SL_CHROMIUM_PATH } : {}) });
   let cabinetId;
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ viewport: { width: 1734, height: 1200 } });
     const page = await context.newPage();
     await page.goto(`${base}/web/login`);
     await page.getByLabel('login-username').fill('sl_admin');
@@ -104,6 +104,8 @@ const report = (label, status, passed) => console.log(`${passed ? 'PASS' : 'FAIL
         } catch { /* non-JSON response */ }
         if (typeof responseEvidence === 'string') {
           console.log(`PUT response detail=${responseEvidence.replaceAll(password, '[REDACTED]').slice(0, 300)}`);
+                    const bodyCode = (await response.json().catch(() => null))?.code;
+                    if (typeof bodyCode === 'string') console.log(`PUT response code=${bodyCode.slice(0, 100)}`);
         }
         const visibleError = await page.getByRole('alert').innerText().catch(() => '');
         console.log(`UI error text: ${visibleError.replaceAll(password, '[REDACTED]').slice(0, 500)}`);
@@ -112,37 +114,340 @@ const report = (label, status, passed) => console.log(`${passed ? 'PASS' : 'FAIL
       await page.getByText('Saved', { exact: true }).waitFor({ timeout: 15000 });
     };
 
+    // Exercise cabinet dimension controls through the designer and verify the
+    // saved dimensions survive a browser refresh before creating geometry.
+    const cabinetWidthField = page.getByLabel('Cabinet width in units', { exact: true });
+    const cabinetHeightField = page.getByLabel('Cabinet height in units', { exact: true });
+    const initialCabinet = await (await apiRequest('get', `${api}cabinets/${cabinetId}/`)).json();
+    const editedCabinetWidth = Number(initialCabinet.width_units) + 1;
+    const editedCabinetHeight = Number(initialCabinet.height_units) + 1;
+    await cabinetWidthField.fill(String(editedCabinetWidth));
+    await cabinetWidthField.press('Tab');
+    await cabinetHeightField.fill(String(editedCabinetHeight));
+    await cabinetHeightField.press('Tab');
+    await save('edit cabinet dimensions');
+    await page.reload();
+    await page.getByTestId('cabinet-designer').waitFor({ timeout: 30000 });
+    const persistedCabinet = await (await apiRequest('get', `${api}cabinets/${cabinetId}/`)).json();
+    assert.equal(Number(persistedCabinet.width_units), editedCabinetWidth, 'cabinet width persists after refresh');
+    assert.equal(Number(persistedCabinet.height_units), editedCabinetHeight, 'cabinet height persists after refresh');
+
+    // New drawers are intentionally unbound. Create an isolated structural child
+    // beneath this fixture cabinet's native location, then bind it in the visible
+    // drawer inspector before saving (the API rejects unbound drawers).
+    const cabinetDetailResponse = await apiRequest('get', `${api}cabinets/${cabinetId}/`);
+    assert.equal(cabinetDetailResponse.status(), 200, 'read isolated cabinet');
+    const cabinetDetail = await cabinetDetailResponse.json();
+    assert.ok(cabinetDetail.location, 'fixture cabinet has a native parent location');
+    const drawerLocationName = `SL regression drawer ${crypto.randomUUID().slice(0, 8)}`;
+    const drawerLocationResponse = await apiRequest('post', '/api/stock/location/', {
+      name: drawerLocationName,
+      description: 'Disposable structural child for isolated Storage Layout regression',
+      parent: cabinetDetail.location,
+      structural: true
+    });
+    assert.equal(drawerLocationResponse.status(), 201, 'create isolated structural drawer location');
+    const drawerLocation = await drawerLocationResponse.json();
+    assert.ok(drawerLocation.pk, 'created drawer location has no primary key');
+
     await page.getByRole('button', { name: 'Add drawer', exact: true }).click();
-    // Drawer labels are SVG <text> nodes, not regular DOM text. The Add action
-    // selects the new drawer; duplication is enabled from that selection.
     const drawerInspector = page.getByTestId('drawer-inspector');
     await drawerInspector.waitFor({ timeout: 10000 });
+    await page.getByTestId('entity-count').filter({ hasText: '1 item' }).waitFor({ timeout: 10000 });
+    await page.getByText(/Unbound: this drawer cannot resolve inventory/i).waitFor({ timeout: 5000 });
+    const locationIdField = drawerInspector.getByLabel('Location ID', { exact: true });
+    await locationIdField.fill(String(drawerLocation.pk));
+    await locationIdField.press('Tab');
+    await page.getByText(/Unbound: this drawer cannot resolve inventory/i).waitFor({ state: 'hidden', timeout: 5000 });
+    await save('add drawer save');
+    await page.reload();
+    await page.getByTestId('cabinet-designer').waitFor({ timeout: 30000 });
+    let layoutPath = `${api}cabinets/${cabinetId}/layout/`;
+    let layoutResponse = await apiRequest('get', layoutPath);
+    assert.equal(layoutResponse.status(), 200, 'read layout after add refresh');
+    let layout = await layoutResponse.json();
+    assert.equal(layout.drawers.length, 1, 'one added drawer persisted across refresh');
+
+    // Reload does not guarantee selection. Select the persisted drawer explicitly
+    // before invoking the duplicate command.
+    const firstDrawerRect = page.locator('svg g > rect[style]').evaluateAll((nodes) => {
+      const rect = nodes.find((node) => node.style.cursor === 'move');
+      if (!rect) throw new Error('Draggable drawer SVG rect not found for selection');
+      const box = rect.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+    const drawerScreenPoint = await firstDrawerRect;
+    await page.mouse.click(drawerScreenPoint.x, drawerScreenPoint.y);
     await page.getByRole('button', { name: 'Duplicate selection', exact: true }).click();
     await page.getByTestId('entity-count').filter({ hasText: '2 items' }).waitFor({ timeout: 10000 });
-    await save('add + duplicate save');
+    const duplicateInspector = page.getByTestId('drawer-inspector');
+    await duplicateInspector.waitFor({ timeout: 10000 });
+    await page.getByText(/Unbound: this drawer cannot resolve inventory/i).waitFor({ timeout: 5000 });
+    const duplicateLocationResponse = await apiRequest('post', '/api/stock/location/', {
+      name: `SL regression duplicate ${crypto.randomUUID().slice(0, 8)}`,
+      description: 'Disposable structural child for isolated Storage Layout regression duplicate',
+      parent: cabinetDetail.location,
+      structural: true
+    });
+    assert.equal(duplicateLocationResponse.status(), 201, 'create isolated duplicate location');
+    const duplicateLocation = await duplicateLocationResponse.json();
+    const duplicateLocationField = duplicateInspector.getByLabel('Location ID', { exact: true });
+    await duplicateLocationField.fill(String(duplicateLocation.pk));
+    await duplicateInspector.getByLabel('X', { exact: true }).fill('400');
+    await duplicateInspector.getByLabel('Y', { exact: true }).fill('500');
+    await duplicateLocationField.press('Tab');
+    await page.getByText(/Unbound: this drawer cannot resolve inventory/i).waitFor({ state: 'hidden', timeout: 5000 });
+    await save('duplicate drawer save');
+    await page.reload();
+    await page.getByTestId('cabinet-designer').waitFor({ timeout: 30000 });
+    layoutResponse = await apiRequest('get', layoutPath);
+    assert.equal(layoutResponse.status(), 200, 'read layout after duplicate refresh');
+    layout = await layoutResponse.json();
+    assert.equal(layout.drawers.length, 2, 'added and duplicated drawers persist across refresh');
 
-    const layoutPath = `${api}cabinets/${cabinetId}/layout/`;
-    let layoutResponse = await apiRequest('get', layoutPath);
-    assert.equal(layoutResponse.status(), 200, 'read saved layout');
-    let layout = await layoutResponse.json();
-    assert.equal(layout.drawers.length, 2, 'both drawers persisted');
-    const drawerIds = layout.drawers.map((drawer) => drawer.id);
-    assert.ok(drawerIds.every((id) => id), 'persisted drawer IDs returned');
+    const canvas = page.getByRole('application', { name: /cabinet/i });
+    const svg = canvas;
+    const pointerAt = async (x, y) => svg.evaluate((node, point) => {
+      const p = node.createSVGPoint(); p.x = point[0]; p.y = point[1];
+      const transformedGroup = node.querySelector('g[transform]');
+      const ctm = transformedGroup?.getScreenCTM();
+      if (!ctm) throw new Error('SVG transformed-group screen CTM unavailable');
+      const screen = p.matrixTransform(ctm); return { x: screen.x, y: screen.y };
+    }, [x, y]);
+    await canvas.waitFor({ timeout: 10000 });
+    const zoomLabel = page.locator('text=/\\d+%/').first();
+    const zoomBefore = await zoomLabel.textContent();
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await page.waitForFunction((before) => {
+      const label = [...document.querySelectorAll('*')].find((node) => /^\d+%$/.test((node.textContent || '').trim()));
+      return label && label.textContent.trim() !== before.trim();
+    }, zoomBefore);
+    const zoomIn = await zoomLabel.textContent();
+    await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
+    await page.getByRole('button', { name: 'Fit to view', exact: true }).click();
+    const fitZoom = await zoomLabel.textContent();
+    await page.getByRole('button', { name: 'Reset view', exact: true }).click();
+    const resetZoom = await zoomLabel.textContent();
+    assert.ok(zoomBefore && zoomIn && fitZoom && resetZoom, 'canvas zoom indicator is visible');
+    assert.notEqual(zoomIn, zoomBefore, 'zoom-in changes rendered zoom indicator');
+    assert.equal(resetZoom, '100%', 'reset view restores 100% zoom');
+    // Pan uses the SVG's middle-button pointer path; no cabinet geometry is changed.
+    await canvas.scrollIntoViewIfNeeded();
+        const canvasBox = await canvas.boundingBox();
+    assert.ok(canvasBox, 'designer canvas has a visible bounding box');
+    const panBefore = await svg.evaluate((node) => node.querySelector('g[transform]')?.getAttribute('transform'));
+    const panStart = { x: canvasBox.x + canvasBox.width * 0.5, y: canvasBox.y + canvasBox.height * 0.5 };
+    await page.mouse.move(panStart.x, panStart.y);
+    await page.mouse.down({ button: 'middle' });
+    await page.mouse.move(panStart.x + 40, panStart.y + 30, { steps: 10 });
+    await page.mouse.up({ button: 'middle' });
+    await page.waitForFunction(({ selector, before }) => {
+      const node = document.querySelector(selector)?.querySelector('g[transform]');
+      return node && node.getAttribute('transform') !== before;
+    }, { selector: 'svg[role="application"]', before: panBefore });
+    const panAfter = await svg.evaluate((node) => node.querySelector('g[transform]')?.getAttribute('transform'));
+    console.log(`PAN evidence before=${panBefore} after=${panAfter}`);
+    assert.notEqual(panAfter, panBefore, 'middle-button pan changes canvas transform');
+
+
+    const drawButton = page.getByRole('button', { name: 'Draw drawer', exact: true });
+    await drawButton.waitFor({ state: 'visible', timeout: 10000 });
+    assert.equal(await drawButton.count(), 1, 'Draw drawer control is exposed by its accessible name');
+    {
+      await drawButton.click();
+      const svgBox = await svg.boundingBox();
+      assert.ok(svgBox, 'designer canvas has a visible bounding box');
+      const drawStart = await pointerAt(200, 200);
+      await page.mouse.move(drawStart.x, drawStart.y);
+      await page.mouse.down();
+      const drawEnd = await pointerAt(300, 280);
+      await page.mouse.move(drawEnd.x, drawEnd.y, { steps: 10 });
+      await page.mouse.up();
+      await page.getByRole('button', { name: 'Drawing — drag on cabinet', exact: true }).click();
+      await page.getByTestId('entity-count').filter({ hasText: '3 items' }).waitFor({ timeout: 10000 });
+      const drawnInspector = page.getByTestId('drawer-inspector');
+      await drawnInspector.waitFor({ timeout: 10000 });
+      const drawnLocationResponse = await apiRequest('post', '/api/stock/location/', {
+        name: `SL regression drawn ${crypto.randomUUID().slice(0, 8)}`,
+        description: 'Disposable structural child for isolated Storage Layout regression drawn drawer',
+        parent: cabinetDetail.location,
+        structural: true
+      });
+      assert.equal(drawnLocationResponse.status(), 201, 'create isolated drawn-drawer location');
+      const drawnLocation = await drawnLocationResponse.json();
+      const drawnLocationField = drawnInspector.getByLabel('Location ID', { exact: true });
+      await drawnLocationField.fill(String(drawnLocation.pk));
+      await drawnLocationField.press('Tab');
+      await page.getByText(/Unbound: this drawer cannot resolve inventory/i).waitFor({ state: 'hidden', timeout: 5000 });
+      await save('draw drawer save');
+      await page.reload();
+      await page.getByTestId('cabinet-designer').waitFor({ timeout: 30000 });
+      layoutResponse = await apiRequest('get', layoutPath);
+      assert.equal(layoutResponse.status(), 200, 'read layout after draw refresh');
+      layout = await layoutResponse.json();
+      assert.equal(layout.drawers.length, 3, 'drawn drawer persists independently');
+    }
+    assert.ok(layout.drawers.every((drawer) => drawer.id), 'persisted drawer IDs returned');
+
+    // SVG client coordinates are derived from its current screen CTM, so
+    // zoom/pan transforms cannot skew pointer targeting or geometry checks.
+    const snapSwitch = page.getByRole('switch', { name: 'Snap to grid', exact: true });
+    const gridSize = page.getByRole('textbox', { name: 'Grid size', exact: true });
+    await snapSwitch.waitFor({ state: 'visible', timeout: 10000 });
+    await gridSize.waitFor({ state: 'visible', timeout: 10000 });
+    const gridControlsAvailable = true;
+    {
+      if ((await snapSwitch.getAttribute('aria-checked')) !== 'true') await snapSwitch.click();
+      await gridSize.fill('10');
+      await gridSize.press('Tab');
+    }
+
+    const readGeometry = async () => page.locator('svg g > rect[style]').evaluateAll((nodes) => {
+      const rect = nodes.find((node) => node.style.cursor === 'move');
+      if (!rect) throw new Error('Draggable drawer SVG rect not found');
+      return ['x', 'y', 'width', 'height'].map((key) => Number(rect.getAttribute(key)));
+    });
+    let beforeMove = await readGeometry();
+
+    const rectScreenBox = await page.locator('svg g > rect[style]').evaluateAll((nodes) => {
+      const rect = nodes.find((node) => node.style.cursor === 'move');
+      if (!rect) throw new Error('Draggable drawer SVG rect not found');
+      const box = rect.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    });
+    let point = { x: rectScreenBox.x + rectScreenBox.width / 2, y: rectScreenBox.y + rectScreenBox.height / 2 };
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down();
+    const moveTarget = { x: point.x + 30 * rectScreenBox.width / beforeMove[2], y: point.y + 30 * rectScreenBox.height / beforeMove[3] };
+    await page.mouse.move(moveTarget.x, moveTarget.y, { steps: 10 });
+    await page.mouse.up();
+    let afterMove = await readGeometry();
+    console.log(`MOVE evidence before=${JSON.stringify(beforeMove)} after=${JSON.stringify(afterMove)} screen_delta=30,30`);
+    assert.notDeepEqual(afterMove.slice(0, 2), beforeMove.slice(0, 2), 'drag changes drawer position');
+    if (gridControlsAvailable) {
+      assert.equal((afterMove[0] - beforeMove[0]) % 10, 0, 'move x snaps to grid');
+      assert.equal((afterMove[1] - beforeMove[1]) % 10, 0, 'move y snaps to grid');
+    }
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    assert.deepEqual(await readGeometry(), beforeMove, 'undo restores pre-move geometry');
+    await page.getByRole('button', { name: 'Redo', exact: true }).click();
+    assert.deepEqual(await readGeometry(), afterMove, 'redo reapplies moved geometry');
+    const [x, y, width, height] = afterMove;
+    const selectedDrawerCenter = await page.locator('svg g > rect[style]').evaluateAll((nodes) => {
+      const rect = nodes.find((node) => node.style.cursor === 'move');
+      if (!rect) throw new Error('Draggable drawer SVG rect not found before resize');
+      const box = rect.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+    await page.mouse.click(selectedDrawerCenter.x, selectedDrawerCenter.y);
+    const resizeHandle = await page.locator('svg rect[style]').evaluateAll((nodes) => {
+      const handle = nodes.find((node) => node.style.cursor === 'se-resize');
+      if (!handle) throw new Error('South-east resize handle is not rendered for selected drawer');
+      const box = handle.getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+    const resizeHit = await page.evaluate(({ x, y }) => {
+      const target = document.elementFromPoint(x, y);
+      return target ? { tag: target.tagName, cursor: target.style?.cursor, ariaHidden: target.getAttribute('aria-hidden') } : null;
+    }, resizeHandle);
+    console.log(`RESIZE target=${JSON.stringify(resizeHit)} handle=${JSON.stringify(resizeHandle)} zoom=${await zoomLabel.textContent()}`);
+    await page.mouse.move(resizeHandle.x, resizeHandle.y, { steps: 10 });
+    await page.mouse.down();
+    const resizeScreenDelta = await svg.evaluate((node) => {
+      const group = node.querySelector('g[transform]');
+      const scale = group?.getScreenCTM()?.a;
+      if (!scale || !Number.isFinite(scale)) throw new Error('SVG model-to-screen scale unavailable');
+      return 20 * scale;
+    });
+    await page.mouse.move(resizeHandle.x + resizeScreenDelta, resizeHandle.y + resizeScreenDelta, { steps: 10 });
+    await page.waitForTimeout(150);
+    await page.mouse.up();
+    const afterResize = await readGeometry();
+    console.log(`RESIZE evidence before=${JSON.stringify(afterMove)} after=${JSON.stringify(afterResize)} handle=${JSON.stringify(resizeHandle)}`);
+    const failures = [];
+    try {
+      assert.ok(afterResize[2] > width && afterResize[3] > height, 'resize changes drawer dimensions');
+    } catch (error) {
+      failures.push(error.message);
+      console.error(`FAIL resize: ${error.message}`);
+    }
+    await save('move + resize + grid snap + undo/redo save');
+    layoutResponse = await apiRequest('get', layoutPath);
+    assert.equal(layoutResponse.status(), 200, 'read moved and resized layout');
+    layout = await layoutResponse.json();
+    assert.equal(layout.drawers.length, 3, 'three drawer records persist');
 
     // Change drawer geometry through the visible inspector when a drawer is selected.
     const widthField = page.getByLabel('Width', { exact: true });
-    if (await widthField.count()) {
-      const prior = Number(await widthField.inputValue());
-      await widthField.fill(String(prior - 1));
-      await widthField.press('Tab');
-      await save('edit drawer save');
-    } else {
-      throw new Error('Drawer width inspector control was not found; edit regression not run');
-    }
+    assert.equal(await widthField.count(), 1, 'selected drawer exposes width inspector control');
+    const priorWidth = Number(await widthField.inputValue());
+    const editedWidth = priorWidth - 1;
+    await widthField.fill(String(editedWidth));
+    await widthField.press('Tab');
+    await save('edit drawer geometry');
+    layoutResponse = await apiRequest('get', layoutPath);
+    assert.equal(layoutResponse.status(), 200, 'read edited drawer geometry');
+    layout = await layoutResponse.json();
+    const editedDrawer = layout.drawers.find((drawer) => drawer.location === drawerLocation.pk);
+    assert.ok(editedDrawer, 'edited drawer is present by its isolated native location');
+    assert.equal(Number(editedDrawer.width), editedWidth, 'drawer width edit persisted');
+
+    // Exercise interior-bin design on a persisted, isolated drawer only. A bin
+    // requires its own native child location; bind it through the visible inspector.
+    const interiorDrawer = layout.drawers[0];
+    const binLocationResponse = await apiRequest('post', '/api/stock/location/', {
+      name: `SL regression bin ${crypto.randomUUID().slice(0, 8)}`,
+      description: 'Disposable non-structural child for isolated Storage Layout regression bin',
+      parent: interiorDrawer.location,
+      structural: false
+    });
+    assert.equal(binLocationResponse.status(), 201, 'create isolated bin location');
+    const binLocation = await binLocationResponse.json();
+    await page.goto(`${base}/web/plugin/storage-layout/drawers/${interiorDrawer.id}/design`);
+    await page.getByRole('button', { name: 'Add bin', exact: true }).click();
+    await page.getByTestId('entity-count').filter({ hasText: /item/ }).waitFor({ timeout: 10000 });
+    const binInspector = page.getByTestId('bin-inspector');
+    await binInspector.waitFor({ timeout: 10000 });
+    const binLocationField = binInspector.getByLabel('Location ID', { exact: true });
+    await binLocationField.fill(String(binLocation.pk));
+    await binLocationField.press('Tab');
+    const binSavePending = page.waitForResponse((response) =>
+      response.url().includes(`/drawers/${interiorDrawer.id}/layout/`) && response.request().method() === 'PUT'
+    );
+    await page.getByRole('button', { name: 'Save layout', exact: true }).click();
+    const binSaveResponse = await binSavePending;
+    report('interior bin save', binSaveResponse.status(), binSaveResponse.ok());
+    assert.equal(binSaveResponse.status(), 200, 'interior bin save response');
+    await page.getByRole('button', { name: 'Save layout', exact: true }).waitFor({ state: 'visible' });
+    const binLayoutResponse = await apiRequest('get', `${api}drawers/${interiorDrawer.id}/layout/`);
+    assert.equal(binLayoutResponse.status(), 200, 'read saved interior bin layout');
+    const binLayout = await binLayoutResponse.json();
+    assert.ok(binLayout.bins.some((bin) => bin.location === binLocation.pk), 'bound interior bin persisted');
+    assert.equal(await page.getByRole('button', { name: 'Generate bin grid' }).count(), 1, 'grid generation control is present');
+    const binWidthField = binInspector.getByLabel('Width', { exact: true });
+    const originalBinWidth = Number(await binWidthField.inputValue());
+    const editedBinWidth = originalBinWidth + 1;
+    await binWidthField.fill(String(editedBinWidth));
+    await binWidthField.press('Tab');
+    const editBinPending = page.waitForResponse((response) =>
+      response.url().includes(`/drawers/${interiorDrawer.id}/layout/`) && response.request().method() === 'PUT'
+    );
+    await page.getByRole('button', { name: 'Save layout', exact: true }).click();
+    const editBinResponse = await editBinPending;
+    report('edit bin geometry', editBinResponse.status(), editBinResponse.ok());
+    assert.equal(editBinResponse.status(), 200, 'edited bin layout save');
+    const editedBinLayoutResponse = await apiRequest('get', `${api}drawers/${interiorDrawer.id}/layout/`);
+    assert.equal(editedBinLayoutResponse.status(), 200, 'read edited bin layout');
+    const editedBinLayout = await editedBinLayoutResponse.json();
+    const editedBin = editedBinLayout.bins.find((bin) => bin.location === binLocation.pk);
+    assert.ok(editedBin, 'edited bin persists by isolated native location');
+    assert.equal(Number(editedBin.width), editedBinWidth, 'bin width edit persisted');
 
     // Archive one persisted drawer via the designer's explicit archive confirmation.
+    await page.goto(designUrl);
+    await page.getByTestId('cabinet-designer').waitFor({ timeout: 30000 });
     const archivedDrawer = layout.drawers[1];
-    const archiveTarget = page.getByText(archivedDrawer.label, { exact: true });
+    const archiveTarget = page.getByRole('button', { name: `Drawer ${archivedDrawer.label}`, exact: true });
     await archiveTarget.click();
     await page.getByRole('button', { name: 'Archive', exact: true }).click();
     const dialog = page.getByRole('dialog');
@@ -154,11 +459,59 @@ const report = (label, status, passed) => console.log(`${passed ? 'PASS' : 'FAIL
     layoutResponse = await apiRequest('get', layoutPath);
     assert.equal(layoutResponse.status(), 200, 'reload layout');
     layout = await layoutResponse.json();
-    assert.equal(layout.drawers.length, 2, 'drawer records remain after reload');
+    const expectedDrawerRecords = 3;
+    assert.equal(layout.drawers.length, expectedDrawerRecords, 'drawer records remain after reload');
     assert.equal(layout.drawers.filter((drawer) => drawer.archived).length, 1, 'one archived drawer persisted');
-    assert.equal(new Set(layout.drawers.map((drawer) => drawer.id)).size, 2, 'stable persisted IDs after reload');
-    report(`reload persistence cabinet=${cabinetId}`, layoutResponse.status(), true);
+    assert.equal(new Set(layout.drawers.map((drawer) => drawer.id)).size, expectedDrawerRecords, 'stable persisted IDs after reload');
+
+    const captureSnapshot = async () => {
+      const cabinetResponse = await apiRequest('get', `${api}cabinets/${cabinetId}/`);
+      const layoutSnapshotResponse = await apiRequest('get', layoutPath);
+      assert.equal(cabinetResponse.status(), 200, 'snapshot cabinet details');
+      assert.equal(layoutSnapshotResponse.status(), 200, 'snapshot cabinet layout');
+      const cabinetRecord = await cabinetResponse.json();
+      const layoutRecord = await layoutSnapshotResponse.json();
+      const drawers = await Promise.all(layoutRecord.drawers.map(async (drawer) => {
+        const drawerLayoutResponse = await apiRequest('get', `${api}drawers/${drawer.id}/layout/`);
+        assert.equal(drawerLayoutResponse.status(), 200, `snapshot drawer ${drawer.id} layout`);
+        const drawerLayout = await drawerLayoutResponse.json();
+        return {
+          id: drawer.id, location: drawer.location, x: drawer.x, y: drawer.y,
+          width: drawer.width, height: drawer.height, archived: drawer.archived,
+          bins: (drawerLayout.bins || []).map((bin) => ({
+            id: bin.id, location: bin.location, x: bin.x, y: bin.y,
+            width: bin.width, height: bin.height
+          })).sort((a, b) => String(a.id).localeCompare(String(b.id)))
+        };
+      }));
+      return {
+        cabinet: { id: cabinetRecord.id, width_units: cabinetRecord.width_units, height_units: cabinetRecord.height_units },
+        drawers: drawers.sort((a, b) => String(a.id).localeCompare(String(b.id)))
+      };
+    };
+    const beforeRestartSnapshot = await captureSnapshot();
+    console.log(`PRE-RESTART snapshot=${JSON.stringify(beforeRestartSnapshot)}`);
+    execFileSync('ssh', [...sshOptions, 'inventree-deploy@mainserver-1', 'inventree-deploy restart'], {
+      encoding: 'utf8', timeout: 120000, stdio: ['ignore', 'ignore', 'ignore']
+    });
+    let healthy = false;
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      try {
+        const health = await page.request.get(`${base}/api/`, { timeout: 5000 });
+        if (health.status() === 200) { healthy = true; break; }
+      } catch { /* service is still restarting */ }
+      await page.waitForTimeout(2000);
+    }
+    assert.ok(healthy, 'API returned HTTP 200 after approved service restart');
+    console.log('PASS API health after restart HTTP 200');
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.getByTestId('cabinet-designer').waitFor({ timeout: 60000 });
+    const afterRestartSnapshot = await captureSnapshot();
+    console.log(`POST-RESTART snapshot=${JSON.stringify(afterRestartSnapshot)}`);
+    assert.deepEqual(afterRestartSnapshot, beforeRestartSnapshot, 'cabinet, drawer and bin identity/geometry snapshots survive restart');
+    report(`restart persistence cabinet=${cabinetId}`, 200, true);
     console.log('Isolated fixture is retained for audit; no pre-existing cabinet was changed.');
+    if (failures.length) throw new Error(`${failures.length} regression check(s) failed: ${failures.join('; ')}`);
   } finally {
     await browser.close();
   }

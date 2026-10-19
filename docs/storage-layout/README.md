@@ -29,10 +29,15 @@ a real Development UI capture from 2026-10-19 using the application build
 recorded in [DEPLOYMENT.md](../DEPLOYMENT.md). No cabinet, topology or mapping
 changes were submitted for this guide. All other diagrams in this guide are
 illustrative Mermaid diagrams, not screenshots or evidence of a live workflow.
-Drawer/bin instructions were checked against the frontend source, but a saved
-drawer/bin workflow was not exercised in the capture session. Earlier
-cabinet-dimension persistence testing is recorded separately in the deployment
-document.
+A live browser suite passed on the deployed app `2bb7375ed`. It verified cabinet
+dimensions (641 × 841) through Save, refresh and restart; Add and Duplicate through
+Save and refresh; drawing a 100 × 80 drawer at (200, 200) through Save and refresh;
+snap-to-10 movement from (0, 0) to (30, 30); resizing from 60 × 40 to 80 × 60;
+undo/redo; inspector width 79; adding a bin bound to a native child (width 21)
+through Save and refresh; archive/duplicate; and snapshot identity/geometry across
+container restart. This is browser verification, not hardware testing. No screenshots
+from that suite are included or implied here. Multi-select, align and distribute are
+covered by source inspection only and were not acceptance-tested in this run.
 
 ## 1. Find or create a cabinet
 
@@ -106,8 +111,8 @@ flowchart LR
     E[Toolbar: add, draw, duplicate, validate, save] --> B
 ```
 
-This illustration is not a browser capture. Its labels describe source-checked
-controls; it does not imply that a drawer was saved or tested live.
+This illustration is not a browser capture. The controls shown were verified in
+the live browser suite, but the illustration itself is not evidence or a screenshot.
 
 1. To place a drawer by size, choose **Add drawer**, then select its rectangle
    or list entry. To draw its size and position directly, turn on **Draw drawer**
@@ -130,11 +135,13 @@ controls; it does not imply that a drawer was saved or tested live.
 7. Choose **Validate** and address reported conflicts before **Save**. Duplicate
    and archive affect the layout; do not use them casually on shared data.
 
-Newly added or duplicated drawers are saved as new drawers, even though the
-editor uses a temporary ID before saving. Do not copy an ID from another drawer
-or try to reuse an old ID; the server decides the permanent ID when it saves.
-This creation behavior is source-verified, not yet verified in the live Development
-UI; see [deployment checkpoint 002J-M](../DEPLOYMENT.md#checkpoint-002j-m--designer-persistence-and-drawing-tools).
+Newly added, duplicated and drawn drawers need a structural native child Location
+ID. Bins are nonstructural children and do not have that requirement. The editor
+does not automatically create native locations for these items: create the native
+child through InvenTree first, then enter its numeric Location ID in the relevant
+binding field. This numeric-ID workflow is a practical limitation; labels or
+layout IDs are not substitutes. The live browser suite verified Add, Duplicate
+and Draw persistence as described above. See [deployment checkpoint 002J-M](../DEPLOYMENT.md#checkpoint-002j-m--designer-persistence-and-drawing-tools).
 
 ### Front versus interior — illustrative diagram, not a screenshot
 
@@ -148,9 +155,10 @@ flowchart TD
 
 ## 4. Design bins inside a drawer
 
-This section describes the source-checked UI. No saved drawer was available for
-a live interior capture without changing the existing cabinet; the diagram below
-is illustrative, not a screenshot.
+The live browser suite verified adding a bin, binding it to a native child, and
+saving/reloading its geometry. The diagram below remains illustrative, not a
+screenshot. Bins are nonstructural native children; they do not require the
+structural-child Location ID required by drawers.
 
 ```mermaid
 flowchart TD
