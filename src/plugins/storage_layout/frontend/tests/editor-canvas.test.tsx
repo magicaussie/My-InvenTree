@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { EditorCanvas } from '../src/components/editor/EditorCanvas';
@@ -30,6 +30,83 @@ function renderCanvas() {
 }
 
 describe('EditorCanvas', () => {
+  it('sizes the workspace against the viewport and responds to window resizing', () => {
+    const { container } = renderCanvas();
+    const workspace = container.querySelector('.mantine-Stack-root');
+    expect(workspace).toHaveStyle({ height: `${window.innerHeight - 24}px` });
+    const originalHeight = window.innerHeight;
+    try {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 1000
+      });
+      fireEvent(window, new Event('resize'));
+      expect(workspace).toHaveStyle({ height: '976px' });
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: 200
+      });
+      fireEvent(window, new Event('resize'));
+      expect(workspace).toHaveStyle({ height: '320px' });
+    } finally {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: originalHeight
+      });
+    }
+  });
+
+  it('initially fits, but preserves explicit zoom across resize and unrelated edits', () => {
+    const callbacks: ResizeObserverCallback[] = [];
+    const OriginalObserver = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      constructor(callback: ResizeObserverCallback) {
+        callbacks.push(callback);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    try {
+      const { rerender } = renderCanvas();
+      const svg = screen.getByRole('application', { name: 'Cabinet canvas' });
+      vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+        width: 1000,
+        height: 700
+      } as DOMRect);
+      const resize = () =>
+        act(() =>
+          callbacks.forEach((callback) => {
+            callback([], {} as ResizeObserver);
+          })
+        );
+      resize();
+      const fitted = svg
+        .querySelector('g[transform]')
+        ?.getAttribute('transform');
+      expect(fitted).not.toBe('translate(0 0) scale(1)');
+      fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+      const manual = svg
+        .querySelector('g[transform]')
+        ?.getAttribute('transform');
+      expect(manual).not.toBe(fitted);
+      rerender(
+        <MantineProvider>
+          <EditorCanvas {...props} entities={[...props.entities]} />
+        </MantineProvider>
+      );
+      resize();
+      expect(svg.querySelector('g[transform]')?.getAttribute('transform')).toBe(
+        manual
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+      expect(svg.querySelector('g[transform]')?.getAttribute('transform')).toBe(
+        fitted
+      );
+    } finally {
+      globalThis.ResizeObserver = OriginalObserver;
+    }
+  });
   it('toggles the rendered grid with an accessible control', () => {
     const { container } = renderCanvas();
     const toggle = screen.getByRole('button', { name: 'Grid' });

@@ -126,6 +126,36 @@ export function EditorCanvas(props: EditorCanvasProps) {
   } = props;
 
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const autoFitRef = useRef(true);
+  const [workspaceHeight, setWorkspaceHeight] = useState(480);
+
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const measure = () => {
+      // Resolve against the viewport, not an indefinite percentage-height chain.
+      // Keep a usable surface when responsive toolbars stack above the canvas.
+      setWorkspaceHeight(
+        Math.max(
+          320,
+          window.innerHeight - workspace.getBoundingClientRect().top - 24
+        )
+      );
+    };
+    measure();
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measure);
+    observer?.observe(workspace);
+    if (workspace.parentElement) observer?.observe(workspace.parentElement);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
   const [viewport, setViewport] = useState<Viewport>({
     zoom: 1,
     offsetX: 0,
@@ -153,6 +183,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
     (next: Viewport | ((current: Viewport) => Viewport)) => {
       const value =
         typeof next === 'function' ? next(viewportRef.current) : next;
+      autoFitRef.current = false;
       viewportRef.current = value;
       setViewport(value);
     },
@@ -563,7 +594,10 @@ export function EditorCanvas(props: EditorCanvasProps) {
     const screen = svgRef.current?.getBoundingClientRect();
     if (!screen) return;
     const next = fitViewport(bounds, screen);
-    if (next) updateViewport(next);
+    if (next) {
+      updateViewport(next);
+      autoFitRef.current = true;
+    }
   }, [bounds, updateViewport]);
 
   useEffect(() => {
@@ -575,8 +609,9 @@ export function EditorCanvas(props: EditorCanvasProps) {
         { width: canvasWidth, height: canvasHeight },
         screen
       );
-      if (fitted && pointerIdRef.current === null) {
-        updateViewport((current) =>
+      if (fitted && autoFitRef.current && pointerIdRef.current === null) {
+        viewportRef.current = fitted;
+        setViewport((current) =>
           current.zoom === fitted.zoom &&
           current.offsetX === fitted.offsetX &&
           current.offsetY === fitted.offsetY
@@ -587,7 +622,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
     });
     observer.observe(svg);
     return () => observer.disconnect();
-  }, [canvasWidth, canvasHeight, updateViewport]);
+  }, [canvasWidth, canvasHeight]);
 
   // Escape/blur cancels either interaction even if focus left the SVG.
   useEffect(() => {
@@ -637,7 +672,11 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const transform = `translate(${viewport.offsetX} ${viewport.offsetY}) scale(${viewport.zoom})`;
 
   return (
-    <Stack gap='xs' h='100%'>
+    <Stack
+      ref={workspaceRef}
+      gap='xs'
+      style={{ height: workspaceHeight, minHeight: 320, flexShrink: 0 }}
+    >
       <Group justify='space-between'>
         <Group gap='xs'>
           <Tooltip label={t`Zoom in`}>
@@ -724,7 +763,12 @@ export function EditorCanvas(props: EditorCanvasProps) {
       <Paper
         withBorder
         p={0}
-        style={{ flex: 1, minHeight: 240, overflow: 'hidden' }}
+        style={{
+          flex: 1,
+          minHeight: 240,
+          overflow: 'hidden',
+          position: 'relative'
+        }}
       >
         <svg
           ref={svgRef}
@@ -735,6 +779,8 @@ export function EditorCanvas(props: EditorCanvasProps) {
           height='100%'
           style={{
             display: 'block',
+            position: 'absolute',
+            inset: 0,
             touchAction: 'none',
             outline: 'none',
             cursor:
