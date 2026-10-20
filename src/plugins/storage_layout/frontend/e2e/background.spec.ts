@@ -105,3 +105,26 @@ test('narrow image controls remain reachable and native SPA navigation guards di
   await save.click();
   await expect(page.getByText('Unsaved background changes', { exact: true })).toHaveCount(0);
 });
+
+for (const width of [390, 425]) {
+  test(`drawer image editor fits ${width}px without horizontal pane overflow`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await open(page, { path: '/drawers/drawer-1/design', feature: 'RenderDrawerDesigner' });
+    await expect(page.getByRole('button', { name: 'Upload background' })).toBeEnabled();
+    await page.locator('input[type=file]').setInputFiles({ name: 'narrow.png', mimeType: 'image/png', buffer: png });
+    await expect(page.getByTestId('background-image')).toBeVisible();
+    await page.getByLabel('Edit background image', { exact: true }).check();
+    const save = page.getByRole('button', { name: 'Save background', exact: true });
+    await save.scrollIntoViewIfNeeded();
+    const dimensions = await page.evaluate(() => ({ width: innerWidth, content: document.documentElement.scrollWidth }));
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.width);
+    const bounds = await save.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    await page.getByLabel('Background opacity', { exact: true }).fill('0.65');
+    await save.click();
+    await page.reload();
+    await expect(page.getByTestId('background-image')).toHaveAttribute('opacity', '0.65');
+  });
+}

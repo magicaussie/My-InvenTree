@@ -531,7 +531,12 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
           <Tabs.Tab value='diagnostics'>{t`Diagnostics`}</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value='layout' pt='sm'>
-          <Group align='flex-start' gap='sm' wrap='nowrap'>
+          <Group
+            align='flex-start'
+            gap='sm'
+            wrap='wrap'
+            style={{ minWidth: 0 }}
+          >
             <Paper withBorder p='xs' w={200} style={{ flexShrink: 0 }}>
               <Stack gap={2} data-testid='bin-list'>
                 <Text size='sm' fw={600}>
@@ -570,7 +575,7 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
               </Stack>
             </Paper>
 
-            <Stack gap='xs' style={{ flex: 1, minWidth: 320 }}>
+            <Stack gap='xs' style={{ flex: '1 1 320px', minWidth: 300 }}>
               <BackgroundCanvas
                 api={context.api}
                 target='drawers'

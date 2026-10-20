@@ -190,3 +190,27 @@ class BackgroundTests(ApiTestCase):
         response.close()
         with mock.patch('storage_layout.backgrounds.MAX_PIXELS', 10):
             self.upload(revision=3, expected=400)
+
+    def test_real_ownership_hides_background_content_and_writes(self):
+        """Exercise native ownership without mocking the ownership predicate."""
+        from django.contrib.auth.models import Group
+
+        from common.models import InvenTreeSetting
+        from users.models import Owner
+
+        self.upload()
+        InvenTreeSetting.set_setting('STOCK_OWNERSHIP_CONTROL', True, self.user)
+        other = Group.objects.create(name='background-other-owner')
+        self.cabinet_location.owner = Owner.get_owner(other)
+        self.cabinet_location.save()
+        for url in (self.url, self.drawer_url):
+            self.get(url, expected_code=404)
+            self.get(url + 'content/', expected_code=404)
+            self.upload(url, revision=2, expected=404)
+            self.patch(url, DEFAULT_METADATA, HTTP_IF_MATCH='"2"', expected_code=404)
+        self.cabinet_location.owner = Owner.get_owner(self.group)
+        self.cabinet_location.save()
+        self.get(self.url)
+        content = self.get(self.url + 'content/')
+        self.assertEqual(content['Content-Type'], 'image/png')
+        content.close()
