@@ -65,6 +65,7 @@ import {
 import { SimulationPanel } from './editor/SimulationPanel';
 import { EditorToolbar } from './editor/Toolbar';
 import { TopologyEditor } from './editor/TopologyEditor';
+import { StructureEditor } from './StructureEditor';
 
 export interface CabinetDesignerProps {
   context: InvenTreePluginContext;
@@ -683,7 +684,8 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
 
       <Tabs value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
-          <Tabs.Tab value='layout'>{t`Layout`}</Tabs.Tab>
+          <Tabs.Tab value='layout'>{t`Drawers and Bins`}</Tabs.Tab>
+          <Tabs.Tab value='structure'>{t`Cabinet / Structure`}</Tabs.Tab>
           <Tabs.Tab value='topology'>{t`Topology`}</Tabs.Tab>
           <Tabs.Tab value='mapping'>{t`Mapping`}</Tabs.Tab>
           <Tabs.Tab value='colors'>{t`Colors`}</Tabs.Tab>
@@ -1027,6 +1029,13 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
           />
         </Tabs.Panel>
       </Tabs>
+      <div style={{ display: activeTab === 'structure' ? 'block' : 'none' }}>
+        <StructureEditor
+          context={context}
+          cabinetId={cabinetId}
+          readOnly={editor.status !== 'ready'}
+        />
+      </div>
 
       <RenumberModal
         opened={renumberOpen}

@@ -17,8 +17,9 @@ APP = 'storage_layout'
 MIGRATION_0001 = '0001_storage_and_electrical'
 MIGRATION_0002 = '0002_mapping_and_constraints'
 MIGRATION_0003 = '0003_operations_audit_permissions'
+MIGRATION_0004 = '0004_cabinet_structure'
 
-LATEST = MIGRATION_0003
+LATEST = MIGRATION_0004
 
 TABLES = (
     'storage_layout_cabinet',
@@ -108,6 +109,13 @@ class MigrationLifecycleTests(TransactionTestCase):
 
         self.assertIn('storage_layout_cabinetoperation', names)
         self.assertIn('storage_layout_designaudit', names)
+
+        migrate_to(MIGRATION_0004)
+        self.assertIn('structure', [
+            field.name for field in MigrationExecutor(connection).loader.project_state(
+                [(APP, MIGRATION_0004)]
+            ).apps.get_model(APP, 'Cabinet')._meta.fields
+        ])
 
     def test_operation_rows_created_for_existing_cabinets(self):
         """The 0003 data migration precreates reservation rows."""

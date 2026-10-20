@@ -15,6 +15,8 @@ side effects.
 
 from __future__ import annotations
 
+import math
+
 from rest_framework import serializers
 
 from storage_layout.models import (
@@ -67,6 +69,7 @@ class CabinetSerializer(serializers.ModelSerializer):
             'location',
             'width_units',
             'height_units',
+            'structure',
             'revision',
             'archived',
             'active_mapping',
@@ -419,6 +422,109 @@ class CabinetUpdateSerializer(serializers.Serializer):
     height_units = serializers.IntegerField(min_value=1, required=False)
     archived = serializers.BooleanField(required=False)
     default_profile = serializers.UUIDField(required=False, allow_null=True)
+    structure = serializers.JSONField(required=False, allow_null=True)
+
+    def validate_structure(self, value):
+        """Validate explicit physical cabinet geometry without logical-unit inference."""
+        if value is None:
+            return value
+        if not isinstance(value, dict) or set(value) != {
+            'schema_version',
+            'units',
+            'view',
+            'envelope',
+            'features',
+        }:
+            raise serializers.ValidationError('Expected the complete structure schema.')
+        if value['schema_version'] != 1 or isinstance(value['schema_version'], bool):
+            raise serializers.ValidationError('schema_version must be 1.')
+        if value['units'] != 'mm' or value['view'] != 'front':
+            raise serializers.ValidationError(
+                "units must be 'mm' and view must be 'front'."
+            )
+        envelope = value['envelope']
+        if not isinstance(envelope, dict) or set(envelope) != {
+            'width',
+            'height',
+            'depth',
+        }:
+            raise serializers.ValidationError(
+                'envelope must contain width, height, and depth.'
+            )
+
+        def positive_number(number):
+            return (
+                isinstance(number, (int, float))
+                and not isinstance(number, bool)
+                and math.isfinite(number)
+                and number > 0
+            )
+
+        if not all(
+            positive_number(envelope[key]) for key in ('width', 'height', 'depth')
+        ):
+            raise serializers.ValidationError(
+                'Envelope dimensions must be positive finite numbers.'
+            )
+        features = value['features']
+        if not isinstance(features, list):
+            raise serializers.ValidationError('features must be a list.')
+        seen = set()
+        openings = []
+        allowed = {'partition', 'shelf', 'opening', 'door', 'panel'}
+        for index, feature in enumerate(features):
+            if not isinstance(feature, dict) or set(feature) != {
+                'id',
+                'type',
+                'x',
+                'y',
+                'width',
+                'height',
+            }:
+                raise serializers.ValidationError({
+                    index: 'Feature has an invalid shape.'
+                })
+            fid = feature['id']
+            if not isinstance(fid, str) or not fid.strip() or fid in seen:
+                raise serializers.ValidationError({
+                    index: 'Feature IDs must be non-empty and unique.'
+                })
+            seen.add(fid)
+            if not isinstance(feature['type'], str) or feature['type'] not in allowed:
+                raise serializers.ValidationError({index: 'Unsupported feature type.'})
+            if not all(
+                isinstance(feature[key], (int, float))
+                and not isinstance(feature[key], bool)
+                and math.isfinite(feature[key])
+                for key in ('x', 'y', 'width', 'height')
+            ):
+                raise serializers.ValidationError({
+                    index: 'Feature geometry must be finite numbers.'
+                })
+            x, y, width, height = (
+                feature[key] for key in ('x', 'y', 'width', 'height')
+            )
+            if x < 0 or y < 0 or width <= 0 or height <= 0:
+                raise serializers.ValidationError({
+                    index: 'Coordinates must be nonnegative and dimensions positive.'
+                })
+            if x + width > envelope['width'] or y + height > envelope['height']:
+                raise serializers.ValidationError({
+                    index: 'Feature lies outside the cabinet envelope.'
+                })
+            if feature['type'] == 'opening':
+                for ox, oy, ow, oh in openings:
+                    if (
+                        x < ox + ow
+                        and ox < x + width
+                        and y < oy + oh
+                        and oy < y + height
+                    ):
+                        raise serializers.ValidationError({
+                            index: 'Openings must not overlap.'
+                        })
+                openings.append((x, y, width, height))
+        return value
 
 
 # endregion

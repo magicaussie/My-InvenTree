@@ -12,6 +12,21 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
+## Cabinet / Structure feature status — local source only
+
+The local cabinet physical-structure editor and nullable `Cabinet.structure` migration
+are not deployed to Development. Do not describe them as live or run a build, schema
+migration, activation, or data mutation without specific owner/supervisor approval for
+the exact source input and operation. The default live acceptance script
+`contrib/remote-development/live-structure-acceptance.cjs` is read-only against the
+current shared Development cabinet; absence of the new tab is the expected result.
+Its opt-in `--exercise` mode creates a disposable isolated cabinet and refuses to
+write unless the currently running UI exposes the feature; `--restart` additionally
+opts into the restricted Development restart. Neither mode is approved/run against
+the current old deployment. Never edit shared cabinet data to manufacture
+acceptance screenshots. Before any separately approved migration, use only the existing
+administrator-approved private backup/verification mechanism in `docs/DEPLOYMENT.md`.
+
 ## Current deployment checkpoint — transferred archive review only; Development activation stopped
 
 - User-approved source commit: `10e05fdc21d563c14c9ea10da26f51867bf5229f`. Transferred archive SHA-256: `da20e278215d926125f2dffa28452f35ce18fac8091119c05651fb0d2ea53191`. Read-only reconciliation found extracted content matching the archive (tar comparison differed only in ownership metadata), and installed `/etc/myinventree-dev/compose.yml` matched exactly.

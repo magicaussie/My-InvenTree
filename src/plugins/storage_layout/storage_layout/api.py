@@ -436,6 +436,9 @@ class CabinetDetail(StorageLayoutBaseMixin, APIView):
         if 'height_units' in data:
             fields['height_units'] = data['height_units']
 
+        if 'structure' in data:
+            fields['structure'] = data['structure']
+
         if 'archived' in data:
             fields['archived'] = data['archived']
 

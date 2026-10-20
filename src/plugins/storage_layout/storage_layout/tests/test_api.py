@@ -376,6 +376,62 @@ class CabinetApiTests(ApiTestCase):
         self.assertEqual(response.data['name'], 'Renamed')
         self.assertEqual(response.data['revision'], self.cabinet.revision + 1)
 
+    def test_patch_structure_preserves_logical_layout_and_native_ids(self):
+        """Physical geometry writes share cabinet CAS but do not alter layout/mappings."""
+        structure = {
+            'schema_version': 1, 'units': 'mm', 'view': 'front',
+            'envelope': {'width': 674.0, 'height': 840.0, 'depth': 500.0},
+            'features': [
+                {'id': 'partition-a', 'type': 'partition', 'x': 300, 'y': 0, 'width': 10, 'height': 840},
+                {'id': 'opening-a', 'type': 'opening', 'x': 0, 'y': 0, 'width': 300, 'height': 400},
+                {'id': 'door-a', 'type': 'door', 'x': 0, 'y': 0, 'width': 300, 'height': 400},
+            ],
+        }
+        original = (self.cabinet.width_units, self.cabinet.height_units,
+                    self.cabinet.location_id, self.drawer.location_id,
+                    self.mapping.pk, self.drawer.pk)
+        response = self.patch(
+            f'{BASE}cabinets/{self.cabinet.pk}/', {'structure': structure},
+            expected_code=200, HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        )
+        self.assertEqual(response.data['structure'], structure)
+        self.cabinet.refresh_from_db()
+        self.drawer.refresh_from_db()
+        self.assertEqual((self.cabinet.width_units, self.cabinet.height_units,
+                          self.cabinet.location_id, self.drawer.location_id,
+                          self.cabinet.active_mapping_id, self.drawer.pk), original)
+        self.assertEqual(self.patch(
+            f'{BASE}cabinets/{self.cabinet.pk}/', {'name': 'Changed'},
+            expected_code=200, HTTP_IF_MATCH=f'"{self.cabinet.revision}"',
+        ).data['structure'], structure)
+
+    def test_patch_structure_rejects_invalid_geometry(self):
+        """Malformed, non-finite, out-of-bounds, and intersecting openings fail."""
+        examples = [
+            {'schema_version': 1, 'units': 'mm', 'view': 'front', 'envelope': {'width': -1, 'height': 10, 'depth': 10}, 'features': []},
+            {'schema_version': 1, 'units': 'mm', 'view': 'front', 'envelope': {'width': 10, 'height': 10, 'depth': 10}, 'features': [{'id': 'a', 'type': 'shelf', 'x': 9, 'y': 0, 'width': 2, 'height': 1}]},
+            {'schema_version': 1, 'units': 'mm', 'view': 'front', 'envelope': {'width': 20, 'height': 20, 'depth': 10}, 'features': [{'id': 'a', 'type': 'opening', 'x': 0, 'y': 0, 'width': 10, 'height': 10}, {'id': 'b', 'type': 'opening', 'x': 5, 'y': 5, 'width': 10, 'height': 10}]},
+        ]
+        for structure in examples:
+            self.patch(f'{BASE}cabinets/{self.cabinet.pk}/', {'structure': structure},
+                       expected_code=400, HTTP_IF_MATCH=f'"{self.cabinet.revision}"')
+
+    def test_patch_structure_stale_revision_does_not_write(self):
+        """A stale structure edit fails without changing geometry or revision."""
+        structure = {'schema_version': 1, 'units': 'mm', 'view': 'front',
+                     'envelope': {'width': 10, 'height': 10, 'depth': 10}, 'features': []}
+        self.patch(f'{BASE}cabinets/{self.cabinet.pk}/', {'structure': structure},
+                   expected_code=412, HTTP_IF_MATCH='"999"')
+        self.cabinet.refresh_from_db()
+        self.assertIsNone(self.cabinet.structure)
+
+    def test_patch_structure_requires_change_permission(self):
+        """A view-only user cannot edit physical cabinet geometry."""
+        user = grant(User.objects.create_user(username='structure-viewer', password='x'), 'view_cabinet')
+        self.client.force_login(user)
+        self.patch(f'{BASE}cabinets/{self.cabinet.pk}/', {'structure': None},
+                   expected_code=403, HTTP_IF_MATCH=f'"{self.cabinet.revision}"')
+
     def test_patch_archives_cabinet(self):
         """A cabinet can be archived through the CAS patch."""
         response = self.patch(

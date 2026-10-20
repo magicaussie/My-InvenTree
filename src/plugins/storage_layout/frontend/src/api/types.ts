@@ -85,6 +85,22 @@ export interface DrawerLayoutDocument {
   archive_ids: string[];
 }
 
+/** Millimetre-based physical cabinet geometry, independent of layout units. */
+export interface StructureDocument {
+  schema_version: 1;
+  units: 'mm';
+  view: 'front';
+  envelope: { width: number; height: number; depth: number };
+  features: Array<{
+    id: string;
+    type: 'partition' | 'shelf' | 'opening' | 'door' | 'panel';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
+}
+
 /* ------------------------------------------------------------------ */
 /* Read models                                                         */
 /* ------------------------------------------------------------------ */
@@ -97,6 +113,8 @@ export interface CabinetSummary {
   width_units: number;
   height_units: number;
   revision: number;
+  /** Physical front-view construction geometry; null on legacy cabinets. */
+  structure?: StructureDocument | null;
   archived: boolean;
   /** Active mapping id (string) or null. */
   active_mapping: string | null;

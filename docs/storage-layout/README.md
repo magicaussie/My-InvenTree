@@ -44,6 +44,40 @@ confirmed a disposable populated stock record retained quantity and location thr
 drawer/bin rename, archive and repeated saves. This is not general stock-placement
 acceptance. No screenshots from these suites are included or implied here.
 
+## Cabinet / Structure mode — source-only, not live-verified
+
+The current local source adds a separate `Cabinet / Structure` tab for a front-view
+millimetre-based physical envelope. Its editor is designed to initialize an envelope,
+then draw/edit cabinet body, partition, shelf, opening, door and panel features; Save
+writes a separate structure document and refresh should reload it. This document is
+separate from the existing drawer/bin layout: legacy `width_units` and `height_units`
+are not converted, and editing structure must not alter drawers, bins, native
+locations, stock or electrical mappings. These are source-level design expectations,
+not claims of deployed/live behaviour: the currently running Development application
+has not received this source or its migration.
+
+The authenticated live check is
+[`live-structure-acceptance.cjs`](../../contrib/remote-development/live-structure-acceptance.cjs).
+Run with no arguments for the read-only Development audit; it records the current
+cabinet designer before and after refresh without saving or changing shared records.
+After the feature is separately approved and deployed, `--exercise` opts into writes
+to a newly created isolated cabinet only (the fixture is retained for audit). That mode first requires the live Structure
+tab, then uses pointer drawing/resizing for the outer envelope, partition, shelf and
+opening, saves and checks API/refresh persistence plus unchanged logical dimensions
+and layout. `--exercise --restart` additionally requests only the restricted
+Development restart. Do not run either write mode against the current old deployment;
+no feature deployment or live exercise has been approved or performed. The live editor shows the existing `Layout`,
+`Topology`, `Mapping`, `Colors` and `Diagnostics` tabs, with no `Cabinet / Structure`
+tab before or after refresh. These captures document absence on the running UI; they
+are not evidence that the feature works live:
+
+![Current Development cabinet editor without Cabinet / Structure tab](images/live-structure-development-before-refresh.png)
+
+[After-refresh screenshot](images/live-structure-development-after-refresh.png).
+Until a separately approved fixture-based live write test runs, body/divider/shelf
+edits and save-refresh persistence are **not browser-verified**. See
+[deployment evidence](../DEPLOYMENT.md#cabinet-structure-source-and-live-status).
+
 ## 1. Find or create a cabinet
 
 ### Cabinet list — illustrative workflow, not a screenshot

@@ -239,6 +239,9 @@ class Cabinet(StorageLayoutModel):
     height_units = models.PositiveIntegerField(
         validators=[MinValueValidator(1)], verbose_name=_('Height (units)')
     )
+    structure = models.JSONField(
+        null=True, blank=True, default=None, verbose_name=_('Physical structure')
+    )
 
     revision = models.PositiveBigIntegerField(default=1, verbose_name=_('Revision'))
     archived = models.BooleanField(default=False, verbose_name=_('Archived'))

@@ -53,6 +53,13 @@ interface FixtureBin {
 
 export interface MockState {
   revision: number;
+  structure: {
+    schema_version: 1;
+    units: 'mm';
+    view: 'front';
+    envelope: { width: number; height: number; depth: number };
+    features: { id: string; type: string; x: number; y: number; width: number; height: number }[];
+  };
   cabinet: {
     id: string;
     name: string;
@@ -114,6 +121,13 @@ const BASE = '/plugin/storage-layout/api/v1';
 function initialState(): MockState {
   return {
     revision: 3,
+    structure: {
+      schema_version: 1,
+      units: 'mm',
+      view: 'front',
+      envelope: { width: 300, height: 400, depth: 200 },
+      features: []
+    },
     cabinet: {
       id: 'cab-1',
       name: 'Cabinet A',
@@ -534,7 +548,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
         message: 'An If-Match header is required'
       });
     }
-    if (ifMatch !== `"${state.revision}"`) {
+    if (ifMatch !== `"${state.revision}"` && ifMatch !== String(state.revision)) {
       throw new HttpError(412, {
         code: 'stale',
         message: 'The cabinet revision has changed'
@@ -587,10 +601,20 @@ export function createMockApi(options: MockOptions = {}): MockApi {
         width_units: state.cabinet.width_units,
         height_units: state.cabinet.height_units,
         revision: state.revision,
+        structure: state.structure,
         archived: false,
         active_mapping: state.cabinet.active_mapping,
         default_profile: null
       });
+    }
+
+    if (method === 'PATCH' && /^\/cabinets\/[^/]+\/$/.test(path)) {
+      requireMatch(config);
+      if ('structure' in doc) state.structure = doc.structure as MockState['structure'];
+      state.revision += 1;
+      const response = ok({ ...state.cabinet, revision: state.revision, structure: state.structure });
+      response.headers = etagHeaders(state.revision);
+      return response;
     }
 
     if (method === 'GET' && path === `/cabinets/${state.cabinet.id}/layout/`) {

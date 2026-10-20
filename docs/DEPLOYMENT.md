@@ -22,6 +22,44 @@ Development at <http://192.168.1.108:18081/web/> was already running the new rev
 
 Non-admin permissions are UNVERIFIED: normal API user creation returned 201, but login returned 400 `username_password_mismatch`; test users were cleaned up and their removal verified by prefix. Do not claim privileged-actor permission behavior was tested.
 
+## Cabinet / Structure source and live status
+
+Local, uncommitted source adds a `Cabinet / Structure` editor and an additive
+`Cabinet.structure` JSON field (`null=True`, `blank=True`, `default=None`). This
+nullable migration leaves existing cabinet rows logically unset and does not
+rewrite legacy dimensions or layout data. It has **not** been built, migrated,
+activated or deployed to Development; no live migration was run. Source-level
+frontend/backend tests belong to the concurrent feature work and are not evidence
+of deployment. The authenticated check is
+`node contrib/remote-development/live-structure-acceptance.cjs`; it is read-only,
+checks the currently running Development designer before and after refresh, and
+captures screenshots under `docs/storage-layout/images/`. It intentionally does
+does not edit shared cabinet records. Its optional `--exercise` mode creates a
+new isolated cabinet, and only proceeds if the currently running live UI exposes
+the Structure tab; it then draws the envelope, partition, shelf and opening with
+pointer input, resizes the envelope and partition, saves and verifies backend plus
+refresh persistence while asserting logical dimensions/layout are unchanged. The
+separate `--restart` option requires `--exercise` and additionally invokes only the
+restricted Development restart. Neither write mode has been run because the current
+live deployment does not contain this feature. The absent tab remains the expected
+current live result; exercise acceptance is pending an approved feature deployment.
+
+Any future approval to build and activate this schema change must identify the
+exact reviewed commit and archive, and specifically authorize the migration. Before
+migration, use only the existing administrator-approved private Development backup
+and verification procedure documented below (`backup-verify.py`); do not invent a
+backup route, expand deployment privileges, or migrate without a verified backup.
+An additive nullable field is a compatibility safeguard, not a substitute for
+backup/restore validation. Main, hardware and worker gates remain out of scope.
+
+There is no approved build/activation command template for this new input. Do not
+infer deployment authorization from historical deployment records or adapt stale
+commands. A supervisor must first provide the exact reviewed source commit/hash and
+explicitly approve the operation and scope. Any separately approved migration must
+use only the existing administrator-approved private Development backup and
+verification mechanism; preserve named volumes. Main, hardware and worker gates
+remain out of scope.
+
 ## Historical verified result (2026-10-19; superseded by checkpoint 002J-N)
 
 **Development is operational:** <http://192.168.1.108:18081/web/>. Project `myinventree-dev` on the owner-confirmed CasaOS host `mainserver-1` (hostname `mainserver`, LAN `192.168.1.108`, SSH Tailscale `100.98.254.48`). PostgreSQL, Redis, backend and nginx are healthy; bootstrap exited 0. No manually launched Django/Vite service is required. Docker is enabled at boot and the four long-running services use `restart: unless-stopped`. Host reboot was deliberately **not** performed because it would interrupt unrelated CasaOS workloads.

@@ -64,6 +64,46 @@ test('cabinet designer loads geometry, allocation bands and diagnostics', async 
   await expect(page.getByText('revision 3')).toBeVisible();
 });
 
+test('structure drawing survives mode changes and saves by revision CAS in Chromium', async ({ page }) => {
+  await open(page, { path: '/cabinets/cab-1/design', feature: 'RenderCabinetDesigner' });
+  await page.getByRole('tab').nth(1).click();
+  const envelope = page.getByTestId('cabinet-envelope');
+  await expect(envelope).toBeVisible();
+  await page.getByRole('button', { name: 'Partition', exact: true }).click();
+  const box = await envelope.boundingBox();
+  if (!box) throw new Error('structure envelope has no browser bounding box');
+  await page.mouse.move(box.x + 50, box.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 110, box.y + 100, { steps: 6 });
+  await page.mouse.up();
+  const partition = page.getByTestId('feature-partition');
+  await expect(partition).toHaveAttribute('width', '60');
+  await expect(page.getByTestId('structure-dirty')).toBeVisible();
+
+  await page.getByRole('tab').nth(0).click();
+  await expect(page.getByTestId('drawer-list')).toBeVisible();
+  await page.getByRole('tab').nth(1).click();
+  await expect(page.getByTestId('feature-partition')).toHaveAttribute('width', '60');
+  await page.getByTestId('save-structure-button').click();
+  await expect(page.getByTestId('structure-dirty')).toHaveCount(0);
+  const calls = await recordedCalls(page);
+  const patch = calls.find((call) => call.method === 'PATCH' && call.url.endsWith('/cabinets/cab-1/'));
+  expect(patch?.headers?.['If-Match']).toBe('3');
+  expect(patch?.body.structure.features).toEqual([expect.objectContaining({ type: 'partition', width: 60 })]);
+  expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(0);
+
+  await page.getByRole('tab').nth(0).click();
+  const drawer = page.locator('rect[style*="move"]').first();
+  const originalX = Number(await drawer.getAttribute('x'));
+  await dragFirstDrawer(page, 30, 0);
+  await expect.poll(async () => Number(await drawer.getAttribute('x'))).not.toBe(originalX);
+  const editedX = await drawer.getAttribute('x');
+  await page.getByRole('tab').nth(1).click();
+  await page.getByRole('tab').nth(0).click();
+  await expect(drawer).toHaveAttribute('x', editedX ?? '');
+  await expect(page.getByText('Unsaved changes')).toBeVisible();
+});
+
 test('pointer drag moves a drawer, undo reverts it, save uses compare-and-swap', async ({
   page
 }) => {

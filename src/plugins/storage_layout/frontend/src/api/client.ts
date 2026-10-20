@@ -153,9 +153,15 @@ export class StorageLayoutClient {
     }
   }
 
-  private async patch<T>(url: string, body: unknown): Promise<T> {
+  private async patch<T>(
+    url: string,
+    body: unknown,
+    revision?: number
+  ): Promise<T> {
     try {
-      const response = await this.api.patch<T>(url, body);
+      const response = await this.api.patch<T>(url, body, {
+        headers: revision === undefined ? {} : { 'If-Match': String(revision) }
+      });
       return response.data;
     } catch (error) {
       throw normaliseError(error);
@@ -206,6 +212,18 @@ export class StorageLayoutClient {
       throw new Error('Provide exactly one of location or root_location_name.');
     }
     return this.post<CabinetSummary>(Endpoints.cabinets(), body);
+  }
+
+  async updateStructure(
+    id: string,
+    structure: import('./types').StructureDocument,
+    revision: number
+  ) {
+    return this.patch<CabinetSummary>(
+      Endpoints.cabinet(id),
+      { structure },
+      revision
+    );
   }
 
   async updateCabinet(
