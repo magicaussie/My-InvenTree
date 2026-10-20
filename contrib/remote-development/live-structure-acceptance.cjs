@@ -24,7 +24,9 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
   assert.ok(password);
   const browser = await chromium.launch({headless:true,...(process.env.SL_CHROMIUM_PATH ? {executablePath:process.env.SL_CHROMIUM_PATH}: {})});
   try {
-    const context = await browser.newContext({viewport:{width:1600,height:1100}}), page=await context.newPage();
+    const context=await browser.newContext({viewport:{width:1600,height:1100}}), page=await context.newPage();
+    page.on('pageerror',error=>console.log(`BROWSER PAGEERROR ${error.name}: ${error.message}`));
+    page.on('console',message=>{if(message.type()==='error')console.log(`BROWSER CONSOLE ${message.text().slice(0,300)}`);});
     await page.goto(`${base}/web/login`,{waitUntil:'domcontentloaded'});
     await page.getByLabel('login-username').waitFor({timeout:20000});
     await page.getByLabel('login-username').fill('sl_admin'); await page.getByLabel('login-password').fill(password);
@@ -77,7 +79,8 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
     await page.getByRole('button',{name:'Draw Cabinet',exact:true}).click(); await dragCanvas(10,10,590,790);
     const featureDrags = {partition:[40,40,60,760],shelf:[80,100,560,120],opening:[80,200,300,300]};
     for (const [feature, coordinates] of Object.entries(featureDrags)) { await page.getByRole('button',{name:new RegExp(`^${feature}$`,'i')}).click(); await dragCanvas(...coordinates); }
-    const featureCounts = Object.fromEntries(['partition','shelf','opening'].map(type => [type, page.getByTestId(`feature-${type}`).count()]));
+    for (const [feature, coordinates] of Object.entries({door:[330,400,430,700],panel:[450,400,550,700]})) { await page.getByRole('button',{name:new RegExp(`^${feature}$`,'i')}).click(); await dragCanvas(...coordinates); }
+    const featureCounts = Object.fromEntries(['partition','shelf','opening','door','panel'].map(type => [type, page.getByTestId(`feature-${type}`).count()]));
     const observedFeatureCounts = Object.fromEntries(await Promise.all(Object.entries(featureCounts).map(async ([type, count]) => [type, await count])));
     if (Object.values(observedFeatureCounts).some(count => count !== 1)) {
       console.log(`DRAW DIAGNOSTIC cabinet=${cabinet.id} counts=${JSON.stringify(observedFeatureCounts)}`);
@@ -85,28 +88,54 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
       await screenshot(page,'live-structure-exercise-draw-failure.png');
       console.log(`DRAW DIAGNOSTIC svg=${(await svg.evaluate(node => node.outerHTML)).slice(0,12000)}`);
     }
-    assert.deepEqual(observedFeatureCounts, {partition:1,shelf:1,opening:1});
+    assert.deepEqual(observedFeatureCounts, {partition:1,shelf:1,opening:1,door:1,panel:1});
     await screenshot(page,'live-structure-exercise-drawn.png');
     // Resize the envelope and selected feature using the real pointer handles.
+    console.log(`UI DIAGNOSTIC url=${page.url()} designer=${await page.getByTestId('cabinet-designer').count()} svg=${await svg.count()} envelope=${await page.getByTestId('cabinet-envelope').count()} handles=${await page.getByTestId('cabinet-resize-handle').count()}`);
     const envelopeHandle=page.getByTestId('cabinet-resize-handle'); let box=await envelopeHandle.boundingBox(); assert.ok(box);
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2); await page.mouse.down(); await page.mouse.move(box.x+box.width/2+12,box.y+box.height/2+12,{steps:6}); await page.mouse.up();
-    await page.getByTestId('feature-partition').click();
-    const featureHandle=page.getByTestId('feature-resize-handle'); box=await featureHandle.boundingBox(); assert.ok(box);
-    await page.mouse.move(box.x+box.width/2,box.y+box.height/2); await page.mouse.down(); await page.mouse.move(box.x+box.width/2+10,box.y+box.height/2+10,{steps:6}); await page.mouse.up();
+    const featureBox = async type => page.getByTestId(`feature-${type}`).boundingBox();
+    const moveFeature = async (type,dx,dy) => { const b=await featureBox(type); assert.ok(b); await page.mouse.move(b.x+b.width/2,b.y+b.height/2); await page.mouse.down(); await page.mouse.move(b.x+b.width/2+dx,b.y+b.height/2+dy,{steps:6}); await page.mouse.up(); };
+    const resizeFeature = async (type,dx,dy) => { await page.getByTestId(`feature-${type}`).click(); const h=page.getByTestId('feature-resize-handle'); const b=await h.boundingBox(); assert.ok(b); await page.mouse.move(b.x+b.width/2,b.y+b.height/2); await page.mouse.down(); await page.mouse.move(b.x+b.width/2+dx,b.y+b.height/2+dy,{steps:6}); await page.mouse.up(); };
+    await page.getByRole('button',{name:'Snap on',exact:true}).click();
+    await page.getByRole('button',{name:'Snap off',exact:true}).waitFor();
+    await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+    assert.match(await svg.locator('g[transform]').getAttribute('transform'),/scale\(1\.1\)/);
+    await page.getByRole('button',{name:'Fit',exact:true}).click();
+    assert.match(await svg.locator('g[transform]').getAttribute('transform'),/translate\(30,20\) scale\(1\)/);
+    await page.getByRole('combobox',{name:'Tool'}).click(); await page.getByRole('option',{name:'pan',exact:true}).click();
+    const svgBox=await svg.boundingBox(); assert.ok(svgBox); await page.mouse.move(svgBox.x+100,svgBox.y+100); await page.mouse.down(); await page.mouse.move(svgBox.x+120,svgBox.y+115,{steps:4}); await page.mouse.up();
+    assert.match(await svg.locator('g[transform]').getAttribute('transform'),/translate\(50,35\) scale\(1\)/);
+    await page.getByRole('combobox',{name:'Tool'}).click(); await page.getByRole('option',{name:'select',exact:true}).click();
+    await page.getByRole('button',{name:'Fit',exact:true}).click();
+    const beforeMove=await featureBox('shelf'); await moveFeature('shelf',10,10); const afterMove=await featureBox('shelf'); assert.notDeepEqual(afterMove,beforeMove,'shelf move must change its rendered position');
+    await resizeFeature('shelf',10,10);
+    const beforePartitionMove=await featureBox('partition'); await moveFeature('partition',10,10); const afterPartitionMove=await featureBox('partition'); assert.notDeepEqual(afterPartitionMove,beforePartitionMove,'partition move must change its rendered position');
+    await resizeFeature('partition',10,10);
+    await page.getByTestId('feature-door').click();
+    for (const [key,value] of [['x','330'],['y','400'],['width','120'],['height','250']]) await page.getByLabel(`${key} (mm)`,{exact:true}).fill(value);
+    for (const [key,value] of [['width','650'],['height','850'],['depth','450']]) await page.getByLabel(`Cabinet ${key} (mm)`,{exact:true}).fill(value);
+    await page.getByRole('button',{name:'Undo',exact:true}).last().click();
+    assert.match(await svg.locator('text').textContent(),/depth 400 mm/,'undo must restore the prior cabinet depth');
+    await page.getByRole('button',{name:'Redo',exact:true}).last().click();
+    assert.match(await svg.locator('text').textContent(),/depth 450 mm/,'redo must restore the exact cabinet depth');
     const pending=page.waitForResponse(r=>r.url().includes(`/cabinets/${cabinet.id}`)&&r.request().method()==='PATCH');
     await page.getByTestId('save-structure-button').click(); const savedResponse=await pending; assert.equal(savedResponse.status(),200,`structure save HTTP ${savedResponse.status()}`);
+    await page.getByRole('img',{name:'Cabinet structure drawing'}).waitFor({state:'visible',timeout:15000});
     await screenshot(page,'live-structure-exercise-saved.png');
     let persisted=await readCabinet(); assert.ok(persisted.structure,'saved structure absent from cabinet API');
-    const expected=persisted.structure; assert.deepEqual(expected.features.map(f=>f.type).sort(),['opening','partition','shelf']);
+    const expected=persisted.structure; assert.deepEqual(expected.features.map(f=>f.type).sort(),['door','opening','panel','partition','shelf']);
     const stale=await req('patch',cabinetUrl,{structure:expected},{'If-Match':String(baseline.revision)});
     assert.equal(stale.status(),412,`stale revision PATCH HTTP ${stale.status()}`);
     const afterStale=await readCabinet(); assert.equal(afterStale.revision,persisted.revision,'stale revision altered cabinet revision'); assert.deepEqual(afterStale.structure,expected,'stale revision altered structure');
-    assert.ok(expected.envelope.width>600&&expected.envelope.height>800,'envelope pointer resize not persisted');
-    const partition=expected.features.find(f=>f.type==='partition'); assert.ok(partition.width>20&&partition.height>20,'partition feature resize not persisted');
+    assert.equal(expected.envelope.width,650,'exact cabinet width not persisted'); assert.equal(expected.envelope.height,850,'exact cabinet height not persisted'); assert.equal(expected.envelope.depth,450,'exact cabinet depth not persisted');
+    const partition=expected.features.find(f=>f.type==='partition'); assert.ok(partition.x>40&&partition.y>40&&partition.width>20&&partition.height>20,'partition move/resize not persisted');
+    const shelf=expected.features.find(f=>f.type==='shelf'); assert.ok(shelf.x>80&&shelf.y>100&&shelf.width>480&&shelf.height>20,'shelf move/resize not persisted');
+    const door=expected.features.find(f=>f.type==='door'); assert.deepEqual({x:door.x,y:door.y,width:door.width,height:door.height},{x:330,y:400,width:120,height:250},'exact door dimensions not persisted');
     assert.equal(persisted.width_units,baseline.width_units); assert.equal(persisted.height_units,baseline.height_units);
     await assertLayoutPreserved(persisted.revision);
     await page.reload({waitUntil:'domcontentloaded'}); await page.getByTestId('cabinet-designer').waitFor({timeout:30000}); await page.getByRole('tab',{name:'Cabinet / Structure',exact:true}).click();
-    await page.getByTestId('feature-partition').waitFor({state:'visible'}); await screenshot(page,'live-structure-exercise-refreshed.png');
+    await page.getByTestId('feature-partition').waitFor({state:'visible'}); await page.getByRole('img',{name:'Cabinet structure drawing'}).waitFor({state:'visible',timeout:15000}); await screenshot(page,'live-structure-exercise-refreshed.png');
     persisted=await readCabinet(); assert.deepEqual(persisted.structure,expected,'structure differs after refresh');
     assert.equal(persisted.width_units,baseline.width_units); assert.equal(persisted.height_units,baseline.height_units);
     await assertLayoutPreserved(persisted.revision);
@@ -114,6 +143,7 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
       execFileSync('ssh',['-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','inventree-deploy@mainserver-1','inventree-deploy','restart'],{encoding:'utf8',timeout:120000,stdio:['ignore','ignore','ignore']});
       let healthy=false; for(let i=0;i<60;i++){try{if((await context.request.get(`${base}/api/`,{timeout:5000})).status()===200){healthy=true;break;}}catch{} await page.waitForTimeout(2000);}
       assert.ok(healthy,'Development API did not recover after restricted restart'); await page.reload({waitUntil:'domcontentloaded',timeout:60000}); await page.getByTestId('cabinet-designer').waitFor({timeout:60000}); await page.getByRole('tab',{name:'Cabinet / Structure',exact:true}).click();
+      await page.getByTestId('feature-partition').waitFor({state:'visible',timeout:60000}); await page.getByRole('img',{name:'Cabinet structure drawing'}).waitFor({state:'visible',timeout:15000});
       persisted=await readCabinet(); assert.deepEqual(persisted.structure,expected,'structure differs after restricted restart'); await assertLayoutPreserved(persisted.revision);
       await screenshot(page,'live-structure-exercise-after-restart.png');
     }

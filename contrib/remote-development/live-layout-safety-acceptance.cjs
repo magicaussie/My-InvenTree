@@ -30,7 +30,7 @@ const remote = command => execFileSync('ssh', ['-o','BatchMode=yes','-o','Strict
     const headers = {'X-CSRFToken':csrf, Referer:`${base}/web/`};
     const req = (method,path,data,extra={}) => context.request[method](base+path,{headers:{...headers,...extra},...(data===undefined?{}:{data})});
     // Remove only known IDs from prior runs after verifying the generated disposable username prefix.
-    for (const priorId of [3,4,5,6,7,8,9]) {
+    for (const priorId of [3,4,5,6,7,8,9,10,11,12,13]) {
       const prior=await req('get',`/api/user/${priorId}/`);
       if(prior.status()===200){const account=await prior.json();if(/^sl_safety_[a-f0-9]{20}$/.test(account.username||'')){const removed=await req('delete',`/api/user/${priorId}/`);report(`clean prior disposable user ${priorId}`,removed.status(),[200,204]);}}
     }
@@ -54,6 +54,14 @@ const remote = command => execFileSync('ssh', ['-o','BatchMode=yes','-o','Strict
     }
     const user = await userResult.json();
     assert.equal(user.username,username);
+    // UserCreateSerializer deliberately ignores submitted passwords and sets an
+    // unusable password. Set the disposable account's password through the
+    // documented superuser endpoint before attempting browser login.
+    const passwordResult = await req('patch',`/api/user/${user.pk ?? user.id}/set-password/`,{password:userPassword});
+    if (!report('set disposable non-admin password through supported admin endpoint',passwordResult.status(),[200,204])) {
+      console.log(`BLOCKER password setup failed HTTP ${passwordResult.status()} ${redacted((await passwordResult.text()).slice(0,700),[password,userPassword])}`);
+      return;
+    }
     assert.equal(user.is_staff,false);
     assert.equal(user.is_superuser,false);
     console.log(`FIXTURE disposable_user_id=${user.pk ?? user.id}`);
@@ -140,7 +148,29 @@ const remote = command => execFileSync('ssh', ['-o','BatchMode=yes','-o','Strict
     const readStock=async(label)=>{const r=await check(label,await req('get',stockReadPath),200);const s=await r.json();return {id:s.pk??s.id,quantity:s.quantity,location:s.location};};
     const expectedStock=await readStock('baseline populated stock record');
     assert.equal(String(expectedStock.location),String(savedBin.location)); assert.equal(Number(expectedStock.quantity),7);
+    const cabinetDetailPath=`${api}cabinets/${cabinet.id}/`;
+    const readCabinetDetail=async()=>{const r=await req('get',cabinetDetailPath);assert.equal(r.status(),200);return {data:await r.json(),etag:r.headers().etag};};
+    const initialCabinet=await readCabinetDetail();
+    const electricalPath=`${api}cabinets/${cabinet.id}/electrical/`;
+    const electricalResponse=await check('snapshot isolated cabinet LED/electrical topology',await req('get',electricalPath),200);
+    const expectedElectrical=await electricalResponse.json();
+    const nativeLocationPath=`/api/stock/location/${savedBin.location}/`;
+    const nativeLocationResponse=await check('snapshot populated bin native location',await req('get',nativeLocationPath),200);
+    const expectedNativeLocation=await nativeLocationResponse.json();
+    const structure={schema_version:1,units:'mm',view:'front',envelope:{width:500,height:500,depth:400},features:[{id:crypto.randomUUID(),type:'door',x:20,y:20,width:200,height:300},{id:crypto.randomUUID(),type:'panel',x:250,y:20,width:200,height:300}]};
+    await check('save physical structure on isolated populated cabinet',await req('patch',cabinetDetailPath,{structure},{'If-Match':String(initialCabinet.etag||'').replaceAll('"','')}),200);
+    const afterStructure=await readCabinetDetail();
+    assert.deepEqual(afterStructure.data.structure,structure,'structure payload did not persist on populated cabinet');
+    assert.equal(afterStructure.data.active_mapping,initialCabinet.data.active_mapping,'active LED mapping reference changed after structure edit');
+    const electricalAfter=await check('re-read isolated cabinet LED/electrical topology',await req('get',electricalPath),200);
+    const electricalAfterData=await electricalAfter.json();
+    assert.deepEqual({...electricalAfterData,cabinet:{...electricalAfterData.cabinet,revision:expectedElectrical.cabinet.revision}},{...expectedElectrical,cabinet:{...expectedElectrical.cabinet,revision:expectedElectrical.cabinet.revision}},'LED/electrical topology changed after structure edit');
+    assert.equal(electricalAfterData.cabinet.revision,afterStructure.data.revision,'electrical snapshot revision does not match cabinet revision');
+    const nativeAfter=await check('re-read populated bin native location',await req('get',nativeLocationPath),200);
+    assert.deepEqual(await nativeAfter.json(),expectedNativeLocation,'native location changed after structure edit');
+    console.log(`PRESERVATION active_mapping=${initialCabinet.data.active_mapping ?? 'none'}; electrical LED topology was read-only snapshotted; no controller or hardware endpoint was called`);
     const assertPreserved=async(label)=>{const now=await readStock(label);assert.deepEqual(now,expectedStock,`${label}: stock identity, quantity, or location changed`);};
+    await assertPreserved('stock unchanged after populated-cabinet structure edit');
     const saveCabinet=async(label,doc)=>{const r=await req('get',cabinetPath);assert.equal(r.status(),200);const current=await r.json();const changed=doc(current);await check(label,await req('put',cabinetPath,changed,{'If-Match':String(r.headers().etag||'').replaceAll('"','')}),200);};
     await saveCabinet('rename drawer and save',doc=>({...doc,drawers:doc.drawers.map(d=>d.id===drawerId?{...d,label:`Renamed drawer ${uuid}`} : d)}));
     await assertPreserved('stock unchanged after drawer rename');

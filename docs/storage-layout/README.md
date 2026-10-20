@@ -43,21 +43,29 @@ context, not evidence about the current Cabinet / Structure image build. See the
 ## Cabinet / Structure mode — Development browser-verified
 
 Development has a separate `Cabinet / Structure` tab for a front-view millimetre-based
-physical envelope. The authenticated isolated-fixture run verified pointer drawing and
-resizing of the outer envelope, partition, shelf and opening; save, refresh and
-restricted restart persistence; and stale-revision rejection. This document is separate
-from the existing drawer/bin layout: legacy `width_units` and `height_units` are not
-converted. The live acceptance fixture began empty; preservation of populated stock,
-native locations and electrical mappings during structure edits remains unverified.
+physical envelope. Authenticated isolated-fixture browser acceptance verified exact
+numeric dimensions, pointer drawing, moving and resizing of partitions and shelves,
+openings, doors and panels, snap, zoom, pan, fit, select, undo/redo, save, refresh,
+stale-revision rejection and persistence across the restricted Development restart.
+This document is separate from the existing drawer/bin layout: legacy `width_units` and
+`height_units` are not converted.
+
+A separate populated isolated fixture verified that a structure edit did not change
+stock identity/quantity/location, the native Location record, or the electrical-topology
+snapshot; the same stock stayed unchanged through drawer/bin rename, archive and repeated
+save. That fixture had no active LED mapping (`active_mapping` was null), so preservation
+of a populated mapping is not verified. A low-permission browser session was established
+and both cabinet-layout and native-location writes were denied with HTTP 403. See the
+[deployment acceptance record](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development)
+for fixture IDs, screenshot hashes, auth diagnosis and remaining limits.
 
 The authenticated live check is
 [`live-structure-acceptance.cjs`](../../contrib/remote-development/live-structure-acceptance.cjs).
 Its no-argument mode is read-only against the existing cabinet. `--exercise` writes only
 to a newly created isolated cabinet, retained for audit, and `--exercise --restart`
-additionally requests only the restricted Development restart. It must never be run
-against Main. The successful cabinet fixture was
-`b457e5ab-7125-4e19-9c04-6e32ed402fea`; details and exact deployment evidence are in
-[DEPLOYMENT.md](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
+additionally requests only the restricted Development restart. The companion populated
+fixture check is [`live-layout-safety-acceptance.cjs`](../../contrib/remote-development/live-layout-safety-acceptance.cjs).
+Both scripts are restricted to approved Development and must never be run against Main.
 
 Live screenshots from the successful exercise:
 
