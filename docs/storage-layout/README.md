@@ -20,6 +20,14 @@ your zoom/pan is then preserved across unrelated edits and window resizing.
 **Fit to view** fits again and resumes automatic fitting as the canvas resizes.
 This changes only the view, never saved drawing dimensions or inventory.
 
+**Source update (not yet deployed or live-browser verified):** **Expand canvas**
+opens either canvas and its drawing toolbar across the full browser viewport,
+without the surrounding host panels. Use **Exit full viewport** or the browser's
+**Escape** shortcut to return. Existing selections and unsaved edits are retained.
+If browser fullscreen is unavailable or denied, the editor expands within the
+page instead. **Exit full viewport** and **Escape** also close this fallback,
+and normal page scrolling is restored.
+
 Authenticated Development verification on `f099aa1d3` measured a 696px cabinet
 canvas and 672px drawer canvases at 1600×1100. At narrow widths, stacked panels
 and a minimum usable workspace require vertical scrolling; below 425px the host's
@@ -354,6 +362,11 @@ For an authorised configuration change:
    **Bus reverse** and **Skip** configurations marked unsupported are not live-ready.
 4. Review, then **Save topology** only if authorised to change stored config.
    **Reload** retrieves stored topology and discards local topology edits.
+
+New controllers, outputs and strings receive their saved IDs from the server on
+save; subsequent edits retain those IDs. A local source fix corrects the editor
+sending unsaved IDs as existing records (`Unknown or cross-cabinet controller id`).
+This fix has not yet been deployed or live-browser verified.
 
 Saving configuration is not discovery, a connectivity test, or proof of wiring.
 No controller was added or queried for this guide; the diagram above is illustrative.

@@ -34,7 +34,6 @@ import type {
   StringInput
 } from '../../api/types';
 import { StorageLayoutApiError } from '../../api/types';
-import { newId } from '../../utils';
 
 export interface TopologyEditorProps {
   client: StorageLayoutClient;
@@ -50,7 +49,7 @@ export interface TopologyEditorProps {
 
 function emptyString(): StringInput {
   return {
-    id: newId(),
+    id: null,
     label: 'S1',
     output_offset: 0,
     pixel_count: 1,
@@ -61,7 +60,7 @@ function emptyString(): StringInput {
 
 function emptyOutput(): OutputInput {
   return {
-    id: newId(),
+    id: null,
     bus_index: 0,
     wled_start: 0,
     pixel_count: 1,
@@ -78,7 +77,7 @@ function emptyOutput(): OutputInput {
 
 function emptyController(): ControllerInput {
   return {
-    id: newId(),
+    id: null,
     name: 'Controller',
     origin: '',
     expected_mac: null,

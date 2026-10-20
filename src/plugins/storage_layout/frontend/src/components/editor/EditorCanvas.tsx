@@ -129,6 +129,51 @@ export function EditorCanvas(props: EditorCanvasProps) {
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const autoFitRef = useRef(true);
   const [workspaceHeight, setWorkspaceHeight] = useState(480);
+  const [expanded, setExpanded] = useState(false);
+  const [viewportExpanded, setViewportExpanded] = useState(false);
+  const isExpanded = expanded || viewportExpanded;
+
+  useEffect(() => {
+    const update = () => {
+      setExpanded(document.fullscreenElement === workspaceRef.current);
+    };
+    document.addEventListener('fullscreenchange', update);
+    return () => document.removeEventListener('fullscreenchange', update);
+  }, []);
+
+  useEffect(() => {
+    if (!viewportExpanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const exit = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setViewportExpanded(false);
+    };
+    document.addEventListener('keydown', exit);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', exit);
+    };
+  }, [viewportExpanded]);
+
+  const toggleExpanded = async () => {
+    if (viewportExpanded) {
+      setViewportExpanded(false);
+      return;
+    }
+    try {
+      if (document.fullscreenElement === workspaceRef.current) {
+        await document.exitFullscreen();
+      } else {
+        await workspaceRef.current?.requestFullscreen();
+      }
+    } catch {
+      // Fullscreen can be unavailable on HTTP or denied by an embedded host.
+      // Keep the same mounted editor so unsaved work and pointer state survive.
+      if (document.fullscreenElement !== workspaceRef.current) {
+        setViewportExpanded(true);
+      }
+    }
+  };
 
   useEffect(() => {
     const workspace = workspaceRef.current;
@@ -675,7 +720,19 @@ export function EditorCanvas(props: EditorCanvasProps) {
     <Stack
       ref={workspaceRef}
       gap='xs'
-      style={{ height: workspaceHeight, minHeight: 320, flexShrink: 0 }}
+      style={{
+        position: viewportExpanded ? 'fixed' : undefined,
+        inset: viewportExpanded ? 0 : undefined,
+        zIndex: viewportExpanded ? 1000 : undefined,
+        height: isExpanded ? '100dvh' : workspaceHeight,
+        width: isExpanded ? '100%' : undefined,
+        overflow: isExpanded ? 'auto' : undefined,
+        minHeight: isExpanded ? 0 : 320,
+        flexShrink: 0,
+        background: 'var(--mantine-color-body)',
+        padding: isExpanded ? 12 : undefined,
+        boxSizing: 'border-box'
+      }}
     >
       <Group justify='space-between'>
         <Group gap='xs'>
@@ -749,6 +806,14 @@ export function EditorCanvas(props: EditorCanvasProps) {
           >
             {t`Grid`}
           </Button>
+          <Button
+            size='compact-xs'
+            variant='default'
+            aria-pressed={isExpanded}
+            onClick={toggleExpanded}
+          >
+            {isExpanded ? t`Exit full viewport` : t`Expand canvas`}
+          </Button>
           <Text size='xs' c='dimmed'>
             {Math.round(viewport.zoom * 100)}%
           </Text>
@@ -765,7 +830,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
         p={0}
         style={{
           flex: 1,
-          minHeight: 240,
+          minHeight: isExpanded ? 0 : 240,
           overflow: 'hidden',
           position: 'relative'
         }}

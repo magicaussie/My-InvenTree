@@ -808,6 +808,14 @@ msgstr ""
 msgid "Grid"
 msgstr ""
 
+#: src/components/editor/EditorCanvas.tsx
+msgid "Exit full viewport"
+msgstr ""
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Expand canvas"
+msgstr ""
+
 #. placeholder {0}: entities.length
 #: src/components/editor/EditorCanvas.tsx
 msgid "{0} item"

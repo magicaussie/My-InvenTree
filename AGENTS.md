@@ -12,6 +12,15 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
+## Expand canvas follow-up — local only, not deployed
+
+The pending canvas expansion now falls back to an in-page full-viewport editor
+when browser fullscreen is unavailable or denied. Escape and the exit button
+restore the normal layout; scrolling is restored on exit/unmount, without
+remounting the canvas. Local frontend suite: 335 tests passed; typecheck passed.
+Native and fallback paths have component coverage, not live browser acceptance.
+No live services, inventory, ownership settings or owner files were changed.
+
 ## Viewport workspace correction — current Development
 
 Application `f099aa1d315a20807a88b3c62dc70c8ee4095b5b` is now deployed.

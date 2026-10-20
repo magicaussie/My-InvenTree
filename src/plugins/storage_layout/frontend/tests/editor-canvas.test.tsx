@@ -30,6 +30,85 @@ function renderCanvas() {
 }
 
 describe('EditorCanvas', () => {
+  it('requests fullscreen and restores the workspace when fullscreen ends', async () => {
+    const { container } = renderCanvas();
+    const workspace = container.querySelector('.mantine-Stack-root');
+    if (!workspace) throw new Error('Missing editor workspace');
+    const request = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(workspace, 'requestFullscreen', { value: request });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand canvas' }));
+    });
+    expect(request).toHaveBeenCalledOnce();
+    try {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        value: workspace
+      });
+      fireEvent(document, new Event('fullscreenchange'));
+      expect(
+        screen.getByRole('button', { name: 'Exit full viewport' })
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(workspace).toHaveStyle({ width: '100%' });
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        value: null
+      });
+      fireEvent(document, new Event('fullscreenchange'));
+      expect(
+        screen.getByRole('button', { name: 'Expand canvas' })
+      ).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('application')).toBeInTheDocument();
+    } finally {
+      Reflect.deleteProperty(document, 'fullscreenElement');
+    }
+  });
+
+  it.each(['unavailable', 'denied'])(
+    'falls back when fullscreen is %s and exits with Escape',
+    async (mode) => {
+      const { container } = renderCanvas();
+      const workspace = container.querySelector('.mantine-Stack-root');
+      if (!workspace) throw new Error('Missing editor workspace');
+      const canvas = screen.getByRole('application');
+      if (mode === 'denied') {
+        Object.defineProperty(workspace, 'requestFullscreen', {
+          value: vi.fn().mockRejectedValue(new Error('Denied'))
+        });
+      }
+      const previousOverflow = document.body.style.overflow;
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Expand canvas' }));
+      });
+      expect(
+        screen.getByRole('button', { name: 'Exit full viewport' })
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(workspace).toHaveStyle({ position: 'fixed', inset: '0' });
+      expect(document.body.style.overflow).toBe('hidden');
+      expect(screen.getByRole('application')).toBe(canvas);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(
+        screen.getByRole('button', { name: 'Expand canvas' })
+      ).toHaveAttribute('aria-pressed', 'false');
+      expect(document.body.style.overflow).toBe(previousOverflow);
+      expect(screen.getByRole('application')).toBe(canvas);
+    }
+  );
+
+  it('exits the fallback with its button and restores scrolling on unmount', async () => {
+    const { unmount } = renderCanvas();
+    const previousOverflow = document.body.style.overflow;
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand canvas' }));
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Exit full viewport' }));
+    expect(document.body.style.overflow).toBe(previousOverflow);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Expand canvas' }));
+    });
+    unmount();
+    expect(document.body.style.overflow).toBe(previousOverflow);
+  });
   it('sizes the workspace against the viewport and responds to window resizing', () => {
     const { container } = renderCanvas();
     const workspace = container.querySelector('.mantine-Stack-root');

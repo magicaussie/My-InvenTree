@@ -6,7 +6,10 @@ import { expect, it, vi } from 'vitest';
 Element.prototype.scrollIntoView = vi.fn();
 
 import type { StorageLayoutClient } from '../src/api/client';
-import { StorageLayoutApiError } from '../src/api/types';
+import {
+  type ElectricalDocument,
+  StorageLayoutApiError
+} from '../src/api/types';
 import { SimulationPanel } from '../src/components/editor/SimulationPanel';
 import { TopologyEditor } from '../src/components/editor/TopologyEditor';
 
@@ -79,6 +82,60 @@ it('uses saved purpose-specific profiles without overriding duration and shows t
   expect(await screen.findByTestId('effective-profile')).toHaveTextContent('7');
   fireEvent.click(screen.getByRole('button', { name: 'Reload profiles' }));
   await waitFor(() => expect(listProfiles).toHaveBeenCalledTimes(2));
+});
+
+it('creates topology with null IDs and reuses server IDs on subsequent saves', async () => {
+  const getElectrical = vi.fn().mockResolvedValue({
+    data: { cabinet: { revision: 4 }, controllers: [] },
+    etag: '"4"'
+  });
+  const saveElectrical = vi
+    .fn()
+    .mockImplementation(async (_id: string, document: ElectricalDocument) => ({
+      data: {
+        cabinet: { revision: 5 },
+        controllers: document.controllers.map((controller) => ({
+          ...controller,
+          id: 'saved-controller',
+          outputs: controller.outputs.map((output) => ({
+            ...output,
+            id: 'saved-output',
+            strings: output.strings.map((string) => ({
+              ...string,
+              id: 'saved-string'
+            }))
+          }))
+        }))
+      },
+      etag: '"5"'
+    }));
+  const client = {
+    getElectrical,
+    saveElectrical
+  } as unknown as StorageLayoutClient;
+  render(
+    <MantineProvider env='test'>
+      <TopologyEditor client={client} cabinetId='cab' readOnly={false} />
+    </MantineProvider>
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Add controller' })
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Add output' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add string' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save topology' }));
+  await screen.findByText('Electrical topology saved.');
+  expect(saveElectrical.mock.calls[0][1].controllers[0]).toMatchObject({
+    id: null,
+    outputs: [{ id: null, strings: [{ id: null }] }]
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Save topology' }));
+  await waitFor(() => expect(saveElectrical).toHaveBeenCalledTimes(2));
+  expect(saveElectrical.mock.calls[1][1].controllers[0]).toMatchObject({
+    id: 'saved-controller',
+    outputs: [{ id: 'saved-output', strings: [{ id: 'saved-string' }] }]
+  });
+  expect(saveElectrical.mock.calls[1][2]).toBe('"5"');
 });
 
 it('notifies the parent only after authoritative topology save', async () => {

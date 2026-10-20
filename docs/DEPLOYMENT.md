@@ -1,5 +1,14 @@
 # My-InvenTree deployment — status and checkpoints
 
+## Pending — Expand canvas fallback (local only)
+
+The uncommitted canvas expansion supports an in-page full-viewport fallback if
+the browser Fullscreen API is unavailable or rejects the request. Escape and the
+exit button restore the layout; scroll locking is cleaned up on exit/unmount.
+The same canvas stays mounted to preserve editor state. Local frontend suite:
+335 tests passed; TypeScript passed. No live-browser or deployment claim is made.
+Development remains at the baseline below; Main, live data and hardware untouched.
+
 ## Current — viewport workspace correction (2026-10-20)
 
 Application `f099aa1d315a20807a88b3c62dc70c8ee4095b5b` is deployed in Development.
