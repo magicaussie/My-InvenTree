@@ -4,24 +4,23 @@ For day-to-day cabinet and drawer/bin editing, see the
 [Storage Layout graphical user guide](storage-layout/README.md). Its screenshots
 are read-only Development captures, not additional commissioning evidence.
 
-## Current verified result — checkpoint 002J-N
+## Current verified result — transferred archive and live acceptance; build/activation stopped
 
-Development at <http://192.168.1.108:18081/web/> is running source `ec69b6e44d0fe1352e15f7586a9c4434caa35a5e`. The fixed Compose file and named volumes are unchanged; Main remains undeployed and forbidden. Deployment used the existing restricted `up` activation. No hardware operations or workers were started.
+Development at <http://192.168.1.108:18081/web/> was already running the new review-tag images when inspected. User-approved source commit: `10e05fdc21d563c14c9ea10da26f51867bf5229f`; transferred archive SHA-256: `da20e278215d926125f2dffa28452f35ce18fac8091119c05651fb0d2ea53191`.
 
-### Source, Compose and image evidence
+### Archive, Compose and image evidence
 
-- Archive SHA-256: `1dcce6dd24abb4bdf76febfc8d99863b4db30961d1b863a92ac9d2bbd17bcd47`; remote archive `/home/spetchal/myinventree-002jn-source.tar`; extraction `/home/spetchal/myinventree-dev-build-002jn`. All 2,893 archive entries matched.
-- `/etc/myinventree-dev/compose.yml` matched exactly. Backend image ID: `sha256:31b46f14f503280ee5e33775feb6beb281697da2eda315bacf3922ad81507696`; frontend image ID: `sha256:19e1c0071875fb9c2111f072f24bda903f2b537d4912e5d1bf9f952ba41db8c6`. Both running services were healthy.
-- Rollback tags `rollback-002jn` preserve the previous backend and frontend image IDs. Restoration is administrator-only; do not change tags or grant deployment privileges.
-- Development remains LAN-only on port `18081`; no Main, hardware, worker, or named-volume changes were made.
+- Read-only reconciliation found extracted content matching the archive; tar comparison differences were ownership metadata only. Installed `/etc/myinventree-dev/compose.yml` matched exactly.
+- Staging `/home/spetchal/myinventree-dev-build-10e05fdc2` was already populated and services already ran the new review images. Review-tag and running IDs matched: backend `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d`; frontend `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017`. Existing rollback tag `rollback-10e05fdc2` recorded the expected prior IDs (backend `31b46f14…`, frontend `19e1c007…`). The expected old IDs did not match what was running, so build and `up` activation were STOPPED. Images were created Oct 20 00:20 UTC and healthy. This does not establish that this session built them or cryptographically prove build provenance.
+- Development remains LAN-only at port `18081`; Main is forbidden. No existing data was touched; acceptance fixtures were retained. Main remained untouched, WLED stayed off, and no workers were changed.
 
-### Current browser and API acceptance
+### Live browser acceptance and limits
 
-Live browser fixture: `c4d762a9-596f-47f4-9a3e-43ede200784c`. Verified cabinet/drawer interactions include Add, Duplicate, Draw drawer, move/resize, grid/snap, zoom, fit/reset, pan, select/multiselect, top alignment, horizontal distribution, undo/redo, bin Add/edit/move/resize/archive, save/refresh, and restricted restart. Persisted IDs and geometry were identical after restart.
+`live-bin-drawing-acceptance.cjs` passed with real authenticated cabinet/drawer/bin draw, move, resize, undo/redo, save, automatic correct parent, stable IDs across repeated saves and refresh, restricted restart, and collision HTTP 400 with unchanged revision and location count. Fixture cabinet `4664428c-f9f4-4722-a468-43a2c95c9a1f`, drawer `1abcbab9-49e0-4afd-9804-641266ffd654`. Bin drawing is therefore browser-verified on the currently running images, unlike the previous checkpoint's source-only status.
 
-The API acceptance verified automatic native root, drawer and bin creation; hierarchy; stable identities without duplicates on repeated saves; collision rollback with unchanged revision and count; concurrent responses 200/412; stale revision 412; and anonymous 401. In the actual UI, Add drawer followed by Save returned 200 and automatically created the native parent. Anonymous 401 is the only reported permission test; no privileged-actor permission result is claimed. Existing stock data was not touched, so this does not establish stock-placement acceptance.
+`live-layout-safety-acceptance.cjs` passed on a disposable populated stock record: quantity 7 and location remained unchanged after drawer/bin rename, archive and repeated save; the native location was retained. This is a focused safety check, not general stock-placement acceptance.
 
-**Deployed bin-drawing gap:** the live UI supports Add bin, but drawing bins was found absent in the deployed build. A local `DrawerDesigner` `onDraw` correction passed 42 focused tests and typecheck; it is not deployed and needs a new privileged approval before any build/activation. Do not describe Draw bin as deployed or browser-verified.
+Non-admin permissions are UNVERIFIED: normal API user creation returned 201, but login returned 400 `username_password_mismatch`; test users were cleaned up and their removal verified by prefix. Do not claim privileged-actor permission behavior was tested.
 
 ## Historical verified result (2026-10-19; superseded by checkpoint 002J-N)
 
@@ -241,13 +240,9 @@ sudo -n /usr/local/sbin/inventree-deploy status
 
 No sudoers or deployment-wrapper changes are proposed. This proposal has not been executed; image construction, activation and live acceptance remain pending.
 
-## Checkpoint 002J-N — Storage Layout source-tested update; not deployed
+## Historical checkpoint 002J-N — source-tested update (superseded)
 
-**Status: source-tested only.** The current local source includes the named native-location picker and atomic native-child creation described in [the graphical guide](storage-layout/README.md). This checkpoint does not assert that the feature is present in Development. The deployed application source remains `2bb7375ed`; deployed backend/frontend image IDs remain the IDs listed under checkpoint 002J-M. Documentation commits are not application image builds.
-
-A fresh live Development audit of cabinet `de2fcca3-6946-42e7-9ae3-b80b6c914d0b` found zero layout rows. This is an empty-owner-cabinet audit, not acceptance of the new create/picker workflow and not evidence that the new source was deployed. Live verification also confirmed left-side layout controls and horizontal distribution behavior; these observations do not change the source-versus-deployment distinction. The guide diagrams are illustrative, not live screenshots.
-
-Source-focused checks reported for this update: backend services suite 117 passed and focused suite 31 passed; frontend 313 tests passed and typecheck passed. These are source test results only, not deployment acceptance.
+This earlier checkpoint recorded the named native-location picker and atomic native-child creation as source-tested only. It is superseded by the current live browser acceptance above. Do not use its historical deployment IDs or source-only bin-drawing status as current evidence.
 
 ### Bounded admin proposal — Development application image rebuild
 

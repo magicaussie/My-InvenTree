@@ -2,7 +2,8 @@
 
 Arrange a cabinet front, design drawer interiors, then describe how logical LED
 numbers map to physical strings. Native InvenTree locations remain the inventory
-source of truth: drawing a rectangle does not create a stock location.
+source of truth: drawing a rectangle does not itself create a stock location; the
+verified save workflow creates and retains native child locations as described below.
 
 **Safety:** this guide is for layout and configuration, not commissioning.
 Development has hardware and dispatcher gates **off**. Do not use arm, observe,
@@ -29,17 +30,19 @@ a real Development UI capture from 2026-10-19 using the application build
 recorded in [DEPLOYMENT.md](../DEPLOYMENT.md). No cabinet, topology or mapping
 changes were submitted for this guide. All other diagrams in this guide are
 illustrative Mermaid diagrams, not screenshots or evidence of a live workflow.
-The current deployed app is source `ec69b6e44d0fe1352e15f7586a9c4434caa35a5e`;
-see [current deployment evidence](../DEPLOYMENT.md#current-verified-result--checkpoint-002j-n).
-The live browser suite verified cabinet and drawer editing, including Draw drawer,
-selection/multiselection, top alignment, horizontal distribution, geometry edits,
-undo/redo, and persistence across save, refresh and restricted restart. It verified
-bin Add/edit/move/resize/archive and persistence as well. This is browser verification,
-not hardware or stock-placement acceptance. The current deployed UI supports **Add
-bin**, but **Draw bin is absent**. Do not present bin drawing below as deployed or
-live-verified: a local `DrawerDesigner` `onDraw` correction passed 42 focused tests
-and typecheck, but has not been deployed and requires new privileged approval.
-No screenshots from that suite are included or implied here.
+The current Development browser acceptance is documented in
+[deployment evidence](../DEPLOYMENT.md#current-verified-result--transferred-archive-and-live-acceptance-buildactivation-stopped).
+The live suite verified cabinet/drawer editing including Draw drawer, selection,
+multiselection, alignment, distribution, geometry edits, undo/redo, and persistence
+through save, refresh and restricted restart. A separate authenticated acceptance
+verified **Draw bin** as well as move/resize, undo/redo, save, automatic native parent,
+stable IDs through repeated saves and refresh, restricted restart, and collision
+rejection without revision/location-count changes. This describes the currently
+running review-tag images; their build provenance is not established by this
+verification session, and build/activation were stopped. A second live safety test
+confirmed a disposable populated stock record retained quantity and location through
+drawer/bin rename, archive and repeated saves. This is not general stock-placement
+acceptance. No screenshots from these suites are included or implied here.
 
 ## 1. Find or create a cabinet
 
@@ -165,12 +168,14 @@ flowchart TD
 
 ## 4. Design bins inside a drawer
 
-The live browser suite verified **Add bin**, editing its geometry and native
-binding, and saving/reloading. **Draw bin is not available in the deployed UI**;
-the local `onDraw` correction has passed focused tests and typecheck only and awaits
-new privileged approval before deployment. Do not treat the illustrative diagram as
-evidence of a Draw bin control. Bins are nonstructural native children; they do not
-require the structural-child Location ID required by drawers.
+Live authenticated browser acceptance verified **Draw bin** on the currently running
+Development review-tag images, alongside Add/edit, movement/resizing, save/reload,
+stable native identities and automatic correct parent. The images' build provenance
+was not established by that session; the expected prior image IDs did not match, so
+build and activation were stopped. See [deployment evidence](../DEPLOYMENT.md).
+The diagram below remains illustrative, not a screenshot. Bins are nonstructural
+native children; they do not require the structural-child Location ID required by
+drawers.
 
 ```mermaid
 flowchart TD
@@ -184,9 +189,9 @@ flowchart TD
 
 1. **Save the cabinet layout first**, select the drawer, then choose **Design
    drawer interior and bins** in its properties area (scroll down if necessary).
-2. In the deployed drawer designer, use **Add bin**. Do not follow a Draw bin
-   interaction: that capability is not deployed. Use **Grid generator** for a
-   regular arrangement if available, reviewing generator settings before applying.
+2. Use **Add bin** to place a bin directly, or **Draw bin** to draw its size and
+   position with a click-and-drag gesture. Use **Grid generator** for a regular
+   arrangement if available, reviewing generator settings before applying.
 3. Select a bin in the **Bins** list or top-down canvas. Use its inspector for
    label, position, size and native location binding. Here the plane is the
    drawer interior: bin height runs along the interior depth, not the cabinet's
