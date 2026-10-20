@@ -1,0 +1,2457 @@
+{
+  "run": "635ffee0-94fb-452c-91dd-8ed171f0560c",
+  "base": "http://192.168.1.108:18081",
+  "application": "56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a",
+  "checks": [
+    "authenticated real Development Chromium desktop",
+    "isolated cabinet, two distinct drawers and native-bin locations created via actual API",
+    "populated native stock plus non-null active LED mapping and two allocations baseline",
+    "cabinets 0: real upload, aspect fit, pointer image/object move+resize, opacity/visibility/lock, undo/redo, separate save and reload",
+    "drawers 1: real upload, aspect fit, pointer image/object move+resize, opacity/visibility/lock, undo/redo, separate save and reload",
+    "drawers 2: real upload, aspect fit, pointer image/object move+resize, opacity/visibility/lock, undo/redo, separate save and reload",
+    "stock, all native locations, active mapping, topology and allocations unchanged through image and object edits",
+    "invalid SVG/corrupt/oversize and transforms rejected atomically; missing 428 / stale 412",
+    "browser conflict retains unsaved metadata rather than silently overwriting",
+    "actual host SPA navigation cancels dirty background; clean navigation succeeds",
+    "425x844 default authenticated narrow cabinet and both drawer images rendered; controls scrolled into view",
+    "390x844 real host with explicit browser-local allowMobile override renders all three backgrounds",
+    "genuine non-admin browser session: cabinet and both drawer metadata/upload/content denied 403",
+    "anonymous private image content denied",
+    "restricted Development restart: all three PNG hashes, transforms, layout, populated stock/native locations/mapping/allocations preserved",
+    "no browser hardware/controller/external-origin requests attempted"
+  ],
+  "http": [
+    {
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/",
+      "status": 201
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"1\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"1\""
+    },
+    {
+      "method": "put",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"2\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"2\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"2\""
+    },
+    {
+      "method": "put",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"3\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"3\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"3\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"3\""
+    },
+    {
+      "method": "put",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"4\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"4\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"4\""
+    },
+    {
+      "method": "put",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"5\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"5\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"5\""
+    },
+    {
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/mapping-publish/",
+      "status": 201,
+      "etag": "\"6\""
+    },
+    {
+      "method": "post",
+      "path": "/api/part/category/",
+      "status": 201
+    },
+    {
+      "method": "post",
+      "path": "/api/part/",
+      "status": 201
+    },
+    {
+      "method": "post",
+      "path": "/api/stock/",
+      "status": 201
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"6\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"6\""
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/8/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/308/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/310/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/311/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/312/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/309/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"6\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"8\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"8\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"9\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"9\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"11\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"11\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"12\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"12\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"14\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"14\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/8/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/308/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/311/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/310/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/309/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/312/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 400
+    },
+    {
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 400
+    },
+    {
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 400
+    },
+    {
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 400
+    },
+    {
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 428
+    },
+    {
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 412
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"15\""
+    },
+    {
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "post",
+      "path": "/api/user/",
+      "status": 400
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "post",
+      "path": "/api/user/",
+      "status": 201
+    },
+    {
+      "method": "patch",
+      "path": "/api/user/15/set-password/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 403
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 403
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "restricted",
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 403
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/8/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/309/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/308/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/311/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/310/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/312/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/8/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/312/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/309/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/308/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/311/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/310/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"16\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "PATCH",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"17\""
+    },
+    {
+      "actor": "browser",
+      "method": "PATCH",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"18\""
+    },
+    {
+      "actor": "browser",
+      "method": "POST",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"19\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"19\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"19\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"19\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"19\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "PATCH",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"20\""
+    },
+    {
+      "actor": "browser",
+      "method": "PATCH",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"21\""
+    },
+    {
+      "actor": "browser",
+      "method": "POST",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"22\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"22\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"22\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"22\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"22\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "PATCH",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"23\""
+    },
+    {
+      "actor": "browser",
+      "method": "PATCH",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"24\""
+    },
+    {
+      "actor": "browser",
+      "method": "POST",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/user/15/",
+      "status": 200
+    },
+    {
+      "method": "patch",
+      "path": "/api/user/15/set-password/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 403
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 403
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "patch",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "restricted",
+      "method": "post",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 403
+    },
+    {
+      "actor": "restricted",
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 403
+    },
+    {
+      "method": "get",
+      "path": "/api/settings/global/STOCK_OWNERSHIP_CONTROL/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "status": 200
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "actor": "browser",
+      "method": "GET",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/8/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/308/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/309/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/311/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/310/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/312/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "status": 200,
+      "etag": "\"25\""
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/8/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/309/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/308/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/312/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/311/",
+      "status": 200
+    },
+    {
+      "method": "get",
+      "path": "/api/stock/location/310/",
+      "status": 200
+    }
+  ],
+  "snapshots": {
+    "preservationBefore": {
+      "mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+      "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+      "allocations": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "controllers": [
+        {
+          "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+          "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "origin": "http://192.0.2.1",
+          "expected_mac": null,
+          "firmware_adapter": "wled-v16.0.1-1d",
+          "enabled": false,
+          "status": "unknown",
+          "commissioning_policy": {},
+          "outputs": [
+            {
+              "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+              "bus_index": 0,
+              "wled_start": 0,
+              "pixel_count": 120,
+              "pins": [
+                16
+              ],
+              "led_type": "22",
+              "colour_order": "GRB",
+              "bus_reverse": false,
+              "skip": 0,
+              "auto_white_mode": 0,
+              "max_current_ma": null,
+              "strings": [
+                {
+                  "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                  "label": "Acceptance string",
+                  "output_offset": 0,
+                  "pixel_count": 120,
+                  "notes": "",
+                  "archived": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "stock": {
+        "id": 8,
+        "quantity": 7,
+        "location": 311
+      },
+      "locations": [
+        {
+          "pk": 308,
+          "barcode_hash": "",
+          "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "level": 0,
+          "description": "",
+          "parent": null,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "items": 1,
+          "sublocations": 4,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 309,
+          "barcode_hash": "",
+          "name": "Image drawer 1",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+          "items": 1,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 311,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 309,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+          "items": 1,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 310,
+          "barcode_hash": "",
+          "name": "Image drawer 2",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+          "items": 0,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 312,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 310,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+          "items": 0,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        }
+      ]
+    },
+    "backgrounds": [
+      {
+        "target": "cabinets",
+        "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+        "endpoint": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+        "bg": {
+          "image_url": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+          "metadata": {
+            "x": 0.16666666666666666,
+            "y": 0.16,
+            "width": 0.6499999999999999,
+            "height": 0.585,
+            "opacity": 0.55,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "cc8c3bf973c64f53f696a7f3ad49ff2ce28bd06b5c31ad31922eb1fa69b27252"
+      },
+      {
+        "target": "drawers",
+        "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+        "endpoint": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+        "bg": {
+          "image_url": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+          "metadata": {
+            "x": 0.21666666666666667,
+            "y": 0.2,
+            "width": 0.7000000000000001,
+            "height": 0.42,
+            "opacity": 0.65,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "d8e8c9e92b443bd3a977be8079924a42b6c3197af325f6c3760724510c53703f"
+      },
+      {
+        "target": "drawers",
+        "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+        "endpoint": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+        "bg": {
+          "image_url": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+          "metadata": {
+            "x": 0.21666666666666667,
+            "y": 0.2,
+            "width": 0.7000000000000001,
+            "height": 0.42,
+            "opacity": 0.75,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "9284eb40aaaca2bc4f83659ea980a8c648afde258ea2e34e76e28360438f88d6"
+      }
+    ],
+    "narrow-0": {
+      "viewport": 425,
+      "scrollWidth": 425,
+      "controls": [
+        {
+          "text": "Fit background",
+          "rect": {
+            "x": 28,
+            "y": 456.328125,
+            "width": 132.015625,
+            "height": 36,
+            "top": 456.328125,
+            "right": 160.015625,
+            "bottom": 492.328125,
+            "left": 28
+          }
+        },
+        {
+          "text": "Save background",
+          "rect": {
+            "x": 176.015625,
+            "y": 456.328125,
+            "width": 146.453125,
+            "height": 36,
+            "top": 456.328125,
+            "right": 322.46875,
+            "bottom": 492.328125,
+            "left": 176.015625
+          }
+        }
+      ]
+    },
+    "narrow-1": {
+      "viewport": 425,
+      "scrollWidth": 852,
+      "controls": [
+        {
+          "text": "Fit background",
+          "rect": {
+            "x": 113,
+            "y": 456.453125,
+            "width": 132.015625,
+            "height": 36,
+            "top": 456.453125,
+            "right": 245.015625,
+            "bottom": 492.453125,
+            "left": 113
+          }
+        },
+        {
+          "text": "Save background",
+          "rect": {
+            "x": 261.015625,
+            "y": 456.453125,
+            "width": 146.453125,
+            "height": 36,
+            "top": 456.453125,
+            "right": 407.46875,
+            "bottom": 492.453125,
+            "left": 261.015625
+          }
+        }
+      ]
+    },
+    "narrow-2": {
+      "viewport": 425,
+      "scrollWidth": 852,
+      "controls": [
+        {
+          "text": "Fit background",
+          "rect": {
+            "x": 113,
+            "y": 456.453125,
+            "width": 132.015625,
+            "height": 36,
+            "top": 456.453125,
+            "right": 245.015625,
+            "bottom": 492.453125,
+            "left": 113
+          }
+        },
+        {
+          "text": "Save background",
+          "rect": {
+            "x": 261.015625,
+            "y": 456.453125,
+            "width": 146.453125,
+            "height": 36,
+            "top": 456.453125,
+            "right": 407.46875,
+            "bottom": 492.453125,
+            "left": 261.015625
+          }
+        }
+      ]
+    },
+    "layoutBeforeRestart": {
+      "schema_version": 1,
+      "cabinet": {
+        "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+        "name": "SL image acceptance 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "slug": "sl-image-635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "revision": 25,
+        "width_units": 600,
+        "height_units": 500,
+        "archived": false,
+        "location": 308,
+        "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+        "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+        "total_pixels": 120,
+        "numbering_base": 1
+      },
+      "drawers": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "bins": [
+        {
+          "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+          "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Reference bin",
+          "location": 312,
+          "x": 60,
+          "y": 55,
+          "width": 105,
+          "height": 90,
+          "archived": false
+        },
+        {
+          "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+          "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Reference bin",
+          "location": 311,
+          "x": 60,
+          "y": 55,
+          "width": 105,
+          "height": 90,
+          "archived": false
+        }
+      ],
+      "archive_ids": [],
+      "diagnostics": {
+        "valid": true,
+        "errors": [],
+        "warnings": [],
+        "unused_ranges": [],
+        "total_pixels": 120,
+        "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+        "numbering_base": 1
+      }
+    },
+    "preservationAfterRestart": {
+      "mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+      "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+      "allocations": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "controllers": [
+        {
+          "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+          "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "origin": "http://192.0.2.1",
+          "expected_mac": null,
+          "firmware_adapter": "wled-v16.0.1-1d",
+          "enabled": false,
+          "status": "unknown",
+          "commissioning_policy": {},
+          "outputs": [
+            {
+              "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+              "bus_index": 0,
+              "wled_start": 0,
+              "pixel_count": 120,
+              "pins": [
+                16
+              ],
+              "led_type": "22",
+              "colour_order": "GRB",
+              "bus_reverse": false,
+              "skip": 0,
+              "auto_white_mode": 0,
+              "max_current_ma": null,
+              "strings": [
+                {
+                  "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                  "label": "Acceptance string",
+                  "output_offset": 0,
+                  "pixel_count": 120,
+                  "notes": "",
+                  "archived": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "stock": {
+        "id": 8,
+        "quantity": 7,
+        "location": 311
+      },
+      "locations": [
+        {
+          "pk": 308,
+          "barcode_hash": "",
+          "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "level": 0,
+          "description": "",
+          "parent": null,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "items": 1,
+          "sublocations": 4,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 309,
+          "barcode_hash": "",
+          "name": "Image drawer 1",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+          "items": 1,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 311,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 309,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+          "items": 1,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 310,
+          "barcode_hash": "",
+          "name": "Image drawer 2",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+          "items": 0,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 312,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 310,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+          "items": 0,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        }
+      ]
+    },
+    "ownershipControl": {
+      "key": "STOCK_OWNERSHIP_CONTROL",
+      "value": false
+    }
+  },
+  "screenshots": [
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/desktop-0.png",
+      "sha256": "078e226cd14343d485a307655e6cc66fd92bc4439d81f9ce1f5ae311672a948c"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/desktop-1.png",
+      "sha256": "b959f7e048736735a5f89459eaf00dff0adc1fca52ab0d02a140051d7249d2f2"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/desktop-2.png",
+      "sha256": "6feb08031d1ad6e7d4a395343461d3c8f02810ad34d1325380d4b42ef8966f06"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/stale-conflict.png",
+      "sha256": "180051c98f7d774f6ab1724d7c8a9af4b1a1e8f5369293e1421ae36f410b32f2"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/mobile-gate-390.png",
+      "sha256": "4d9cb2904a193ba261b2198f5a6b2bc8b39973dd7feec47f5961e9598fc64bf6"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/narrow-0.png",
+      "sha256": "8c06c7ce234ac3c275e0cfabe5687f6295eb5ac932a7dd368dea756cdcd27d4a"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/narrow-1.png",
+      "sha256": "d6690d97d9e9e69a5f0cc95d3666968c175f7dd33b43a06980d042081671011e"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/narrow-2.png",
+      "sha256": "8c8f04bff0b473d59bfa352523e60d00c159edbabbdca1b0209aac11db1caea0"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/override-390-0.png",
+      "sha256": "39e8214ed0ea249341d160f16ef3b7173372d340f4a311b4811961b63605ad34"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/override-390-1.png",
+      "sha256": "fe8b4803f1ebc8dcbce8b6e28e1637c847bbccacf20762702b9c265604a226f7"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/override-390-2.png",
+      "sha256": "82c1c0b5636ad922df391c66550df4f64b4b241037b508ea791bfa7c3506ce99"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/restart-0.png",
+      "sha256": "9a829db45a6b9f4ceaf307f54381ae6be53b2631f0e2ed2dd4b31507a3993c97"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/restart-1.png",
+      "sha256": "73184b943931c3aeec2a80a09eb807e4b770772d7563cfb96910fb198c61fb47"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/restart-2.png",
+      "sha256": "a65ec4cda2b9fb64b540e14ba8727252d4526a5acb3e67b7c95482acc9d5bd35"
+    }
+  ],
+  "gaps": [
+    "Default host blocks width <425 px before plugin mounts. 390 px plugin tests use the existing browser-local allowMobile preference, not server configuration.",
+    "Cross-owner with view/change permissions requires ownership-control setting and suitable isolated owner configuration; not inferred from 403 no-permission tests.",
+    "Deployed drawer panes overflow at 425px (scrollWidth 852px); focused source fix and local 390/425 regression are not deployed."
+  ],
+  "chromium": "143.0.7499.169",
+  "fixture": {
+    "cabinet": "03551d5b-baf0-40e6-8028-6252d56397ce",
+    "root": 308,
+    "drawers": [
+      {
+        "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+        "location": 309,
+        "bin": {
+          "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+          "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Reference bin",
+          "location": 311,
+          "x": 30,
+          "y": 30,
+          "width": 80,
+          "height": 70,
+          "archived": false
+        }
+      },
+      {
+        "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+        "location": 310,
+        "bin": {
+          "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+          "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Reference bin",
+          "location": 312,
+          "x": 30,
+          "y": 30,
+          "width": 80,
+          "height": 70,
+          "archived": false
+        }
+      }
+    ],
+    "stock": 8,
+    "restrictedUser": 15
+  },
+  "result": "PARTIAL_ACCEPTANCE",
+  "blockedRequests": [],
+  "previousFailures": [
+    "create /api/user/: HTTP 400 {\"first_name\":[\"This field is required.\"],\"last_name\":[\"This field is required.\"]}\n\n400 !== 201\n"
+  ],
+  "runtimeVerification": {
+    "backend": "sha256:afd216c3e4413aabd63b7c741b23508e8f9ec9a0335234d3c653559fe4b2656f",
+    "frontend": "sha256:c56a6405c990a45041bfe26694e0f293aa6f235581059d372bcb13fdfe45be88",
+    "hardwareGates": {
+      "ENABLE_HARDWARE": false,
+      "DISPATCHER_ENABLED": false
+    },
+    "services": "restricted status: backend/proxy/db/redis healthy; bootstrap exited 0",
+    "restrictedRestarts": 2
+  },
+  "localValidation": {
+    "backgroundChromium": {
+      "passed": 6,
+      "scope": "fixture API harness; responsive fix not deployed"
+    },
+    "backgroundUnit": {
+      "passed": 14
+    },
+    "backendBackground": {
+      "passed": 8,
+      "scope": "disposable SQLite; real native ownership test included"
+    },
+    "typecheck": "passed",
+    "biomeDrawerDesigner": "passed"
+  }
+}

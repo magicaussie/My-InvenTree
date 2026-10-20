@@ -1,0 +1,2230 @@
+{
+  "base": "http://192.168.1.108:18081",
+  "applicationReportedByLead": "19d148233b278a4ef6309555eb2cc36b39c72050",
+  "started": "2026-10-20T10:11:26.578Z",
+  "fixture": {
+    "cabinet": "03551d5b-baf0-40e6-8028-6252d56397ce",
+    "root": 308,
+    "drawers": [
+      {
+        "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+        "location": 309,
+        "bin": {
+          "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+          "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Reference bin",
+          "location": 311,
+          "x": 30,
+          "y": 30,
+          "width": 80,
+          "height": 70,
+          "archived": false
+        }
+      },
+      {
+        "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+        "location": 310,
+        "bin": {
+          "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+          "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Reference bin",
+          "location": 312,
+          "x": 30,
+          "y": 30,
+          "width": 80,
+          "height": 70,
+          "archived": false
+        }
+      }
+    ],
+    "stock": 8,
+    "restrictedUser": 15
+  },
+  "checks": [
+    "cabinets 0: aborted real upload preserves saved metadata/content and reload",
+    "cabinets 0: actual image/jpeg upload, PNG normalization and reload",
+    "cabinets 0: actual image/webp upload, PNG normalization and reload",
+    "cabinets 0: cancel then confirm reference detach persists; fixture records retained",
+    "cabinets 0: original image and metadata restored exactly",
+    "drawers 1: aborted real upload preserves saved metadata/content and reload",
+    "drawers 1: actual image/jpeg upload, PNG normalization and reload",
+    "drawers 1: actual image/webp upload, PNG normalization and reload",
+    "drawers 1: cancel then confirm reference detach persists; fixture records retained",
+    "drawers 1: original image and metadata restored exactly",
+    "drawers 2: aborted real upload preserves saved metadata/content and reload",
+    "drawers 2: actual image/jpeg upload, PNG normalization and reload",
+    "drawers 2: actual image/webp upload, PNG normalization and reload",
+    "drawers 2: cancel then confirm reference detach persists; fixture records retained",
+    "drawers 2: original image and metadata restored exactly",
+    "real pending upload blocks dismissed host navigation; completes and permits clean navigation",
+    "425px cabinets 0: no overflow, real image/object pointer move/resize and undo; drafts reverted",
+    "425px drawers 1: no overflow, real image/object pointer move/resize and undo; drafts reverted",
+    "425px drawers 2: no overflow, real image/object pointer move/resize and undo; drafts reverted",
+    "390px cabinets 0: no overflow, image pointer move/resize and undo/redo; image draft reverted; object gesture limitation recorded",
+    "390px drawers 1: no overflow, image pointer move/resize and undo/redo; image draft reverted; object gesture limitation recorded",
+    "390px drawers 2: no overflow, image pointer move/resize and undo/redo; image draft reverted; object gesture limitation recorded",
+    "restricted Development restart: three content hashes/metadata, layouts, stock, native locations, active mapping, allocations and topology preserved; authenticated desktop renders",
+    "stock/native locations/layouts/active mapping/allocations/topology unchanged; no hardware requests; host observability POSTs blocked by fixture-only boundary"
+  ],
+  "http": [
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"90\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"90\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"90\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"90\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"90\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"90\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"91\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"91\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"91\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"91\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"92\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"92\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"92\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"92\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "DELETE",
+      "status": 200,
+      "etag": "\"93\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"93\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"93\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"93\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"94\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"95\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"95\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"95\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"95\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"95\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"96\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"96\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"96\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"96\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"96\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "DELETE",
+      "status": 200,
+      "etag": "\"97\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"97\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"97\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"97\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"97\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"98\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"99\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"99\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"99\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"99\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"99\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"100\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"100\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"100\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"100\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"100\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "DELETE",
+      "status": 200,
+      "etag": "\"101\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"101\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"101\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"101\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"101\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"102\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"102\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"102\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"102\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "POST",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/electrical/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/layout/",
+      "method": "GET",
+      "status": 200,
+      "etag": "\"103\""
+    },
+    {
+      "path": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+      "method": "GET",
+      "status": 200
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/failed-upload-0.png",
+      "sha256": "01c6fb73c0f2cf0095b20872b268ee36ef688eecbd57e671edde4cd3f9cf0807"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/detached-0.png",
+      "sha256": "19cf57f331b063a55133ba042f662630cb4481121dac0efee26d452e0c359289"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/failed-upload-1.png",
+      "sha256": "3a6526b8beceb2b4fc53e94336fe71cf2d5c4c03e2a758642f9a973bb4427df1"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/detached-1.png",
+      "sha256": "659ad2580a68078ecc297598c22c756a581b38c30bb3fc97f4feaa6504a1ae23"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/failed-upload-2.png",
+      "sha256": "37934ddf67ef894de8acd0697b1f63f3dd9ab87398cde3a1785c9372ee0d3b78"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/detached-2.png",
+      "sha256": "b8b15f94b95c0796667be254efcb8f356479049aec1e36ca1b56b98a04fdd12c"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pending-navigation-blocked.png",
+      "sha256": "cbfcd8d81178afeec57fdd84be009c5092221f35e16e51da6219f070ba4b7b7f"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pointer-425-0.png",
+      "sha256": "237cd726212d43efe78ca1f2c187a909f194ff3d1cc81b491d3099815879eee5"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pointer-425-1.png",
+      "sha256": "20703c8923b90424b670cceba9a91b8d2aedd8ae30aa99768fa0f23e62fa7452"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pointer-425-2.png",
+      "sha256": "d8c319851f5bb21639e7980c8105bda022a8905bdf147987c0de212bb6267a62"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pointer-390-0.png",
+      "sha256": "d1a00537e3f84529419577b1fd832d61ab38decdc70f4cab938b0ad7940d8631"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pointer-390-1.png",
+      "sha256": "d64ad4b1347e95263a67ba1fa4423a155f9627c74906d99decf903d57f45ed4e"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/pointer-390-2.png",
+      "sha256": "21bcfb9bf0c1ec2132588f1cd2b32e77c8f3c69c74afeb0bf5bc1ba4177956ba"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/restart-desktop-0.png",
+      "sha256": "7fa8a6895e39b57e0695330839f082d3abb23d18a0b00acb0cbd48b74a8eb2fe"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/restart-desktop-1.png",
+      "sha256": "73184b943931c3aeec2a80a09eb807e4b770772d7563cfb96910fb198c61fb47"
+    },
+    {
+      "path": "docs/storage-layout/evidence/background-followup-00bf8133-1ab1-457c-8ed0-8d429314ac58/restart-desktop-2.png",
+      "sha256": "a65ec4cda2b9fb64b540e14ba8727252d4526a5acb3e67b7c95482acc9d5bd35"
+    }
+  ],
+  "snapshots": {
+    "preservationBefore": {
+      "drawers": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+      "mappingHash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+      "electrical": {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 90
+        },
+        "controllers": [
+          {
+            "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+            "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+            "origin": "http://192.0.2.1",
+            "expected_mac": null,
+            "firmware_adapter": "wled-v16.0.1-1d",
+            "enabled": false,
+            "status": "unknown",
+            "commissioning_policy": {},
+            "outputs": [
+              {
+                "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+                "bus_index": 0,
+                "wled_start": 0,
+                "pixel_count": 120,
+                "pins": [
+                  16
+                ],
+                "led_type": "22",
+                "colour_order": "GRB",
+                "bus_reverse": false,
+                "skip": 0,
+                "auto_white_mode": 0,
+                "max_current_ma": null,
+                "strings": [
+                  {
+                    "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                    "label": "Acceptance string",
+                    "output_offset": 0,
+                    "pixel_count": 120,
+                    "notes": "",
+                    "archived": false
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "archive_ids": []
+      },
+      "stock": {
+        "pk": 8,
+        "part": 8,
+        "quantity": 7,
+        "serial": null,
+        "batch": "",
+        "location": 311,
+        "belongs_to": null,
+        "build": null,
+        "consumed_by": null,
+        "customer": null,
+        "delete_on_deplete": true,
+        "expiry_date": null,
+        "in_stock": true,
+        "is_building": false,
+        "link": "",
+        "owner": null,
+        "packaging": null,
+        "parent": null,
+        "purchase_order": null,
+        "purchase_order_reference": null,
+        "sales_order": null,
+        "sales_order_reference": null,
+        "status": 10,
+        "status_text": "OK",
+        "status_custom_key": 10,
+        "supplier_part": null,
+        "SKU": null,
+        "MPN": null,
+        "barcode_hash": "",
+        "creation_date": "2026-10-20 09:47",
+        "stocktake_date": null,
+        "updated": "2026-10-20 09:47",
+        "purchase_price": null,
+        "purchase_price_currency": "USD",
+        "allocated": 0,
+        "expired": false,
+        "installed_items": 0,
+        "child_items": 0,
+        "stale": false,
+        "part_detail": {
+          "pk": 8,
+          "IPN": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "barcode_hash": "",
+          "category_default_location": null,
+          "default_location": null,
+          "default_expiry": 0,
+          "name": "SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "revision": "",
+          "full_name": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c | SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "description": "Retained isolated acceptance",
+          "image": null,
+          "thumbnail": "/static/img/blank_image.thumbnail.png",
+          "active": true,
+          "locked": false,
+          "assembly": false,
+          "component": true,
+          "minimum_stock": "0.000000",
+          "is_template": false,
+          "purchaseable": true,
+          "salable": false,
+          "testable": false,
+          "trackable": false,
+          "virtual": false,
+          "consumable": false,
+          "units": "",
+          "pricing_min": null,
+          "pricing_max": null
+        },
+        "tracking_items": 1
+      },
+      "locations": [
+        {
+          "pk": 308,
+          "barcode_hash": "",
+          "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "level": 0,
+          "description": "",
+          "parent": null,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "items": 1,
+          "sublocations": 4,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 309,
+          "barcode_hash": "",
+          "name": "Image drawer 1",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+          "items": 1,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 311,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 309,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+          "items": 1,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 310,
+          "barcode_hash": "",
+          "name": "Image drawer 2",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+          "items": 0,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 312,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 310,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+          "items": 0,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        }
+      ],
+      "bins": [
+        {
+          "schema_version": 1,
+          "cabinet": {
+            "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+            "revision": 90,
+            "width_units": 600,
+            "height_units": 500,
+            "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+            "total_pixels": 120
+          },
+          "drawer": {
+            "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+            "label": "Image drawer 1",
+            "display_number": 1,
+            "location": 309,
+            "x": 60,
+            "y": 70,
+            "width": 260,
+            "height": 200,
+            "interior_width": 300,
+            "interior_height": 250,
+            "archived": false,
+            "allocation": {
+              "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+              "logical_start": 1,
+              "logical_end": 60,
+              "pixel_count": 60
+            }
+          },
+          "bins": [
+            {
+              "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+              "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+              "label": "Reference bin",
+              "location": 311,
+              "x": 60,
+              "y": 55,
+              "width": 105,
+              "height": 90,
+              "archived": false
+            }
+          ],
+          "archive_ids": []
+        },
+        {
+          "schema_version": 1,
+          "cabinet": {
+            "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+            "revision": 90,
+            "width_units": 600,
+            "height_units": 500,
+            "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+            "total_pixels": 120
+          },
+          "drawer": {
+            "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+            "label": "Image drawer 2",
+            "display_number": 2,
+            "location": 310,
+            "x": 320,
+            "y": 40,
+            "width": 230,
+            "height": 180,
+            "interior_width": 300,
+            "interior_height": 250,
+            "archived": false,
+            "allocation": {
+              "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+              "logical_start": 61,
+              "logical_end": 120,
+              "pixel_count": 60
+            }
+          },
+          "bins": [
+            {
+              "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+              "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+              "label": "Reference bin",
+              "location": 312,
+              "x": 60,
+              "y": 55,
+              "width": 105,
+              "height": 90,
+              "archived": false
+            }
+          ],
+          "archive_ids": []
+        }
+      ]
+    },
+    "original-0": {
+      "document": {
+        "image_url": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+        "metadata": {
+          "x": 0.16666666666666666,
+          "y": 0.16,
+          "width": 0.6499999999999999,
+          "height": 0.585,
+          "opacity": 0.55,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      "sha256": "cc8c3bf973c64f53f696a7f3ad49ff2ce28bd06b5c31ad31922eb1fa69b27252"
+    },
+    "original-1": {
+      "document": {
+        "image_url": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+        "metadata": {
+          "x": 0.21666666666666667,
+          "y": 0.2,
+          "width": 0.7000000000000001,
+          "height": 0.42,
+          "opacity": 0.65,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      "sha256": "d8e8c9e92b443bd3a977be8079924a42b6c3197af325f6c3760724510c53703f"
+    },
+    "original-2": {
+      "document": {
+        "image_url": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+        "metadata": {
+          "x": 0.21666666666666667,
+          "y": 0.2,
+          "width": 0.7000000000000001,
+          "height": 0.42,
+          "opacity": 0.75,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      "sha256": "9284eb40aaaca2bc4f83659ea980a8c648afde258ea2e34e76e28360438f88d6"
+    },
+    "preservationAfter": {
+      "drawers": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+      "mappingHash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+      "electrical": {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 103
+        },
+        "controllers": [
+          {
+            "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+            "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+            "origin": "http://192.0.2.1",
+            "expected_mac": null,
+            "firmware_adapter": "wled-v16.0.1-1d",
+            "enabled": false,
+            "status": "unknown",
+            "commissioning_policy": {},
+            "outputs": [
+              {
+                "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+                "bus_index": 0,
+                "wled_start": 0,
+                "pixel_count": 120,
+                "pins": [
+                  16
+                ],
+                "led_type": "22",
+                "colour_order": "GRB",
+                "bus_reverse": false,
+                "skip": 0,
+                "auto_white_mode": 0,
+                "max_current_ma": null,
+                "strings": [
+                  {
+                    "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                    "label": "Acceptance string",
+                    "output_offset": 0,
+                    "pixel_count": 120,
+                    "notes": "",
+                    "archived": false
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "archive_ids": []
+      },
+      "stock": {
+        "pk": 8,
+        "part": 8,
+        "quantity": 7,
+        "serial": null,
+        "batch": "",
+        "location": 311,
+        "belongs_to": null,
+        "build": null,
+        "consumed_by": null,
+        "customer": null,
+        "delete_on_deplete": true,
+        "expiry_date": null,
+        "in_stock": true,
+        "is_building": false,
+        "link": "",
+        "owner": null,
+        "packaging": null,
+        "parent": null,
+        "purchase_order": null,
+        "purchase_order_reference": null,
+        "sales_order": null,
+        "sales_order_reference": null,
+        "status": 10,
+        "status_text": "OK",
+        "status_custom_key": 10,
+        "supplier_part": null,
+        "SKU": null,
+        "MPN": null,
+        "barcode_hash": "",
+        "creation_date": "2026-10-20 09:47",
+        "stocktake_date": null,
+        "updated": "2026-10-20 09:47",
+        "purchase_price": null,
+        "purchase_price_currency": "USD",
+        "allocated": 0,
+        "expired": false,
+        "installed_items": 0,
+        "child_items": 0,
+        "stale": false,
+        "part_detail": {
+          "pk": 8,
+          "IPN": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "barcode_hash": "",
+          "category_default_location": null,
+          "default_location": null,
+          "default_expiry": 0,
+          "name": "SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "revision": "",
+          "full_name": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c | SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "description": "Retained isolated acceptance",
+          "image": null,
+          "thumbnail": "/static/img/blank_image.thumbnail.png",
+          "active": true,
+          "locked": false,
+          "assembly": false,
+          "component": true,
+          "minimum_stock": "0.000000",
+          "is_template": false,
+          "purchaseable": true,
+          "salable": false,
+          "testable": false,
+          "trackable": false,
+          "virtual": false,
+          "consumable": false,
+          "units": "",
+          "pricing_min": null,
+          "pricing_max": null
+        },
+        "tracking_items": 1
+      },
+      "locations": [
+        {
+          "pk": 308,
+          "barcode_hash": "",
+          "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "level": 0,
+          "description": "",
+          "parent": null,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "items": 1,
+          "sublocations": 4,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 309,
+          "barcode_hash": "",
+          "name": "Image drawer 1",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+          "items": 1,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 311,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 309,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+          "items": 1,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 310,
+          "barcode_hash": "",
+          "name": "Image drawer 2",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+          "items": 0,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 312,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 310,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+          "items": 0,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        }
+      ],
+      "bins": [
+        {
+          "schema_version": 1,
+          "cabinet": {
+            "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+            "revision": 103,
+            "width_units": 600,
+            "height_units": 500,
+            "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+            "total_pixels": 120
+          },
+          "drawer": {
+            "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+            "label": "Image drawer 1",
+            "display_number": 1,
+            "location": 309,
+            "x": 60,
+            "y": 70,
+            "width": 260,
+            "height": 200,
+            "interior_width": 300,
+            "interior_height": 250,
+            "archived": false,
+            "allocation": {
+              "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+              "logical_start": 1,
+              "logical_end": 60,
+              "pixel_count": 60
+            }
+          },
+          "bins": [
+            {
+              "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+              "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+              "label": "Reference bin",
+              "location": 311,
+              "x": 60,
+              "y": 55,
+              "width": 105,
+              "height": 90,
+              "archived": false
+            }
+          ],
+          "archive_ids": []
+        },
+        {
+          "schema_version": 1,
+          "cabinet": {
+            "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+            "revision": 103,
+            "width_units": 600,
+            "height_units": 500,
+            "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+            "total_pixels": 120
+          },
+          "drawer": {
+            "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+            "label": "Image drawer 2",
+            "display_number": 2,
+            "location": 310,
+            "x": 320,
+            "y": 40,
+            "width": 230,
+            "height": 180,
+            "interior_width": 300,
+            "interior_height": 250,
+            "archived": false,
+            "allocation": {
+              "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+              "logical_start": 61,
+              "logical_end": 120,
+              "pixel_count": 60
+            }
+          },
+          "bins": [
+            {
+              "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+              "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+              "label": "Reference bin",
+              "location": 312,
+              "x": 60,
+              "y": 55,
+              "width": 105,
+              "height": 90,
+              "archived": false
+            }
+          ],
+          "archive_ids": []
+        }
+      ]
+    },
+    "backgroundsBeforeRestart": [
+      {
+        "document": {
+          "image_url": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+          "metadata": {
+            "x": 0.16666666666666666,
+            "y": 0.16,
+            "width": 0.6499999999999999,
+            "height": 0.585,
+            "opacity": 0.55,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "cc8c3bf973c64f53f696a7f3ad49ff2ce28bd06b5c31ad31922eb1fa69b27252"
+      },
+      {
+        "document": {
+          "image_url": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+          "metadata": {
+            "x": 0.21666666666666667,
+            "y": 0.2,
+            "width": 0.7000000000000001,
+            "height": 0.42,
+            "opacity": 0.65,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "d8e8c9e92b443bd3a977be8079924a42b6c3197af325f6c3760724510c53703f"
+      },
+      {
+        "document": {
+          "image_url": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+          "metadata": {
+            "x": 0.21666666666666667,
+            "y": 0.2,
+            "width": 0.7000000000000001,
+            "height": 0.42,
+            "opacity": 0.75,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "9284eb40aaaca2bc4f83659ea980a8c648afde258ea2e34e76e28360438f88d6"
+      }
+    ],
+    "backgroundsAfterRestart": [
+      {
+        "document": {
+          "image_url": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+          "metadata": {
+            "x": 0.16666666666666666,
+            "y": 0.16,
+            "width": 0.6499999999999999,
+            "height": 0.585,
+            "opacity": 0.55,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "cc8c3bf973c64f53f696a7f3ad49ff2ce28bd06b5c31ad31922eb1fa69b27252"
+      },
+      {
+        "document": {
+          "image_url": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+          "metadata": {
+            "x": 0.21666666666666667,
+            "y": 0.2,
+            "width": 0.7000000000000001,
+            "height": 0.42,
+            "opacity": 0.65,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "d8e8c9e92b443bd3a977be8079924a42b6c3197af325f6c3760724510c53703f"
+      },
+      {
+        "document": {
+          "image_url": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+          "metadata": {
+            "x": 0.21666666666666667,
+            "y": 0.2,
+            "width": 0.7000000000000001,
+            "height": 0.42,
+            "opacity": 0.75,
+            "visible": true,
+            "locked": true,
+            "aspect_locked": true
+          }
+        },
+        "sha256": "9284eb40aaaca2bc4f83659ea980a8c648afde258ea2e34e76e28360438f88d6"
+      }
+    ],
+    "preservationAfterRestart": {
+      "drawers": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+      "mappingHash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+      "electrical": {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 103
+        },
+        "controllers": [
+          {
+            "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+            "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+            "origin": "http://192.0.2.1",
+            "expected_mac": null,
+            "firmware_adapter": "wled-v16.0.1-1d",
+            "enabled": false,
+            "status": "unknown",
+            "commissioning_policy": {},
+            "outputs": [
+              {
+                "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+                "bus_index": 0,
+                "wled_start": 0,
+                "pixel_count": 120,
+                "pins": [
+                  16
+                ],
+                "led_type": "22",
+                "colour_order": "GRB",
+                "bus_reverse": false,
+                "skip": 0,
+                "auto_white_mode": 0,
+                "max_current_ma": null,
+                "strings": [
+                  {
+                    "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                    "label": "Acceptance string",
+                    "output_offset": 0,
+                    "pixel_count": 120,
+                    "notes": "",
+                    "archived": false
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "archive_ids": []
+      },
+      "stock": {
+        "pk": 8,
+        "part": 8,
+        "quantity": 7,
+        "serial": null,
+        "batch": "",
+        "location": 311,
+        "belongs_to": null,
+        "build": null,
+        "consumed_by": null,
+        "customer": null,
+        "delete_on_deplete": true,
+        "expiry_date": null,
+        "in_stock": true,
+        "is_building": false,
+        "link": "",
+        "owner": null,
+        "packaging": null,
+        "parent": null,
+        "purchase_order": null,
+        "purchase_order_reference": null,
+        "sales_order": null,
+        "sales_order_reference": null,
+        "status": 10,
+        "status_text": "OK",
+        "status_custom_key": 10,
+        "supplier_part": null,
+        "SKU": null,
+        "MPN": null,
+        "barcode_hash": "",
+        "creation_date": "2026-10-20 09:47",
+        "stocktake_date": null,
+        "updated": "2026-10-20 09:47",
+        "purchase_price": null,
+        "purchase_price_currency": "USD",
+        "allocated": 0,
+        "expired": false,
+        "installed_items": 0,
+        "child_items": 0,
+        "stale": false,
+        "part_detail": {
+          "pk": 8,
+          "IPN": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "barcode_hash": "",
+          "category_default_location": null,
+          "default_location": null,
+          "default_expiry": 0,
+          "name": "SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "revision": "",
+          "full_name": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c | SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "description": "Retained isolated acceptance",
+          "image": null,
+          "thumbnail": "/static/img/blank_image.thumbnail.png",
+          "active": true,
+          "locked": false,
+          "assembly": false,
+          "component": true,
+          "minimum_stock": "0.000000",
+          "is_template": false,
+          "purchaseable": true,
+          "salable": false,
+          "testable": false,
+          "trackable": false,
+          "virtual": false,
+          "consumable": false,
+          "units": "",
+          "pricing_min": null,
+          "pricing_max": null
+        },
+        "tracking_items": 1
+      },
+      "locations": [
+        {
+          "pk": 308,
+          "barcode_hash": "",
+          "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "level": 0,
+          "description": "",
+          "parent": null,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "items": 1,
+          "sublocations": 4,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 309,
+          "barcode_hash": "",
+          "name": "Image drawer 1",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+          "items": 1,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 311,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 309,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+          "items": 1,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 310,
+          "barcode_hash": "",
+          "name": "Image drawer 2",
+          "level": 1,
+          "description": "",
+          "parent": 308,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+          "items": 0,
+          "sublocations": 1,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": true,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        },
+        {
+          "pk": 312,
+          "barcode_hash": "",
+          "name": "Reference bin",
+          "level": 2,
+          "description": "",
+          "parent": 310,
+          "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+          "items": 0,
+          "sublocations": 0,
+          "owner": null,
+          "icon": "",
+          "custom_icon": null,
+          "structural": false,
+          "external": false,
+          "location_type": null,
+          "location_type_detail": null
+        }
+      ],
+      "bins": [
+        {
+          "schema_version": 1,
+          "cabinet": {
+            "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+            "revision": 103,
+            "width_units": 600,
+            "height_units": 500,
+            "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+            "total_pixels": 120
+          },
+          "drawer": {
+            "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+            "label": "Image drawer 1",
+            "display_number": 1,
+            "location": 309,
+            "x": 60,
+            "y": 70,
+            "width": 260,
+            "height": 200,
+            "interior_width": 300,
+            "interior_height": 250,
+            "archived": false,
+            "allocation": {
+              "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+              "logical_start": 1,
+              "logical_end": 60,
+              "pixel_count": 60
+            }
+          },
+          "bins": [
+            {
+              "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+              "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+              "label": "Reference bin",
+              "location": 311,
+              "x": 60,
+              "y": 55,
+              "width": 105,
+              "height": 90,
+              "archived": false
+            }
+          ],
+          "archive_ids": []
+        },
+        {
+          "schema_version": 1,
+          "cabinet": {
+            "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+            "revision": 103,
+            "width_units": 600,
+            "height_units": 500,
+            "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+            "total_pixels": 120
+          },
+          "drawer": {
+            "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+            "label": "Image drawer 2",
+            "display_number": 2,
+            "location": 310,
+            "x": 320,
+            "y": 40,
+            "width": 230,
+            "height": 180,
+            "interior_width": 300,
+            "interior_height": 250,
+            "archived": false,
+            "allocation": {
+              "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+              "logical_start": 61,
+              "logical_end": 120,
+              "pixel_count": 60
+            }
+          },
+          "bins": [
+            {
+              "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+              "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+              "label": "Reference bin",
+              "location": 312,
+              "x": 60,
+              "y": 55,
+              "width": 105,
+              "height": 90,
+              "archived": false
+            }
+          ],
+          "archive_ids": []
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "No deployment performed by this runner; restricted restart only when explicitly opted in.",
+    "Live cross-owner denial cannot be verified while shared STOCK_OWNERSHIP_CONTROL is False. No ownership settings changed.",
+    "390px requires browser-local allowMobile override; 425px is default supported minimum.",
+    "cabinets 0: 390px override image gestures passed; object gestures not asserted after cabinet move remained unchanged in two prior bounded probes. 425px object gestures passed. Tiny override canvas requires separate hit-target investigation.",
+    "drawers 1: 390px override image gestures passed; object gestures not asserted after cabinet move remained unchanged in two prior bounded probes. 425px object gestures passed. Tiny override canvas requires separate hit-target investigation.",
+    "drawers 2: 390px override image gestures passed; object gestures not asserted after cabinet move remained unchanged in two prior bounded probes. 425px object gestures passed. Tiny override canvas requires separate hit-target investigation."
+  ],
+  "chromium": "143.0.7499.169",
+  "restrictedStatus": "NAME                          IMAGE                                                                                        COMMAND                  SERVICE     CREATED         STATUS                            PORTS\nmyinventree-dev-backend-1     localhost/myinventree-dev-backend:review                                                     \"gunicorn --chdir /a…\"   backend     8 minutes ago   Up 8 seconds (healthy)            \nmyinventree-dev-bootstrap-1   localhost/myinventree-dev-backend:review                                                     \"python /app/contrib…\"   bootstrap   8 minutes ago   Exited (0) 7 minutes ago          \nmyinventree-dev-db-1          postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24   \"docker-entrypoint.s…\"   db          22 hours ago    Up 9 seconds (health: starting)   5432/tcp\nmyinventree-dev-proxy-1       localhost/myinventree-dev-frontend:review                                                    \"/docker-entrypoint.…\"   proxy       8 minutes ago   Up 9 seconds (health: starting)   192.168.1.108:18081->80/tcp\nmyinventree-dev-redis-1       redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499       \"docker-entrypoint.s…\"   redis       22 hours ago    Up 9 seconds (health: starting)   6379/tcp\n",
+  "blockedRequests": [
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    }
+  ],
+  "result": "PASS_WITH_DOCUMENTED_LIMITATIONS",
+  "finished": "2026-10-20T10:12:05.530Z"
+}

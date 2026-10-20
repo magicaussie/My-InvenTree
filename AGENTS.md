@@ -12,7 +12,47 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
-## 002J-Q image source implementation — not deployed
+## 002J-Q responsive follow-up — Development browser verified with limits
+
+The lead built and deployed application `19d148233b278a4ef6309555eb2cc36b39c72050`.
+Actual authenticated Chromium follow-up passed 24 checkpoints, including real
+JPEG/WebP uploads, failed-network preservation, cancel/confirm image detach and
+restoration on all three isolated backgrounds, pending navigation protection,
+425px no-overflow/image/object gestures, 390px override image gestures, and a
+restricted restart with exact saved-data/content preservation. See
+[final evidence and precise limits](docs/storage-layout/evidence/002J-Q-LIVE-ACCEPTANCE.md).
+Read-only exact activation verification passed after restart; all four services
+healthy, original backup/rehearsal retained. No Main/hardware/workers/shared
+records touched. Fixture records retained; DELETE used only on authorized fixture
+background-reference endpoints. Live ownership control remains False: no settings
+changes and no live cross-owner claim. Default <425px mobile gate remains; 390px
+object gestures remain unresolved, not passed. Current-runtime security resume also
+passed invalid-upload/metadata rejection, missing/stale CAS, actual browser stale
+conflict, non-admin/anonymous denials and exact saved-data preservation. No
+application source changes in acceptance; documentation remains uncommitted.
+Preserve all owner untracked files.
+
+## Historical 002J-Q live image acceptance — original baseline, partial acceptance
+
+At this historical checkpoint, application `56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a` was activated in Development.
+Read-only inspection confirmed backend `afd216c3e4413aabd63b7c741b23508e8f9ec9a0335234d3c653559fe4b2656f`
+and frontend `c56a6405c990a45041bfe26694e0f293aa6f235581059d372bcb13fdfe45be88`.
+See [live acceptance and remaining gates](docs/storage-layout/evidence/002J-Q-LIVE-ACCEPTANCE.md).
+Desktop real uploads/image and object gestures, separate saves, reload, stale CAS,
+permission denials and two restricted restarts passed on one retained isolated
+cabinet with two images/bins, quantity-7 stock, non-null active LED mapping and
+allocations. Hardware/dispatcher gates remain False; no hardware endpoints used.
+
+Do not claim full acceptance: default host blocks <425 px; deployed drawer panes
+produce 852 px horizontal overflow at 425 px. Focused responsive source fix plus
+390/425 Chromium regressions pass locally but are NOT deployed. Coordinate lead
+before reviewed image rebuild/activation. Live ownership control is False; do not
+change shared settings to test cross-owner denial. Actual native ownership tested
+only in disposable local Django tests. Never infer it from no-permission 403s.
+Original runner retained fixtures without DELETE; follow-up permits only authorized fixture background detach. Preserve owner untracked files.
+Guide reviewed and updated with credential-free evidence and verified limits.
+
+## Historical 002J-Q source implementation — before activation
 
 Structure frontend/opening reference UI is retired; backend `Cabinet.structure`
 and existing saved data remain. Additive 0005 provides independent Cabinet/Drawer

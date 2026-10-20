@@ -25,11 +25,12 @@ flowchart TD
     H --> I[Separate human commissioning approval required for hardware]
 ```
 
-The only embedded screenshot is the **Mapping** image (`images/06-mapping.png`),
+The historical workflow screenshot is the **Mapping** image (`images/06-mapping.png`),
 a real Development UI capture from 2026-10-19 using the application build
 recorded in [DEPLOYMENT.md](../DEPLOYMENT.md). No cabinet, topology or mapping
-changes were submitted for this guide. All other diagrams in this guide are
-illustrative Mermaid diagrams, not screenshots or evidence of a live workflow.
+changes were submitted for this guide. Mermaid diagrams are illustrative, not screenshots or evidence of a live workflow.
+New image-background acceptance screenshots and their isolated-fixture scope are
+explicitly identified below.
 ## Prior browser verification — drawer/bin workflows
 
 Before the Cabinet / Structure deployment, Development browser suites verified
@@ -40,12 +41,40 @@ review-tag images whose build provenance was not established there. It is histor
 context, not evidence about the current Cabinet / Structure image build. See the
 [current deployment evidence](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
 
-## 002J-Q background images — local source, not deployed
+## 002J-Q background images — Development verified with remaining limits
 
 **Cabinet / Structure** and opening-guided drawer creation are retired. Previously
 saved `Cabinet.structure` and its backend API are retained without conversion.
-The following controls are implemented and locally fixture-tested, not authenticated
-Development browser evidence. Historical Structure screenshots remain audit records.
+Authenticated desktop Development acceptance now verifies real PNG upload and
+independent cabinet/two-drawer images, pointer edits, separate save/reload and
+restricted restart persistence with populated stock and active LED allocations.
+[Exact evidence, screenshots and remaining acceptance gates](evidence/002J-Q-LIVE-ACCEPTANCE.md).
+Historical Structure screenshots remain audit records.
+
+**Responsive correction deployed:** `19d148233` passes actual Chromium
+no-horizontal-overflow assertions at 425 px for the cabinet and both drawers,
+including image/object pointer move/resize and undo. Real JPEG/WebP uploads,
+failed-upload preservation, cancel/confirm image removal and exact restoration,
+slow pending-navigation protection, and restricted restart persistence also pass
+on retained isolated fixtures. Removal detaches the background, not the cabinet,
+drawer, bins or stock. Original invalid-upload, stale-conflict and non-admin/
+anonymous permission probes were also rerun successfully on `19d148233`, preserving
+all saved fixture images and populated inventory/mapping data. See the linked
+evidence for current-runtime HTTP snapshots and exact remaining limits.
+
+**Narrow-view limits:** the host blocks the default UI below 425 px. 390 px captures
+use a disposable browser-local mobile override, not the default supported workflow.
+No-overflow and image gestures pass there, but object gestures remain unverified
+following unchanged-movement probes. Do not treat those captures as full mobile
+PASS. Live cross-owner denial is also unverified: shared ownership control is off
+and was not changed.
+
+![Development cabinet image with two drawer overlays](evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/desktop-0.png)
+
+[Distinct drawer one reference](evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/desktop-1.png)
+and [drawer two reference](evidence/background-635ffee0-94fb-452c-91dd-8ed171f0560c/desktop-2.png)
+are actual authenticated Development captures of isolated synthetic reference
+rasters, not photographs or shared inventory records.
 
 1. Save or revert layout changes, then choose **Upload background** (PNG/JPEG/WebP,
    at most 8 MiB and 20 million pixels; animated images are rejected). Upload and

@@ -1,6 +1,72 @@
 # My-InvenTree deployment — status and checkpoints
 
-## 002J-Q deployment tooling correction — local validation only
+## 002J-Q responsive correction — live follow-up verified (2026-10-20)
+
+Deployed source `19d148233b278a4ef6309555eb2cc36b39c72050`; archive SHA-256
+`9461b1de0e7e6c8efa42bde48576002d38cc828ea0779cd74ff4078c3cab3e73`.
+Read-only inspection after acceptance confirmed healthy running backend
+`sha256:8c4f55d8f6a607b06f91f9759c292c49fab6517d0d3810dcba0a8b71161d3f1b`
+and frontend `sha256:4b6cc8989850ce4f8ce75461c26e9852893e999896200694339799598661a4f4`.
+The backend ID above is the actual inspected ID (the handoff had a transcription
+error). The lead built and deployed this commit; acceptance performed no build/up.
+
+[Final browser report, screenshots, exact scope and limitations](storage-layout/evidence/002J-Q-LIVE-ACCEPTANCE.md#responsive-deployment-follow-up-19d148233)
+records 24 passing follow-up checkpoints and an actual restricted Development restart,
+plus 8 current-runtime security-resume checkpoints: original invalid uploads,
+metadata validation, missing/stale CAS, browser stale conflict, permissions and
+saved-data preservation. Both running image IDs above were re-inspected healthy
+after the security rerun. No additional restart was needed.
+
+Local validation: the lead reported the full frontend suite **329 passed** and
+typecheck passed, plus tooling discovery **13 passed**. This final acceptance turn
+also ran `python3 -m unittest discover -s contrib/remote-development -p 'test_*.py'`:
+**28 passed** in the current checkout; both background runners pass `node --check`.
+These local results are distinct from live browser acceptance.
+425px drawer overflow is fixed in live Chromium. 390px requires browser-local
+mobile override; image gestures pass but object gestures are not accepted there.
+Live cross-owner denial remains unverified; no shared ownership setting changed.
+
+Read-only `prepare-002jq.py` `verify_activation()` passed against separate
+`/var/backups/myinventree-dev/002jq-responsive-19d148233-evidence` after restart:
+exact candidate IDs, persistent service IDs/mounts, Compose, migration, hardware
+gates, successful bootstrap and unrelated container identities checked. Original
+source/archive evidence intentionally remains original; `correction-source.txt`
+records the correction SHA/archive and no schema change. Original backup
+`/var/backups/myinventree-dev/20261020T091716Z` and original full-media/scratch
+migration PASS record remain untouched; no new backup or restore was performed.
+All four long-running services subsequently inspected healthy. Fixture background
+references were detached only with explicit authorization, then restored exactly;
+no fixture record deletion, Main, hardware, workers or shared-record mutations.
+
+## Historical 002J-Q activated image baseline — live acceptance partial (2026-10-20)
+
+The lead activated application `56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a` and
+reported `prepare-002jq.py verify` PASSED. Live read-only container inspection
+confirmed backend `sha256:afd216c3e4413aabd63b7c741b23508e8f9ec9a0335234d3c653559fe4b2656f`
+and frontend `sha256:c56a6405c990a45041bfe26694e0f293aa6f235581059d372bcb13fdfe45be88`.
+
+[Exact authenticated browser/HTTP/snapshot evidence and remaining gates](storage-layout/evidence/002J-Q-LIVE-ACCEPTANCE.md)
+records desktop and narrow viewport real uploads, independent cabinet/two-drawer
+images, pointer image/object manipulation, saves/reloads, navigation guard,
+invalid uploads/CAS conflicts, actual non-admin denials and two restricted
+Development restarts. Retained isolated populated fixture verifies stock/native
+locations, non-null active mapping, topology and allocations unchanged. All four
+long-running services healthy afterward, bootstrap exited 0. Both hardware gates
+read back False; no hardware, worker, Main, shared-record or unrelated-service
+operation and no deletion. Owner files untouched; this historical acceptance did not rebuild application images.
+
+**Not full PASS:** deployed drawer pane overflow at 425 px (852 px scroll width)
+has a focused source fix and two new passing local browser regressions, not a
+redeployed fix. Default host blocks <425 px; 390 px rendering used a browser-local
+allowMobile override. Live ownership control is False, so cross-owner denial
+remains unverified without shared-setting changes; local actual-owner test passes.
+Pending-request navigation and narrow pointer gestures remain gaps. Coordinate
+lead for a reviewed Development frontend build, activation and live reacceptance.
+
+The preactivation/source-only sections below are historical and do not supersede
+this activation/acceptance record.
+
+## Historical 002J-Q deployment tooling correction — local validation only
 
 The exact pending application remains pinned to
 `56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a`, archive SHA-256
@@ -14,7 +80,7 @@ No new live inspection, backup, restore, deployment or browser acceptance is
 claimed. Main, workers, hardware, unrelated services and volume deletion remain
 forbidden. Local mocked/static evidence cannot authorize execution.
 
-## Pending source review — 002J-Q cabinet/drawer image backgrounds (not deployed)
+## Historical pending source review — 002J-Q cabinet/drawer image backgrounds (before deployment)
 
 Source retires Cabinet / Structure and opening guides while preserving all backend
 structure data. Secure image APIs and independent cabinet/drawer underlays and
@@ -31,7 +97,7 @@ For day-to-day cabinet and drawer/bin editing, see the
 credential-free authenticated Development captures; isolated-fixture writes are
 identified where used and are not additional commissioning evidence.
 
-## Current deployment checkpoint — approved Cabinet / Structure feature activated in Development
+## Historical deployment checkpoint — approved Cabinet / Structure feature activated in Development
 
 - **Approved source input:** commit `9bb88e3c607931e04645aa8024f600b126d1e733`; archive SHA-256 `c0e34a80d65310bf0fc290704be46fda6324bc98d4942b2e66e8d9481ff25e9e`. Transferred archive `/home/spetchal/myinventree-002jo-9bb88e3c6.tar`; staging `/home/spetchal/myinventree-dev-build-9bb88e3c6` was reused read-only after approval and exact per-file/path content reconciliation. No re-extraction or overwrite occurred. Installed `/etc/myinventree-dev/compose.yml` matched `contrib/remote-development/compose.yml` byte-for-byte (SHA-256 `f2d46709c2e01a6c724852842369867be2fe3e9743dde0f0e6c4c2a0c137f8b2`); policy review confirmed no host binds, privileged mode or hardware access.
 - **Rollback and built images:** rollback tags `localhost/myinventree-dev-backend:rollback-002jo` and `localhost/myinventree-dev-frontend:rollback-002jo` retain prior backend `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d` and frontend `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017`. The approved backend/frontend targets were built once with `--pull=false`; no subsequent image rebuild was made. Running review IDs after restart: backend `sha256:0a9530a566651f0da7d22da35c0107297316969c5ede22ff76e9b43bd41a978c`; frontend `sha256:1b744d12dc75804dde441a941aafa4ae970e2f815f24305e59a664816774592c`. Backend, proxy, database and Redis were healthy; bootstrap exited 0.
