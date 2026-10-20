@@ -15,9 +15,12 @@ For every Storage Layout plugin change, review [the graphical user guide](docs/s
 ## Cabinet / Structure feature status — local source only
 
 The local cabinet physical-structure editor and nullable `Cabinet.structure` migration
-are not deployed to Development. Do not describe them as live or run a build, schema
-migration, activation, or data mutation without specific owner/supervisor approval for
-the exact source input and operation. The default live acceptance script
+are not deployed to Development. An approved deployment attempt for commit
+`9bb88e3c607931e04645aa8024f600b126d1e733` was stopped before transfer/build/backup/
+activation because its designated fresh staging directory already existed and the
+expected remote archive was absent; see `docs/DEPLOYMENT.md`. Do not describe the
+feature as live or resume deployment from existing staging without a newly approved
+bounded path/process. The default live acceptance script
 `contrib/remote-development/live-structure-acceptance.cjs` is read-only against the
 current shared Development cabinet; absence of the new tab is the expected result.
 Its opt-in `--exercise` mode creates a disposable isolated cabinet and refuses to

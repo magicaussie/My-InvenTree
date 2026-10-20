@@ -4,9 +4,15 @@ For day-to-day cabinet and drawer/bin editing, see the
 [Storage Layout graphical user guide](storage-layout/README.md). Its screenshots
 are read-only Development captures, not additional commissioning evidence.
 
-## Current verified result — transferred archive and live acceptance; build/activation stopped
+## Current deployment checkpoint — approved 9bb88e3c6 run stopped before build/backup/activation
 
-Development at <http://192.168.1.108:18081/web/> was already running the new review-tag images when inspected. User-approved source commit: `10e05fdc21d563c14c9ea10da26f51867bf5229f`; transferred archive SHA-256: `da20e278215d926125f2dffa28452f35ce18fac8091119c05651fb0d2ea53191`.
+The approved commit is `9bb88e3c607931e04645aa8024f600b126d1e733`; the locally generated Git archive `/tmp/myinventree-002jo-9bb88e3c6.tar` and a fresh `git archive` of that commit both hash to the approved SHA-256 `c0e34a80d65310bf0fc290704be46fda6324bc98d4942b2e66e8d9481ff25e9e`. Remote checks found `/home/spetchal/myinventree-dev-build-9bb88e3c6` already exists and is populated, while `/home/spetchal/myinventree-9bb88e3c6.tar` is absent. The instruction to stop if the fresh staging directory exists was therefore followed: no transfer, archive extraction, image tag/build, backup, migration, or activation was performed. Do not reuse or replace that existing staging directory without a newly approved bounded path/process.
+
+Read-only checks confirmed installed `/etc/myinventree-dev/compose.yml` matches `contrib/remote-development/compose.yml` byte-for-byte (both SHA-256 `f2d46709c2e01a6c724852842369867be2fe3e9743dde0f0e6c4c2a0c137f8b2`). Development backend and frontend remain at the approved baseline IDs `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d` and `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017`, both healthy; the review tags still resolve to those same IDs. The transfer/build/activation and backup gates remain pending. No database, volumes, other services, Main, or hardware were touched.
+
+## Historical verified result — transferred archive and live acceptance; build/activation stopped
+
+Development at <http://192.168.1.108:18081/web/> was previously running review-tag images when inspected. User-approved source commit: `10e05fdc21d563c14c9ea10da26f51867bf5229f`; transferred archive SHA-256: `da20e278215d926125f2dffa28452f35ce18fac8091119c05651fb0d2ea53191`.
 
 ### Archive, Compose and image evidence
 
