@@ -8,8 +8,8 @@ Development deployment has not been modified. No authenticated live browser,
 service restart, migration, backup, restore, privileged command, controller action,
 worker activation or Main operation was performed in this task.
 
-Exact application source commit and archive hash are recorded in the delivery
-manifest added after the implementation commit. Do not substitute branch HEAD or
+Exact application source commit and archive hash are recorded in the
+[delivery manifest](002J-Q-DELIVERY-MANIFEST.md) added after the implementation commit. Do not substitute branch HEAD or
 assume a documentation commit has been built. An archive is not build approval.
 
 ## Implemented contract and schema rationale

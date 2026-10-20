@@ -337,4 +337,4 @@ Full frontend lint still finds pre-existing formatting in commands.test.ts.
 No authenticated Development image acceptance, restart durability, image deployment,
 private backup or isolated restore was performed. Existing Development remains
 untouched. Main, workers and hardware remain forbidden. The exact review source
-archive manifest is recorded separately; it is not permission to build or activate.
+[archive manifest](ai/002J-Q-DELIVERY-MANIFEST.md) is recorded separately; it is not permission to build or activate.
