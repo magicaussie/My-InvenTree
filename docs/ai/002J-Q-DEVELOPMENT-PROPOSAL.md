@@ -131,7 +131,8 @@ image. A late target response is ignored. Save controls freeze the image draft;
 image save callbacks update only the root ETag, never reload or replace concurrent
 layout edits. Dirty layout blocks starting image mutations; concurrent aggregate
 writes still receive authoritative CAS protection. Unsaved image edits are not
-persisted to local storage; save/revert before route changes.
+persisted to local storage; navigation protection is described in the correction
+follow-up below.
 
 Fresh complete local runs (same backend environment and commands above):
 - Backend regression: **561 passed**, 51.713s, including populated active mapping
@@ -165,10 +166,11 @@ Fresh complete local runs (same backend environment and commands above):
    low-permission/cross-owner denial, stale CAS and approved restart persistence.
 2. Backup and isolated DB/media restore verification under the existing trusted
    mechanism; no recovery/deployment commands were executed in this task.
-3. Narrow/mobile visual acceptance, extreme-aspect/high-resolution visual checks,
-   localisation of new English image controls, route-change draft-discard warning
-   (browser unload is guarded), and image keyboard undo/redo shortcuts (buttons
-   exist; layout shortcuts do not receive image-focus keystrokes).
+3. Comprehensive mobile/high-resolution visual acceptance and translated text
+   review remain. The correction follow-up below supplies Lingui extraction,
+   focused narrow/extreme-transform fixtures, navigation protection and shortcuts.
+   Legacy browsers without the Navigation API have link/unload protection only;
+   arbitrary programmatic SPA/history changes are not guaranteed there.
 4. No new authenticated screenshots. Updated guide diagram is illustrative. The
    owner's historical four broader browser failures were not independently
    identified; do not equate them with the now-passing 26-test local harness.
@@ -223,3 +225,49 @@ The manifest pins the reviewed source; this proposal is not execution approval.
    consistent, never downgrade or delete the structure/image columns ad hoc.
 
 No deployment, private backup or isolated restore has been executed for 002J-Q.
+
+
+## Review corrections — 2026-10-20 (supersedes earlier frontend gaps)
+
+Shared BackgroundCanvas now guards dirty/busy navigation with the browser
+Navigation API, before host router unmount; cancellation retains the editor.
+Chromium's actual history.pushState cancellation passed in the harness. Older
+browsers get capture-phase link and unload guards, not a claim of complete
+programmatic/history blocking. No host-router dependency or global history
+monkey-patching was introduced. Non-route programmatic replacement of component
+props remains the caller's responsibility.
+
+Image Ctrl/Cmd+Z and redo shortcuts use the same bounded history as buttons,
+only on bubbled key events from active image mode; numeric/text fields retain
+native undo, unrelated page focus never changes image history. Upload commit and
+preview read are separate failure boundaries: successful CAS/ETag adoption is
+retained if preview retrieval fails. Preview decode failures use the same saved
+reference warning. Replace stays labelled Replace even without a usable preview.
+All new controls/status/confirmations use existing Lingui macros; catalogs were
+extracted and compiled, with English fallback, not fabricated translations.
+
+Fresh local commands (frontend directory):
+- `npm run typecheck`: passed.
+- `npm test -- --reporter=dot`: **329 passed / 17 files** (final JSON reporter success=true, zero failures);
+  focused background suite **14 tests**, including navigation cancellation and
+  cleanup, shortcut focus/input isolation, and committed-upload/preview failure.
+- `npm run e2e`: **30 passed**, final rerun 25.4s, including 390px reachable image controls,
+  10:0.001 normalized transform, keyboard undo and real Chromium SPA cancellation.
+  This remains a socket-free fixture, not authenticated Development acceptance.
+- Changed-source/test Biome passes. `npm run lint` still fails solely on the two
+  existing long assertions in untouched `tests/commands.test.ts`.
+- React act warnings remain. Browser harness builds translated production bundle.
+
+Fresh backend commands use the exact disposable environment and command list
+above: **561 passed**, 52.514s, migration suite **7 passed**, drift check no changes.
+No backend schema change was needed for these frontend corrections. Existing
+additive per-model FileFields + normalized metadata keep drawer identity and
+ownership independent, avoid data-URL/arbitrary-origin media, and preserve legacy
+structure data. Root aggregate CAS avoids concurrent image/layout lost updates.
+
+Guide reviewed and updated in the same change. No authenticated screenshot or
+comprehensive high-resolution/mobile visual audit claimed. No deployment, live
+DB, privileged command, backup/restore execution or hardware interaction occurred.
+The approval-gated backup/isolated-restore/build/rollback sequence above remains
+the complete proposed Development plan; consult the latest delivery manifest for
+the exact corrected source commit/archive before approving any build.

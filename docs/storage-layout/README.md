@@ -75,9 +75,20 @@ geometry, stock locations, quantities, topology, mappings or pixel allocations.
 Pending saves disable image controls; failed upload/replacement keeps the previous
 reference, and metadata save failures keep the draft. Revision conflicts require
 reloading the editor after preserving/reverting local work; no automatic merge is
-performed. Unsaved image state warns before browser unload. The image draft is
-session-local: save/revert before changing routes or targets. Image controls are
-currently English; broader localisation and small-screen visual review remain.
+performed. Unsaved image state warns before browser unload. In browsers with the Navigation
+API (verified with the local Chromium fixture), changing cabinet/drawer/SPA route
+or traversing history asks before discarding dirty work or leaving a pending
+request. Cancel keeps the current editor. Older browsers fall back to link-click
+and unload guards; programmatic SPA/history navigation there is not guaranteed.
+The draft is session-local: save/revert before changing targets. In image mode,
+Ctrl/Cmd+Z and Ctrl+Y / Cmd+Shift+Z use image history only while focus is within
+the editor, excluding numeric/text inputs (which retain native text undo).
+A committed upload whose subsequent preview read/decoding fails is explicitly
+reported as **saved, preview unavailable**, not a failed upload; reload to retry.
+Image controls use Lingui messages; untranslated catalogs fall back to English.
+Local Chromium fixture checks cover reachable controls at 390px and an extreme
+10:0.001 normalized transform, not a comprehensive mobile/visual audit. No new
+live screenshots were taken; owner screenshots remain unchanged.
 
 ```mermaid
 flowchart TD

@@ -78,3 +78,30 @@ test('cabinet and two drawer references retain independent transforms', async ({
     await expect(page.getByTestId('background-image')).toHaveAttribute('opacity', String([0.2, 0.4, 0.6][index]));
   }
 });
+
+test('narrow image controls remain reachable and native SPA navigation guards dirty work', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, { path: '/drawers/drawer-1/design', feature: 'RenderDrawerDesigner' });
+  await expect(page.getByRole('button', { name: 'Upload background' })).toBeEnabled();
+  await page.locator('input[type=file]').setInputFiles({ name: 'reference.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByTestId('background-image')).toBeVisible();
+  await page.getByLabel('Edit background image', { exact: true }).check();
+  await page.getByLabel('Lock background', { exact: true }).uncheck();
+  await page.getByLabel('Preserve aspect ratio', { exact: true }).uncheck();
+  await page.getByLabel('Background width (canvas fraction)', { exact: true }).fill('10');
+  await page.getByLabel('Background height (canvas fraction)', { exact: true }).fill('0.001');
+  await expect(page.getByTestId('background-image')).toHaveAttribute('height', '0.3');
+  await page.getByRole('application').focus();
+  await page.keyboard.press('Control+z');
+  await expect(page.getByLabel('Background height (canvas fraction)', { exact: true })).not.toHaveValue('0.001');
+  const original = page.url();
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.evaluate(() => history.pushState({}, '', '/different-spa-route'));
+  expect(page.url()).toBe(original);
+  await expect(page.getByText('Unsaved background changes', { exact: true })).toBeVisible();
+  const save = page.getByRole('button', { name: 'Save background', exact: true });
+  await save.scrollIntoViewIfNeeded();
+  await expect(save).toBeInViewport();
+  await save.click();
+  await expect(page.getByText('Unsaved background changes', { exact: true })).toHaveCount(0);
+});

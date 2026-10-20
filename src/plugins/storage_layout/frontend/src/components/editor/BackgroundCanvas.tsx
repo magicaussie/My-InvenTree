@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import {
   Alert,
   Button,
@@ -25,6 +26,8 @@ export interface BackgroundMetadata {
   locked: boolean;
   aspect_locked: boolean;
 }
+const documentGlobal = globalThis.document;
+
 interface Document {
   image_url: string | null;
   metadata: BackgroundMetadata;
@@ -65,6 +68,7 @@ function BackgroundSession(props: Props) {
   const [mode, setMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
   const past = useRef<BackgroundMetadata[]>([]);
   const future = useRef<BackgroundMetadata[]>([]);
   const alive = useRef(true);
@@ -73,6 +77,33 @@ function BackgroundSession(props: Props) {
     !!metadata &&
     JSON.stringify(metadata) !== JSON.stringify(document?.metadata);
   useDirtyUnloadGuard(dirty || busy);
+  useEffect(() => {
+    if (!dirty && !busy) return;
+    const message = t`Discard unsaved background changes or leave a pending image request?`;
+    const navigation = (
+      window as Window & {
+        navigation?: EventTarget;
+      }
+    ).navigation;
+    // The Navigation API covers host SPA navigation, history traversal and links
+    // before the host router can unmount this identity-keyed session.
+    const guard = (event: Event) => {
+      if (event.cancelable && !window.confirm(message)) event.preventDefault();
+    };
+    const click = (event: MouseEvent) => {
+      const link = (event.target as Element)?.closest?.('a[href]');
+      if (link && !window.confirm(message)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    if (navigation) navigation.addEventListener('navigate', guard);
+    else documentGlobal.addEventListener('click', click, true);
+    return () => {
+      navigation?.removeEventListener('navigate', guard);
+      documentGlobal.removeEventListener('click', click, true);
+    };
+  }, [dirty, busy]);
   useEffect(() => {
     alive.current = true;
     setBusy(true);
@@ -146,12 +177,13 @@ function BackgroundSession(props: Props) {
       (file.size > 8 * 1024 * 1024 ||
         !['image/png', 'image/jpeg', 'image/webp'].includes(file.type))
     ) {
-      setError('Choose PNG, JPEG or WebP, at most 8 MiB.');
+      setError(t`Choose PNG, JPEG or WebP, at most 8 MiB.`);
       return;
     }
     requestBusy.current = true;
     setBusy(true);
     setError(null);
+    setPreviewError(false);
     const form = new FormData();
     if (file) form.append('image', file);
     try {
@@ -175,10 +207,14 @@ function BackgroundSession(props: Props) {
       if (method !== 'patch') {
         setUrl(null);
         if (response.data.image_url) {
-          const content = await api.get(`${endpoint}content/`, {
-            responseType: 'blob'
-          });
-          if (alive.current) setUrl(URL.createObjectURL(content.data));
+          try {
+            const content = await api.get(`${endpoint}content/`, {
+              responseType: 'blob'
+            });
+            if (alive.current) setUrl(URL.createObjectURL(content.data));
+          } catch {
+            if (alive.current) setPreviewError(true);
+          }
         }
       }
     } catch (failure) {
@@ -190,6 +226,22 @@ function BackgroundSession(props: Props) {
     } finally {
       requestBusy.current = false;
       if (alive.current) setBusy(false);
+    }
+  };
+  const undo = () => {
+    if (disabled || !metadata) return;
+    const previous = past.current.pop();
+    if (previous) {
+      future.current.push(metadata);
+      setMetadata(previous);
+    }
+  };
+  const redo = () => {
+    if (disabled || !metadata) return;
+    const next = future.current.pop();
+    if (next) {
+      past.current.push(metadata);
+      setMetadata(next);
     }
   };
   const bounds = canvas.bounds;
@@ -218,20 +270,32 @@ function BackgroundSession(props: Props) {
           };
           probe.src = event.currentTarget.href.baseVal;
         }}
-        onError={() => setError('Background image could not be loaded.')}
+        onError={() => setPreviewError(true)}
       />
     ) : null;
   return (
     <Stack
       gap='xs'
+      style={{ minWidth: 0 }}
       data-background-editor={mode ? 'active' : undefined}
       onKeyDown={(event) => {
-        if (mode) event.stopPropagation();
+        if (!mode) return;
+        event.stopPropagation();
+        const target = event.target as HTMLElement;
+        if (target.closest('input, textarea, [contenteditable=true]')) return;
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          ['z', 'y'].includes(event.key.toLowerCase())
+        ) {
+          event.preventDefault();
+          if (event.shiftKey || event.key.toLowerCase() === 'y') redo();
+          else undo();
+        }
       }}
     >
       <Group wrap='wrap'>
         <Checkbox
-          label='Edit background image'
+          label={t`Edit background image`}
           checked={mode}
           disabled={disabled || !url}
           onChange={(event) => setMode(event.currentTarget.checked)}
@@ -244,7 +308,9 @@ function BackgroundSession(props: Props) {
         >
           {(buttonProps) => (
             <Button {...buttonProps} disabled={disabled || dirty}>
-              {url ? 'Replace background' : 'Upload background'}
+              {document?.image_url
+                ? t`Replace background`
+                : t`Upload background`}
             </Button>
           )}
         </FileButton>
@@ -254,31 +320,36 @@ function BackgroundSession(props: Props) {
           onClick={() => {
             if (
               window.confirm(
-                'Remove this background reference? The stored image is retained.'
+                t`Remove this background reference? The stored image is retained.`
               )
             )
               void mutate('delete');
           }}
         >
-          Remove background
+          {t`Remove background`}
         </Button>
         <Text size='xs'>
           {busy
-            ? 'Saving background…'
+            ? t`Saving background…`
             : dirty
-              ? 'Unsaved background changes'
-              : 'Background saved separately from layout'}
+              ? t`Unsaved background changes`
+              : t`Background saved separately from layout`}
         </Text>
       </Group>
       {layoutDirty && (
         <Text size='xs'>
-          Save or revert layout changes before editing its background.
+          {t`Save or revert layout changes before editing its background.`}
         </Text>
+      )}
+      {previewError && (
+        <Alert color='yellow' role='alert'>
+          {t`Background reference is saved, but its preview could not be loaded. Reload the editor to retry; do not upload again just to retry the preview.`}
+        </Alert>
       )}
       {error && (
         <Alert color='red' role='alert'>
-          {error} Reload the editor after a revision conflict; local changes
-          have not been discarded.
+          {error}{' '}
+          {t`Reload the editor after a revision conflict; local changes have not been discarded.`}
         </Alert>
       )}
       {mode && metadata && (
@@ -289,9 +360,9 @@ function BackgroundSession(props: Props) {
                 key={field}
                 label={
                   {
-                    visible: 'Show background',
-                    locked: 'Lock background',
-                    aspect_locked: 'Preserve aspect ratio'
+                    visible: t`Show background`,
+                    locked: t`Lock background`,
+                    aspect_locked: t`Preserve aspect ratio`
                   }[field]
                 }
                 checked={metadata[field]}
@@ -302,7 +373,7 @@ function BackgroundSession(props: Props) {
               />
             ))}
             <NumberInput
-              label='Background opacity'
+              label={t`Background opacity`}
               min={0}
               max={1}
               step={0.05}
@@ -317,7 +388,7 @@ function BackgroundSession(props: Props) {
             {(['x', 'y', 'width', 'height'] as const).map((field) => (
               <NumberInput
                 key={field}
-                label={`Background ${field} (canvas fraction)`}
+                label={t`Background ${field} (canvas fraction)`}
                 value={metadata[field]}
                 min={field === 'x' || field === 'y' ? -10 : 0.0001}
                 max={field === 'x' || field === 'y' ? 10 : 20}
@@ -339,27 +410,15 @@ function BackgroundSession(props: Props) {
           <Group>
             <Button
               disabled={disabled || past.current.length === 0}
-              onClick={() => {
-                const previous = past.current.pop();
-                if (previous && metadata) {
-                  future.current.push(metadata);
-                  setMetadata(previous);
-                }
-              }}
+              onClick={undo}
             >
-              Undo background
+              {t`Undo background`}
             </Button>
             <Button
               disabled={disabled || future.current.length === 0}
-              onClick={() => {
-                const next = future.current.pop();
-                if (next && metadata) {
-                  past.current.push(metadata);
-                  setMetadata(next);
-                }
-              }}
+              onClick={redo}
             >
-              Redo background
+              {t`Redo background`}
             </Button>
             <Button
               disabled={disabled || metadata.locked}
@@ -374,13 +433,13 @@ function BackgroundSession(props: Props) {
                 });
               }}
             >
-              Fit background
+              {t`Fit background`}
             </Button>
             <Button
               disabled={disabled || !dirty}
               onClick={() => void mutate('patch')}
             >
-              Save background
+              {t`Save background`}
             </Button>
             <Button
               disabled={busy || !dirty}
@@ -390,7 +449,7 @@ function BackgroundSession(props: Props) {
                 setMetadata(document?.metadata ?? null);
               }}
             >
-              Revert background
+              {t`Revert background`}
             </Button>
           </Group>
         </Stack>
@@ -419,7 +478,7 @@ function BackgroundSession(props: Props) {
               ? [
                   {
                     id: 'background',
-                    label: 'Background image',
+                    label: t`Background image`,
                     rect,
                     fillOpacity: 0
                   }

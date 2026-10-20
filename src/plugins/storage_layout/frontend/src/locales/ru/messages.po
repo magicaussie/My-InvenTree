@@ -652,6 +652,102 @@ msgstr ""
 msgid "Locate item"
 msgstr ""
 
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Discard unsaved background changes or leave a pending image request?"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Choose PNG, JPEG or WebP, at most 8 MiB."
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Edit background image"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Replace background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Upload background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Remove this background reference? The stored image is retained."
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Remove background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Saving background…"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Unsaved background changes"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Background saved separately from layout"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Save or revert layout changes before editing its background."
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Background reference is saved, but its preview could not be loaded. Reload the editor to retry; do not upload again just to retry the preview."
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Reload the editor after a revision conflict; local changes have not been discarded."
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Show background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Lock background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Preserve aspect ratio"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Background opacity"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Background {field} (canvas fraction)"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Undo background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Redo background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Fit background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Save background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Revert background"
+msgstr ""
+
+#: src/components/editor/BackgroundCanvas.tsx
+msgid "Background image"
+msgstr ""
+
 #: src/components/editor/EditorCanvas.tsx
 #~ msgid "Drawing — drag on cabinet"
 #~ msgstr ""

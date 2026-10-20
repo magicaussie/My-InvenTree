@@ -24,6 +24,10 @@ drafts. Owner untracked task/scripts/settings/screenshots must remain untouched.
 See `docs/ai/002J-Q-DEVELOPMENT-PROPOSAL.md` for exact local test evidence and
 release gates. No live Development acceptance, privileged commands, backup/restore,
 Main, hardware, workers or live database operations are authorized/performed here.
+Review corrections add Navigation API dirty/pending-route protection (legacy
+link/unload fallback), editor-scoped image keyboard undo/redo, distinct committed
+upload/preview failure status and Lingui controls. Local evidence: 329 frontend,
+30 Chromium fixture, 561 backend and 7 migration tests; not live acceptance.
 Older checkpoints below are historical, not current source behavior.
 
 ## Saved structure reference — source implementation, not deployed

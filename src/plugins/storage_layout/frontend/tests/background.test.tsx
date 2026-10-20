@@ -253,4 +253,104 @@ describe('independent authenticated background canvases', () => {
     expect(f.props.onMove).not.toHaveBeenCalled();
     expect(f.api.get).toHaveBeenCalledTimes(2);
   });
+  it('scopes keyboard history to image editor, excluding numeric inputs', async () => {
+    const f = fixture();
+    render(f.element());
+    await edit();
+    fireEvent.click(screen.getByLabelText('Lock background'));
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    fireEvent.keyDown(screen.getByLabelText('Background opacity'), {
+      key: 'z',
+      ctrlKey: true
+    });
+    expect(screen.getByLabelText('Lock background')).not.toBeChecked();
+    fireEvent.keyDown(screen.getByRole('application'), {
+      key: 'z',
+      ctrlKey: true
+    });
+    expect(screen.getByLabelText('Lock background')).toBeChecked();
+    fireEvent.keyDown(screen.getByRole('application'), {
+      key: 'z',
+      metaKey: true,
+      shiftKey: true
+    });
+    expect(screen.getByLabelText('Lock background')).not.toBeChecked();
+  });
+  it('guards SPA/history navigation while dirty and removes guard after revert', async () => {
+    const navigation = new EventTarget();
+    Object.defineProperty(window, 'navigation', {
+      configurable: true,
+      value: navigation
+    });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    try {
+      const f = fixture('drawers');
+      render(f.element());
+      await edit();
+      fireEvent.click(screen.getByLabelText('Lock background'));
+      const denied = new Event('navigate', { cancelable: true });
+      navigation.dispatchEvent(denied);
+      expect(denied.defaultPrevented).toBe(true);
+      confirm.mockReturnValue(true);
+      const allowed = new Event('navigate', { cancelable: true });
+      navigation.dispatchEvent(allowed);
+      expect(allowed.defaultPrevented).toBe(false);
+      fireEvent.click(screen.getByText('Revert background'));
+      confirm.mockClear();
+      navigation.dispatchEvent(new Event('navigate', { cancelable: true }));
+      expect(confirm).not.toHaveBeenCalled();
+    } finally {
+      confirm.mockRestore();
+      Reflect.deleteProperty(window, 'navigation');
+    }
+  });
+  it('distinguishes committed upload from failed preview retrieval', async () => {
+    const f = fixture();
+    const view = render(f.element());
+    await screen.findByTestId('background-image');
+    f.api.request.mockResolvedValueOnce({
+      data: { image_url: 'saved', metadata },
+      headers: { etag: '"4"' }
+    } as never);
+    f.api.get.mockRejectedValueOnce(new Error('Preview unavailable'));
+    fireEvent.change(
+      view.container.querySelector('input[type=file]') as HTMLInputElement,
+      {
+        target: {
+          files: [new File(['png'], 'view.png', { type: 'image/png' })]
+        }
+      }
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Background reference is saved, but its preview could not be loaded'
+    );
+    expect(f.props.onBackgroundSaved).toHaveBeenCalledWith('"4"');
+    expect(
+      screen.getByText('Background saved separately from layout')
+    ).toBeInTheDocument();
+    expect(f.api.request).toHaveBeenCalledTimes(1);
+  });
+  it('guards fallback links and stops guarding after the editor unmounts', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const f = fixture();
+    const view = render(f.element());
+    await edit();
+    fireEvent.click(screen.getByLabelText('Lock background'));
+    const link = document.createElement('a');
+    link.href = '/another-drawer';
+    document.body.appendChild(link);
+    try {
+      expect(fireEvent.click(link)).toBe(false);
+      expect(confirm).toHaveBeenCalledOnce();
+      view.unmount();
+      confirm.mockClear();
+      // Avoid jsdom's actual navigation while verifying our listener was removed.
+      link.addEventListener('click', (event) => event.preventDefault());
+      fireEvent.click(link);
+      expect(confirm).not.toHaveBeenCalled();
+    } finally {
+      link.remove();
+      confirm.mockRestore();
+    }
+  });
 });
