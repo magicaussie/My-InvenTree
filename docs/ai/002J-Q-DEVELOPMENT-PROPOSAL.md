@@ -1,3 +1,10 @@
+> Corrected application input (not deployed):
+> `56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a`.
+> Archive `/tmp/myinventree-002jq-image-review-56271a1ad.tar`;
+> SHA-256 `0bee583df53713b8a6c92506ec41bfb3ffd385646977c0d5493f6ff87916c4ad`.
+> Reproduce with `git archive --format=tar --output=/tmp/myinventree-002jq-image-review-56271a1ad.tar 56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a`.
+> This later records-only pin does not change the application archive.
+
 # 002J-Q — image frontend implementation and Development-only proposal
 
 ## Decision: NOT READY FOR ACTIVATION
