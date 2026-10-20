@@ -1,5 +1,19 @@
 # My-InvenTree deployment — status and checkpoints
 
+## 002J-Q deployment tooling correction — local validation only
+
+The exact pending application remains pinned to
+`56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a`, archive SHA-256
+`0bee583df53713b8a6c92506ec41bfb3ffd385646977c0d5493f6ff87916c4ad`.
+See [the exact approval/command runbook](ai/002J-Q-EXACT-DEPLOYMENT.md) for
+separately checksum-pinned tooling, isolated-rehearsal approval, `prepare`,
+`verify`, and preactivation-only `recover-originals` commands. Preparation now
+returns with original services healthy rather than leaving a stopped-service gap.
+Postactivation verification is fail-closed and read-only, not automatic rollback.
+No new live inspection, backup, restore, deployment or browser acceptance is
+claimed. Main, workers, hardware, unrelated services and volume deletion remain
+forbidden. Local mocked/static evidence cannot authorize execution.
+
 ## Pending source review — 002J-Q cabinet/drawer image backgrounds (not deployed)
 
 Source retires Cabinet / Structure and opening guides while preserving all backend
