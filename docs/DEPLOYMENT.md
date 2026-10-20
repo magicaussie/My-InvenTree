@@ -1,21 +1,16 @@
 # My-InvenTree deployment — status and checkpoints
 
-## Pending source review — saved structure reference controls (not deployed)
+## Pending source review — 002J-Q cabinet/drawer image backgrounds (not deployed)
 
-The working-tree frontend adds explicit **Load / use saved structure** in Drawers,
-proportional mm-to-logical display projection, optional opening-guided drawing and
-integer-inward fitted drawer creation, plus undoable partition/shelf span controls
-and active-tab keyboard isolation. These changes reuse the existing canvas and
-layout save commands; no backend schema, migration, inventory, mapping or hardware
-contract changes are introduced. See the updated [graphical guide](storage-layout/README.md#saved-structure--drawer-reference--source-implementation-not-yet-deployed).
-
-Local frontend suite: **327 tests passed across 18 files**, with TypeScript checking passing. Regression tests include cabinet-switch isolation for pending reference requests and Structure undo history.
-These are local source tests, not live acceptance of the new controls. No image
-build, activation, remote restart, privileged operation or Main/hardware action was
-performed for this change. The running image IDs recorded below are the prior
-checkpoint, not freshly inspected by this task. A new exact reviewed source/archive
-and owner approval remain required before any privileged image build/activation.
-This source change is recorded separately from the deployed application. Deployment remains gated on approval of its exact commit/archive and bounded build commands.
+Source retires Cabinet / Structure and opening guides while preserving all backend
+structure data. Secure image APIs and independent cabinet/drawer underlays and
+explicit image editing controls are implemented. No live Development system was
+modified, inspected or restarted for this follow-up. Local frontend/backend/browser
+fixture evidence, schema rationale, limitations, and the gated backup/isolated
+restore/build/activation/rollback procedure are in
+[the Development proposal](ai/002J-Q-DEVELOPMENT-PROPOSAL.md). Exact source and archive
+are pinned in [the delivery manifest](ai/002J-Q-DELIVERY-MANIFEST.md). Do not activate
+without owner approval. Main, live DB, workers and hardware remain untouched.
 
 For day-to-day cabinet and drawer/bin editing, see the
 [Storage Layout graphical user guide](storage-layout/README.md). Screenshots are

@@ -40,44 +40,55 @@ review-tag images whose build provenance was not established there. It is histor
 context, not evidence about the current Cabinet / Structure image build. See the
 [current deployment evidence](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
 
-## 002J-Q source checkpoint — incomplete, not deployed
+## 002J-Q background images — local source, not deployed
 
-The source now retires **Cabinet / Structure**, saved-structure overlays, opening
-selection and fitted-opening drawer creation. Drawers and bins remain ordinary
-logical rectangles. Existing `Cabinet.structure` data and its backend API remain
-intact for compatibility; no cleanup or conversion is performed.
+**Cabinet / Structure** and opening-guided drawer creation are retired. Previously
+saved `Cabinet.structure` and its backend API are retained without conversion.
+The following controls are implemented and locally fixture-tested, not authenticated
+Development browser evidence. Historical Structure screenshots remain audit records.
 
-The backend now supports independent cabinet-front and drawer-interior background
-references. **The upload controls and canvas image layers are not yet implemented.**
-Do not interpret this checkpoint as a usable image editor or approved release.
-No new authenticated Development browser evidence or screenshots were captured.
-Historical Structure screenshots remain in the repository for audit only; see
-[the deployment record](../DEPLOYMENT.md) for the previously activated feature.
+1. Save or revert layout changes, then choose **Upload background** (PNG/JPEG/WebP,
+   at most 8 MiB and 20 million pixels; animated images are rejected). Upload and
+   replacement save immediately. Cabinet images are front views; each drawer has
+   its own independent top-down reference.
+2. Choose **Edit background image**. Ordinary drawer/bin gestures are isolated in
+   this mode; dashed object outlines remain reference-only. Uncheck **Lock background**
+   to move the image with the canvas/arrow keys or resize with handles or labelled
+   numeric controls. **Fit background** centres and fits the intrinsic aspect ratio.
+3. **Show background**, **Background opacity**, **Lock background** and **Preserve
+   aspect ratio** control presentation only. Aspect preservation is on by default.
+   **Undo background**, **Redo background** and **Revert background** affect only the
+   image draft. **Save background** explicitly saves metadata, separately from layout.
+4. Exit image editing to select, draw, move or resize drawers/bins. Underlays never
+   intercept those gestures. The same zoom/pan transform applies to both layers.
+5. **Replace background** retains placement/settings. **Remove background** asks for
+   confirmation and immediately detaches the reference; old media is retained for
+   reference-aware cleanup, not physically deleted. Inventory is never removed.
+
+Position and size are fractions of the current canvas, with top-left origin,
+x right and y down. For example width 0.5 spans half the canvas. Changing logical
+canvas dimensions scales each reference axis; it does not rewrite metadata or
+calibrate physical units. Aspect lock preserves the current placement ratio while
+resizing; Fit uses the actual source ratio. No image changes object IDs, rectangle
+geometry, stock locations, quantities, topology, mappings or pixel allocations.
+
+Pending saves disable image controls; failed upload/replacement keeps the previous
+reference, and metadata save failures keep the draft. Revision conflicts require
+reloading the editor after preserving/reverting local work; no automatic merge is
+performed. Unsaved image state warns before browser unload. The image draft is
+session-local: save/revert before changing routes or targets. Image controls are
+currently English; broader localisation and small-screen visual review remain.
 
 ```mermaid
 flowchart TD
-    A[Retired Structure UI] --> B[Saved backend structure retained]
-    C[Cabinet front reference] --> D[Independent normalized image metadata]
-    E[Drawer top-down reference] --> D
-    D --> F[Secured image API implemented]
-    F --> G[Image editor controls and canvas layers still pending]
-    G --> H[Complete acceptance before proposing activation]
+    A[Cabinet front image] --> B[Authenticated private raster underlay]
+    C[Independent drawer top-down image] --> B
+    B --> D[Explicit image edit mode]
+    D --> E[Save normalized reference metadata]
+    E --> F[Exit image mode and edit ordinary rectangles]
+    F --> G[Save layout independently]
+    G --> H[Human review and separately approved Development acceptance]
 ```
-
-Image coordinates are normalized canvas fractions: rendered position is
-`(x × canvas width, y × canvas height)` and rendered size is
-`(width × canvas width, height × canvas height)`. Changing canvas dimensions scales
-the reference proportionally per axis; it never edits drawers, bins, stock or LED
-allocations. Aspect lock is persisted editing intent, not automatic physical
-calibration or a backend geometry constraint. Source replacement preserves metadata.
-
-Only PNG, JPEG and WebP raster uploads are accepted (8 MiB maximum, 20 million
-pixels, no animation); content must match the declared MIME type. Images are decoded
-and re-encoded as PNG with generated filenames. Reads require the same ownership
-and view permissions as layout reads; writes require change permission and the
-cabinet aggregate revision. Responses expose only authorized content endpoints,
-not storage paths or arbitrary external URLs. Replaced/removed files are retained;
-a separate reference-aware retention policy is required before garbage collection.
 
 ## 1. Find or create a cabinet
 

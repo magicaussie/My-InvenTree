@@ -146,6 +146,7 @@ export interface LayoutEditor {
   toggleSelection: (id: string, additive: boolean) => void;
   save: () => Promise<boolean>;
   refresh: () => Promise<void>;
+  acceptBackgroundEtag: (etag: string | null) => void;
   revert: () => void;
   discardRecovery: () => void;
   acceptRecovery: () => void;
@@ -417,6 +418,12 @@ export function useLayoutEditor(options: UseLayoutEditorOptions): LayoutEditor {
     toggleSelection,
     save,
     refresh,
+    acceptBackgroundEtag: (value) => {
+      if (value) {
+        setEtag(value);
+        setRevision(Number(value.replaceAll('"', '')));
+      }
+    },
     revert,
     discardRecovery,
     acceptRecovery

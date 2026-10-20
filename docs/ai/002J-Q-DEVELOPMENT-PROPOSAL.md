@@ -1,9 +1,10 @@
-# 002J-Q — incomplete source checkpoint and Development-only proposal
+# 002J-Q — image frontend implementation and Development-only proposal
 
 ## Decision: NOT READY FOR ACTIVATION
 
-This checkpoint retires the Structure frontend and implements the secured image
-backend foundation. It is **not the complete requested feature**. The existing
+This source retires the Structure frontend and implements the secured image
+backend plus cabinet/drawer canvas controls. Local verification is not full release
+acceptance: the authenticated Development and recovery gates below remain pending. The existing
 Development deployment has not been modified. No authenticated live browser,
 service restart, migration, backup, restore, privileged command, controller action,
 worker activation or Main operation was performed in this task.
@@ -116,29 +117,67 @@ From `src/plugins/storage_layout/frontend`:
   owner's historical four failures are exactly reproduced or all resolved.
 - Final Ruff check of changed Python files and `git diff --check`: passed.
 
-## Outstanding work / release blockers
+## Frontend completion follow-up — local results (2026-10-20)
 
-1. Cabinet-front and drawer-top-down image rendering beneath entity overlays.
-2. Explicit image-edit mode, authenticated blob fetch/object-URL lifecycle,
-   upload/replace/remove controls, drag/resize/fit/reset, opacity/show/lock/aspect,
-   keyboard/focus accessibility and narrow-layout/loading/error states.
-3. Independent draft/undo semantics; stale target/request guards; pending upload,
-   conflict/save failure presentation; do not overwrite edits made during saves.
-   Coordinate root CAS with existing unsaved layout edits and ETags.
-4. Frontend image tests and fixture browser image workflow, including no-image
-   legacy records, distinct drawer images and unchanged inventory/topology.
-5. Resolve or explicitly approve the remaining canvas regression; complete lint.
-6. Authenticated isolated Development fixture with actual stock and active mapping,
-   before/after geometry, native locations, stock, topology, mappings/allocations,
-   save/refresh/reopen and approved restart persistence. Never call controllers.
-7. Screenshots of the implemented image workflow after separate approval; existing
-   owner screenshots and scripts remain untouched. Guide diagram is illustrative.
+`BackgroundCanvas.tsx` is shared by CabinetDesigner and DrawerDesigner, keyed by
+target identity. It loads content using the host authenticated Axios client and
+creates/revokes private blob URLs; returned URLs are never followed. It renders
+normalized image geometry below transparent drawer/bin overlays. Explicit image
+mode isolates pointer/keyboard object gestures and provides labelled numeric
+controls, move/resize, fit, visibility, opacity, lock/aspect lock, bounded separate
+undo/redo, revert, immediate upload/replace/confirmed removal and explicit metadata
+save. Busy/failed/dirty states are visible. Failed replacements keep the previous
+image. A late target response is ignored. Save controls freeze the image draft;
+image save callbacks update only the root ETag, never reload or replace concurrent
+layout edits. Dirty layout blocks starting image mutations; concurrent aggregate
+writes still receive authoritative CAS protection. Unsaved image edits are not
+persisted to local storage; save/revert before route changes.
+
+Fresh complete local runs (same backend environment and commands above):
+- Backend regression: **561 passed**, 51.713s, including populated active mapping
+  and pixel allocation preservation; no controller transport is contacted.
+- Migration suite: **7 passed**, 22.414s. Migration drift: no changes.
+- Frontend `npm run typecheck`: passed.
+- Frontend `npm test -- --reporter=dot`: **325 passed, 17 files**; new
+  image tests cover both normalized layers, dimensions, authenticated content,
+  locks/aspect/fit/visibility/opacity, CAS failure, target switching, URL cleanup,
+  undo/redo, failed replacement and pending-save/intervening-layout safety.
+- `npm run e2e`: **29 passed**, final rerun 24.9s. Existing 26 all pass, including the formerly failing deselection
+  test. Its assertion/hit-testing code was not changed: new layout sizing made it
+  pass; this is not proof of an independently repaired hit-testing root cause.
+- New browser tests cover upload/edit isolation, metadata save, reopen, removal,
+  drawing drawers/bins over images, and independent cabinet/two-drawer metadata.
+  Fixture sessionStorage retains image metadata only. It is not Django/media
+  persistence or authenticated live evidence; fixture content uses a synthetic PNG.
+- Two initial independent-image browser attempts timed out: first selected an
+  unchanged default opacity (Save correctly disabled); second entered an unsafe
+  floating-point string Mantine did not emit as a number. Explicit decimal fixture
+  values resolved it. Review also fixed the fixture drawer endpoint, which had
+  always returned drawer 1 instead of the requested drawer.
+- Changed-source/unit Biome checks and `git diff --check`: passed. Full lint still
+  fails only on unchanged `tests/commands.test.ts` formatting (two assertions).
+  Existing React act and backend registry/static-fixture warnings remain.
+
+## Remaining release gates and limitations
+
+1. Human review and authenticated isolated Development acceptance with two real,
+   distinct drawer images, actual populated stock and active mapping snapshots,
+   low-permission/cross-owner denial, stale CAS and approved restart persistence.
+2. Backup and isolated DB/media restore verification under the existing trusted
+   mechanism; no recovery/deployment commands were executed in this task.
+3. Narrow/mobile visual acceptance, extreme-aspect/high-resolution visual checks,
+   localisation of new English image controls, route-change draft-discard warning
+   (browser unload is guarded), and image keyboard undo/redo shortcuts (buttons
+   exist; layout shortcuts do not receive image-focus keystrokes).
+4. No new authenticated screenshots. Updated guide diagram is illustrative. The
+   owner's historical four broader browser failures were not independently
+   identified; do not equate them with the now-passing 26-test local harness.
 
 ## Proposed exact Development-only build/activation sequence — approval required
 
-Do not execute this sequence now. First complete the blockers, publish a new exact
-application commit/archive manifest, and obtain owner approval for that artifact.
-This checkpoint archive is for review only, not an activation candidate.
+Do not execute this sequence now. First review this exact application archive and the remaining gates above, and
+obtain owner approval for that artifact and bounded Development-only commands.
+The manifest pins the reviewed source; this proposal is not execution approval.
 
 1. Freeze the reviewed application commit. Produce `git archive --format=tar` of
    that exact commit; SHA-256 the resulting bytes. Review tracked-only contents,

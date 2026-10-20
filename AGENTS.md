@@ -12,18 +12,19 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
-## 002J-Q source checkpoint — incomplete; do not activate
+## 002J-Q image source implementation — not deployed
 
-Source retires the Cabinet / Structure frontend and opening-reference workflow,
-but preserves `Cabinet.structure` and backend compatibility. Additive migration
-`0005_background_images` adds independent cabinet/drawer FileFields and normalized
-metadata. Image content is served through ownership-checked plugin endpoints;
-all writes use aggregate CAS. Automatic django-cleanup is disabled for these two
-models to avoid deleting shared references; failed new writes clean their own file.
-Image editor UI/canvas integration and image browser acceptance remain pending.
-This is not a completed image feature or a deployed build. Existing historical
-checkpoints below describe older builds, not this source. See the 002J-Q proposal
-and test report in `docs/DEPLOYMENT.md`. No Main, live DB or hardware work is allowed.
+Structure frontend/opening reference UI is retired; backend `Cabinet.structure`
+and existing saved data remain. Additive 0005 provides independent Cabinet/Drawer
+FileFields and normalized metadata, authenticated PNG streaming and root CAS.
+`BackgroundCanvas` now provides private blob underlays and explicit image editing,
+upload/replace/remove, fit, placement, opacity, visibility, locks and separate
+undo/redo/save. Image saves adopt only the aggregate ETag, never reload layout
+drafts. Owner untracked task/scripts/settings/screenshots must remain untouched.
+See `docs/ai/002J-Q-DEVELOPMENT-PROPOSAL.md` for exact local test evidence and
+release gates. No live Development acceptance, privileged commands, backup/restore,
+Main, hardware, workers or live database operations are authorized/performed here.
+Older checkpoints below are historical, not current source behavior.
 
 ## Saved structure reference — source implementation, not deployed
 

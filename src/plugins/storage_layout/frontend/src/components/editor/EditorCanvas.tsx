@@ -51,6 +51,7 @@ export interface CanvasEntity {
   label: string;
   rect: Rect;
   archived?: boolean;
+  fillOpacity?: number;
   severity?: 'error' | 'warning' | null;
   /** Optional secondary text (e.g. LED range) drawn under the label. */
   detail?: string;
@@ -856,6 +857,7 @@ export function EditorCanvas(props: EditorCanvasProps) {
                     width={rect.width}
                     height={rect.height}
                     rx={2}
+                    fillOpacity={entity.fillOpacity}
                     fill={
                       highlighted
                         ? 'var(--mantine-color-green-2)'

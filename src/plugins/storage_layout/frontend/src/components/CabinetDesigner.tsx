@@ -47,7 +47,8 @@ import { useDirtyUnloadGuard, useLayoutEditor } from '../state/layoutDraft';
 import { topologyFromDocument } from '../state/mapping';
 import { diagnosticsByEntity, severityForEntity } from '../state/validation';
 import { formatRange, newId, rangeCount } from '../utils';
-import { type CanvasEntity, EditorCanvas } from './editor/EditorCanvas';
+import { BackgroundCanvas } from './editor/BackgroundCanvas';
+import type { CanvasEntity } from './editor/EditorCanvas';
 import { FunctionColorsPanel } from './editor/FunctionColorsPanel';
 import { DrawerInspector } from './editor/Inspector';
 import { MappingPanel } from './editor/MappingPanel';
@@ -548,7 +549,12 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable;
-      if (typing || activeTab !== 'layout') return;
+      if (
+        typing ||
+        activeTab !== 'layout' ||
+        target.closest('[data-background-editor=active]')
+      )
+        return;
 
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
@@ -860,7 +866,14 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
               gap='xs'
               style={{ flex: '1 1 520px', minWidth: 300, minHeight: 480 }}
             >
-              <EditorCanvas
+              <BackgroundCanvas
+                api={context.api}
+                target='cabinets'
+                targetId={cabinetId}
+                layoutDirty={editor.dirty}
+                readOnly={editor.status !== 'ready'}
+                rootEtag={editor.etag}
+                onBackgroundSaved={editor.acceptBackgroundEtag}
                 bounds={{
                   width: editor.draft.cabinet.width_units,
                   height: editor.draft.cabinet.height_units

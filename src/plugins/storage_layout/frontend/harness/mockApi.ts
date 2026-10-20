@@ -351,7 +351,7 @@ function sessionStatus(state: MockState, sessionId: string) {
   };
 }
 
-function drawerLayoutDocument(state: MockState) {
+function drawerLayoutDocument(state: MockState, id = 'drawer-1') {
   return {
     schema_version: 1,
     cabinet: {
@@ -360,8 +360,8 @@ function drawerLayoutDocument(state: MockState) {
       active_mapping: state.cabinet.active_mapping,
       total_pixels: state.cabinet.total_pixels
     },
-    drawer: { ...state.drawers[0] },
-    bins: state.bins.map((bin) => ({ ...bin })),
+    drawer: { ...state.drawers.find((drawer) => drawer.id === id) },
+    bins: state.bins.filter((bin) => bin.drawer === id).map((bin) => ({ ...bin })),
     archive_ids: []
   };
 }
@@ -528,6 +528,11 @@ function largeState(): MockState {
 export function createMockApi(options: MockOptions = {}): MockApi {
   const state = options.large ? largeState() : initialState();
   const calls: MockCall[] = [];
+  const backgrounds = new Map<string, { image_url: string | null; metadata: Record<string, unknown> }>();
+  const storedBackgrounds = sessionStorage.getItem('storage-layout-harness-backgrounds');
+  if (storedBackgrounds) for (const [key, value] of JSON.parse(storedBackgrounds)) backgrounds.set(key, value);
+  const defaultBackground = () => ({ image_url: null, metadata: { x: 0, y: 0, width: 1, height: 1, opacity: 0.5, visible: true, locked: true, aspect_locked: true } });
+
 
   function requireMatch(config?: MockConfig) {
     if (state.nextSaveStatus) {
@@ -569,6 +574,26 @@ export function createMockApi(options: MockOptions = {}): MockApi {
       headers: {}
     });
     const doc = (body ?? {}) as Record<string, unknown>;
+    const background = path.match(/^\/(cabinets|drawers)\/([^/]+)\/background\/(content\/)?$/);
+    if (background) {
+      const key = `${background[1]}/${background[2]}`;
+      const value = backgrounds.get(key) ?? defaultBackground();
+      if (background[3]) {
+        const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a6HkAAAAASUVORK5CYII='), (c) => c.charCodeAt(0));
+        return ok(new Blob([bytes], { type: 'image/png' }));
+      }
+      if (method !== 'GET') {
+        requireMatch(config);
+        if (method === 'PATCH') value.metadata = { ...doc };
+        if (method === 'POST') value.image_url = `${BASE}${path}content/`;
+        if (method === 'DELETE') value.image_url = null;
+        backgrounds.set(key, value);
+        sessionStorage.setItem('storage-layout-harness-backgrounds', JSON.stringify([...backgrounds]));
+        state.revision += 1;
+      }
+      return { ...ok(structuredClone(value)), headers: { etag: `"${state.revision}"` } };
+    }
+
 
     if (method === 'GET' && path === '/cabinets/') {
       return ok({
@@ -758,7 +783,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
     }
 
     if (method === 'GET' && /^\/drawers\/[^/]+\/layout\/$/.test(path)) {
-      const response = ok(drawerLayoutDocument(state));
+      const response = ok(drawerLayoutDocument(state, path.split('/')[2]));
       response.headers = etagHeaders(state.revision);
       return response;
     }
@@ -767,7 +792,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
       requireMatch(config);
       state.bins = mapBins((doc.bins ?? []) as Record<string, unknown>[]);
       state.revision += 1;
-      const response = ok(drawerLayoutDocument(state));
+      const response = ok(drawerLayoutDocument(state, path.split('/')[2]));
       response.headers = etagHeaders(state.revision);
       return response;
     }
@@ -967,7 +992,8 @@ export function createMockApi(options: MockOptions = {}): MockApi {
       get: wrap('GET'),
       post: wrap('POST'),
       put: wrap('PUT'),
-      patch: wrap('PATCH')
+      patch: wrap('PATCH'),
+      request: (config: { method: string; url: string; data?: unknown; headers?: Record<string, string> }) => wrap(config.method.toUpperCase())(config.url, config.data, { headers: config.headers })
     },
     calls,
     state,

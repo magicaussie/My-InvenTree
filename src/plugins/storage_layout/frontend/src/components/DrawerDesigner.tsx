@@ -47,7 +47,8 @@ import {
   validateDraft
 } from '../state/validation';
 import { formatRange, newId, rangeCount } from '../utils';
-import { type CanvasEntity, EditorCanvas } from './editor/EditorCanvas';
+import { BackgroundCanvas } from './editor/BackgroundCanvas';
+import type { CanvasEntity } from './editor/EditorCanvas';
 import { BinInspector } from './editor/Inspector';
 import {
   ArchiveConfirmModal,
@@ -570,7 +571,14 @@ export function DrawerDesigner({ context, drawerId }: DrawerDesignerProps) {
             </Paper>
 
             <Stack gap='xs' style={{ flex: 1, minWidth: 320 }}>
-              <EditorCanvas
+              <BackgroundCanvas
+                api={context.api}
+                target='drawers'
+                targetId={drawerId}
+                layoutDirty={dirty}
+                readOnly={status !== 'ready'}
+                rootEtag={etag}
+                onBackgroundSaved={setEtag}
                 bounds={{
                   width: drawer.interior_width,
                   height: drawer.interior_height
