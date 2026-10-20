@@ -115,7 +115,7 @@ describe('independent authenticated background canvases', () => {
     expect(
       screen.getByLabelText('Background height (canvas fraction)')
     ).toHaveValue('0.6');
-    fireEvent.click(screen.getByText('Save background'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save background' }));
     await waitFor(() =>
       expect(f.props.onBackgroundSaved).toHaveBeenCalledWith('"4"')
     );
@@ -151,13 +151,97 @@ describe('independent authenticated background canvases', () => {
     );
     expect(f.api.request).not.toHaveBeenCalled();
   });
+  it.each(['cabinets', 'drawers'] as const)(
+    'preserves the %s background draft and history after a layout save advances root CAS',
+    async (target) => {
+      const f = fixture(target);
+      const view = render(f.element());
+      await edit();
+      fireEvent.click(screen.getByLabelText('Lock background'));
+      view.rerender(f.element({ layoutDirty: true }));
+      expect(
+        screen.getByRole('button', { name: 'Save background' })
+      ).toBeDisabled();
+      f.api.get.mockImplementation(async (url: string) => ({
+        data: url.endsWith('/content/')
+          ? new Blob(['png'])
+          : { image_url: 'https://untrusted.invalid/image', metadata },
+        headers: { etag: '"4"' }
+      }));
+      view.rerender(f.element({ rootEtag: '"4"' }));
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Save background' })
+        ).toBeEnabled()
+      );
+      expect(screen.getByLabelText('Lock background')).not.toBeChecked();
+      expect(
+        screen.getByText('Unsaved background changes')
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Undo background' }));
+      expect(screen.getByLabelText('Lock background')).toBeChecked();
+      fireEvent.click(screen.getByRole('button', { name: 'Redo background' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Save background' }));
+      await waitFor(() => expect(f.api.request).toHaveBeenCalledOnce());
+      expect(f.api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'patch',
+          headers: { 'If-Match': '"4"' },
+          data: { ...metadata, locked: false }
+        })
+      );
+    }
+  );
+  it.each(['metadata', 'replacement', 'revision', 'failed read'])(
+    'does not rebase over a background conflict or unverifiable baseline: %s',
+    async (conflict) => {
+      const f = fixture();
+      const view = render(f.element());
+      await edit();
+      fireEvent.click(screen.getByLabelText('Lock background'));
+      view.rerender(f.element({ layoutDirty: true }));
+      f.api.get.mockImplementation(async (url: string) => {
+        if (conflict === 'failed read') throw new Error('Offline');
+        return {
+          data: url.endsWith('/content/')
+            ? new Blob([conflict === 'replacement' ? 'different png' : 'png'])
+            : {
+                image_url: 'https://untrusted.invalid/image',
+                metadata: {
+                  ...metadata,
+                  opacity: conflict === 'metadata' ? 0.9 : metadata.opacity
+                }
+              },
+          headers: { etag: conflict === 'revision' ? '"5"' : '"4"' }
+        };
+      });
+      f.api.request.mockRejectedValue(new Error('Stale revision'));
+      view.rerender(f.element({ rootEtag: '"4"' }));
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Save background' })
+        ).toBeEnabled()
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Save background' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Stale revision'
+      );
+      expect(f.api.request).toHaveBeenCalledWith(
+        expect.objectContaining({ headers: { 'If-Match': '"3"' } })
+      );
+      expect(
+        screen.getByText('Unsaved background changes')
+      ).toBeInTheDocument();
+      expect(f.props.onBackgroundSaved).not.toHaveBeenCalled();
+    }
+  );
   it('retains the draft and reports a stale or failed save', async () => {
     const f = fixture();
     f.api.request.mockRejectedValue(new Error('Stale revision'));
     render(f.element());
     await edit();
     fireEvent.click(screen.getByLabelText('Lock background'));
-    fireEvent.click(screen.getByText('Save background'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save background' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Stale revision'
     );
@@ -237,7 +321,7 @@ describe('independent authenticated background canvases', () => {
     const view = render(f.element());
     await edit();
     fireEvent.click(screen.getByLabelText('Lock background'));
-    fireEvent.click(screen.getByText('Save background'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save background' }));
     expect(screen.getByLabelText('Background opacity')).toBeDisabled();
     view.rerender(f.element({ layoutDirty: true }));
     await act(async () =>

@@ -28,6 +28,15 @@ export interface BackgroundMetadata {
 }
 const documentGlobal = globalThis.document;
 
+function readImage(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 interface Document {
   image_url: string | null;
   metadata: BackgroundMetadata;
@@ -64,6 +73,9 @@ function BackgroundSession(props: Props) {
   const [metadata, setMetadata] = useState<BackgroundMetadata | null>(null);
   const [etag, setEtag] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const savedImage = useRef<Blob | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const verifiedRoot = useRef(rootEtag);
   const [aspect, setAspect] = useState(1);
   const [mode, setMode] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -121,6 +133,7 @@ function BackgroundSession(props: Props) {
             responseType: 'blob'
           });
           if (cancelled) return;
+          savedImage.current = content.data;
           setUrl(URL.createObjectURL(content.data));
         }
       })
@@ -146,10 +159,54 @@ function BackgroundSession(props: Props) {
     [url]
   );
   useEffect(() => {
-    if (!dirty && !busy && rootEtag) setEtag(rootEtag);
-  }, [rootEtag, dirty, busy]);
+    if (busy || !document) return;
+    if (!rootEtag || rootEtag === etag || rootEtag === verifiedRoot.current) {
+      setSyncing(false);
+      return;
+    }
+    // The aggregate revision also changes on layout saves and reloads. Only
+    // rebase a background draft if its persisted baseline is still unchanged.
+    // Content URLs are stable across replacements, so compare image bytes too.
+    let cancelled = false;
+    setSyncing(true);
+    void (async () => {
+      try {
+        const response = await api.get<Document>(endpoint);
+        if (
+          readEtag(response) !== rootEtag ||
+          response.data.image_url !== document.image_url ||
+          (Object.keys(document.metadata) as (keyof BackgroundMetadata)[]).some(
+            (key) => response.data.metadata[key] !== document.metadata[key]
+          )
+        )
+          return;
+        if (document.image_url) {
+          const baseline = savedImage.current;
+          if (!baseline) return;
+          const content = await api.get(`${endpoint}content/`, {
+            responseType: 'blob'
+          });
+          if ((await readImage(baseline)) !== (await readImage(content.data)))
+            return;
+        }
+        if (!cancelled) {
+          verifiedRoot.current = rootEtag;
+          setEtag(rootEtag);
+        }
+      } catch {
+        // Keep the original CAS token on failed verification; never turn a
+        // failed read into permission to overwrite a newer background.
+      } finally {
+        if (!cancelled) setSyncing(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, endpoint, rootEtag, etag, busy, document]);
   const requestBusy = useRef(false);
-  const disabled = readOnly || forbidden || layoutDirty || busy || !document;
+  const disabled =
+    readOnly || forbidden || layoutDirty || busy || syncing || !document;
   const change = (patch: Partial<BackgroundMetadata>) => {
     if (!disabled && metadata) {
       const next = { ...metadata, ...patch };
@@ -206,12 +263,16 @@ function BackgroundSession(props: Props) {
       onBackgroundSaved(readEtag(response));
       if (method !== 'patch') {
         setUrl(null);
+        savedImage.current = null;
         if (response.data.image_url) {
           try {
             const content = await api.get(`${endpoint}content/`, {
               responseType: 'blob'
             });
-            if (alive.current) setUrl(URL.createObjectURL(content.data));
+            if (alive.current) {
+              savedImage.current = content.data;
+              setUrl(URL.createObjectURL(content.data));
+            }
           } catch {
             if (alive.current) setPreviewError(true);
           }

@@ -1,6 +1,16 @@
 # My-InvenTree deployment — status and checkpoints
 
-## Pending — Expand canvas fallback (local only)
+## Topology and canvas Development follow-up
+
+Topology creation now submits null IDs for server assignment; repeated saves retain
+server UUIDs. Expand canvas supports native fullscreen and a same-canvas in-page
+fallback. Background drafts rebase after layout saves only after verifying unchanged
+persisted metadata and image bytes, retaining CAS protection against real conflicts.
+Authenticated acceptance uses isolated fixtures, disabled controllers and reserved
+TEST-NET origins. Headless native Escape requires explicit API exit; fallback Escape
+is directly verified. Final running image provenance is recorded separately.
+
+## Historical pending — Expand canvas fallback (local only)
 
 The uncommitted canvas expansion supports an in-page full-viewport fallback if
 the browser Fullscreen API is unavailable or rejects the request. Escape and the

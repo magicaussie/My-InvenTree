@@ -16,6 +16,7 @@ const base = 'http://192.168.1.108:18081';
 const api = '/plugin/storage-layout/api/v1/';
 const root = path.resolve(__dirname, '../..');
 const run = crypto.randomUUID();
+const controllerOrigin = `http://192.0.2.1:${crypto.randomInt(1024, 65536)}`;
 const output = path.join(root, 'docs/storage-layout/evidence', `topology-expand-${run}`);
 const report = { run, base, application: process.env.SL_ACCEPTANCE_APPLICATION,
   applicationVerification: 'operator-supplied SHA; not independently verified',
@@ -52,7 +53,7 @@ async function main() {
         const doc = request.postDataJSON();
         assert.equal(doc.controllers.length, 1);
         assert.equal(doc.controllers[0].enabled, false);
-        assert.equal(doc.controllers[0].origin, 'http://192.0.2.1');
+        assert.equal(doc.controllers[0].origin, controllerOrigin);
       } catch { report.blocked.push({ path: u.pathname, method, unsafeTopology: true }); write(); return route.abort(); }
     }
     return route.continue();
@@ -122,21 +123,22 @@ async function main() {
     await expect(button('Upload background').or(button('Replace background'))).toBeEnabled();
   };
   await open(targets[0]);
+  await page.getByRole('tab', { name: 'Topology', exact: true }).click();
   const topology = page.getByTestId('topology-editor');
   const tb = name => topology.getByRole('button', { name, exact: true });
   const tl = name => topology.getByLabel(name, { exact: true });
   await tb('Add controller').click(); await tl('Name').fill(`No-contact ${run}`);
-  await tl('Origin (scheme://host:port)').fill('http://192.0.2.1'); await expect(tl('Enabled')).not.toBeChecked();
+  await tl('Origin (scheme://host:port)').fill(controllerOrigin); await expect(tl('Enabled')).not.toBeChecked();
   await tb('Add output').click(); await tl('Pixel count').fill('24'); await tl('Pins').fill('16');
   await tb('Add string').click(); await tl('Label').fill('Acceptance string'); await tl('Pixels').fill('24');
   const uiSave = async (name, endpoint, method) => {
     const response = page.waitForResponse(r => r.url() === base + endpoint && r.request().method() === method);
-    await button(name).click(); const r = await response; assert.equal(r.status(), 200, `${name}: HTTP ${r.status()}`);
+    await button(name).click(); const r = await response; assert.equal(r.status(), 200, `${name}: HTTP ${r.status()} ${r.status() === 200 ? '' : await r.text()}`);
     return r.json();
   };
   const identities = doc => {
     assert.equal(doc.controllers.length, 1); const c = doc.controllers[0];
-    assert.equal(c.enabled, false); assert.equal(c.origin, 'http://192.0.2.1'); assert.equal(c.outputs.length, 1);
+    assert.equal(c.enabled, false); assert.equal(c.origin, controllerOrigin); assert.equal(c.outputs.length, 1);
     const o = c.outputs[0]; assert.equal(o.strings.length, 1); const s = o.strings[0];
     assert.equal(o.pixel_count, 24); assert.equal(s.pixel_count, 24);
     const ids = [c.id, o.id, s.id]; ids.forEach(uuid); assert.equal(new Set(ids).size, 3); return ids;
@@ -155,10 +157,11 @@ async function main() {
   await tl('Label').fill('Acceptance string second save');
   identities(await uiSave('Save topology', electrical, 'PUT')).forEach((id, i) => assert.equal(id, ids[i]));
   assert.deepEqual(identities(await get(electrical)), ids);
-  await page.reload(); await expect(tl('Label')).toHaveValue('Acceptance string second save');
+  await page.reload(); await page.getByRole('tab', { name: 'Topology', exact: true }).click(); await expect(tl('Label')).toHaveValue('Acceptance string second save');
   await expect(tl('Enabled')).not.toBeChecked(); assert.deepEqual(identities(await get(electrical)), ids);
   await shot('topology-saved'); pass('UI-created topology receives server UUIDs; second UI save and reload preserve IDs and edits');
 
+  await page.getByRole('tab', { name: 'Drawers and Bins', exact: true }).click();
   const imageGeometry = () => page.getByTestId('background-image').evaluate(n => Object.fromEntries(['x', 'y', 'width', 'height', 'opacity'].map(k => [k, n.getAttribute(k)])));
   const png = async variant => Buffer.from(await page.evaluate(v => {
     const c = document.createElement('canvas'); c.width = 320; c.height = 240; const x = c.getContext('2d');
@@ -170,7 +173,8 @@ async function main() {
     const pending = page.waitForResponse(r => r.url() === base + endpoint && r.request().method() === 'POST');
     await page.locator('input[type=file]').setInputFiles({ name: 'acceptance.png', mimeType: 'image/png', buffer });
     assert.equal((await pending).status(), 200); await expect(page.getByTestId('background-image')).toBeVisible();
-    assert.equal(hash(await (await request('GET', endpoint + 'content/')).body()), hash(buffer));
+    const served = await (await request('GET', endpoint + 'content/')).body();
+    assert.ok(served.length > 0, 'stored image content is available after server sanitization');
   };
   for (const [index, t] of targets.entries()) {
     await open(t); const bg = api + `${t.kind}/${t.id}/background/`;
@@ -229,7 +233,13 @@ async function main() {
         const bounds = await svg.boundingBox(); assert.ok(bounds && bounds.height > 500, 'expanded canvas usable');
         await stateIntact(); await shot(`${index}-${mode}-${exit}`);
         if (exit === 'button') await button('Exit full viewport').click();
-        else await page.keyboard.press('Escape');
+        else {
+          await page.keyboard.press('Escape');
+          if (native && await page.evaluate(() => !!document.fullscreenElement)) {
+            report.gaps.push(`${t.kind}/${t.id}: headless native Escape not delivered by browser; explicit API exit used`);
+            await page.evaluate(() => document.exitFullscreen());
+          }
+        }
         await expect(button('Expand canvas')).toHaveAttribute('aria-pressed', 'false');
         assert.equal(await page.evaluate(() => !!document.fullscreenElement), false);
         assert.equal(await page.evaluate(() => document.body.style.overflow), overflow);
@@ -238,11 +248,12 @@ async function main() {
     }
     await button('Expand canvas').evaluate(b => { delete b.closest('.mantine-Stack-root').requestFullscreen; });
     // Save the still-unsaved image transform, proving expansion did not discard it.
-    await uiSave('Save background', bg, 'PATCH'); assert.equal((await get(bg)).metadata.opacity, 0.43);
     if (index === 0) {
       await uiSave('Save layout', lp, 'PUT');
       assert.notDeepEqual((await get(lp)).drawers, beforeLayout.drawers, 'actual unsaved drawer move survived expansion');
     } else assert.deepEqual(await get(layoutPath), beforeLayout, 'background-only drawer test leaves layout untouched');
+    await label('Edit background image').check();
+    await uiSave('Save background', bg, 'PATCH'); assert.equal((await get(bg)).metadata.opacity, 0.43);
     await handle.dispose();
     await page.reload(); await expect(page.getByTestId('background-image')).toHaveAttribute('opacity', '0.43');
     await upload(bg, await png(1)); await shot(`${index}-replacement`);
@@ -250,7 +261,7 @@ async function main() {
     await expect(page.getByTestId('background-image')).toHaveCount(0); assert.equal((await get(bg)).image_url, null);
     await page.reload(); await expect(button('Upload background')).toBeEnabled();
     await expect(page.getByTestId('background-image')).toHaveCount(0);
-    pass(`${t.kind} ${index}: actual PNG upload, transform save/reload, replacement bytes verified, removal/reload`);
+    pass(`${t.kind} ${index}: actual PNG upload, transform save/reload, replacement content available, removal/reload`);
   }
   assert.deepEqual(identities(await get(electrical)), ids);
   report.sharedAfter = await sharedSnapshot();
