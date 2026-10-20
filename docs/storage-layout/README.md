@@ -20,7 +20,7 @@ your zoom/pan is then preserved across unrelated edits and window resizing.
 **Fit to view** fits again and resumes automatic fitting as the canvas resizes.
 This changes only the view, never saved drawing dimensions or inventory.
 
-**Source update (not yet deployed or live-browser verified):** **Expand canvas**
+**Deployed and authenticated-browser verified:** **Expand canvas**
 opens either canvas and its drawing toolbar across the full browser viewport,
 without the surrounding host panels. Use **Exit full viewport** or the browser's
 **Escape** shortcut to return. Existing selections and unsaved edits are retained.

@@ -12,7 +12,18 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
-## Expand canvas follow-up — local only, not deployed
+## Current Development — topology and canvas follow-up
+
+Application `e8dbe88c79f53ac046e568303bbf82764e0d591b` is deployed through
+the existing trusted build and restricted activation workflows. Exact activation
+verification passed after 23 authenticated browser checks. Topology creation,
+repeat save/reload, cabinet/two-drawer images, native expansion/button exit and
+fallback expansion/button/Escape pass. Headless native Escape required explicit
+API exit, not accepted as a real browser Escape. See
+[final deployment evidence](docs/storage-layout/evidence/TOPOLOGY-EXPAND-DEPLOYMENT.md).
+Original backup, rollback images and volumes retained; hardware/workers remain off.
+
+## Historical Expand canvas follow-up — local only, not deployed
 
 The pending canvas expansion now falls back to an in-page full-viewport editor
 when browser fullscreen is unavailable or denied. Escape and the exit button

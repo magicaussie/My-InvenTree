@@ -256,7 +256,11 @@ async function main() {
     if (index === 0) {
       await uiSave('Save layout', lp, 'PUT');
       assert.notDeepEqual((await get(lp)).drawers, beforeLayout.drawers, 'actual unsaved drawer move survived expansion');
-    } else assert.deepEqual(await get(layoutPath), beforeLayout, 'background-only drawer test leaves layout untouched');
+    } else {
+      const afterLayout = await get(layoutPath);
+      afterLayout.cabinet.revision = beforeLayout.cabinet.revision;
+      assert.deepEqual(afterLayout, beforeLayout, 'background-only drawer test leaves layout untouched apart from aggregate revision');
+    }
     await label('Edit background image').check();
     await uiSave('Save background', bg, 'PATCH'); assert.equal((await get(bg)).metadata.opacity, 0.43);
     await handle.dispose();

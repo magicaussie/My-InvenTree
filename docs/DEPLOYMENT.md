@@ -1,5 +1,10 @@
 # My-InvenTree deployment — status and checkpoints
 
+## Current — topology and canvas Development deployed
+
+Running application `e8dbe88c79f53ac046e568303bbf82764e0d591b`.
+[Image IDs, exact provenance, tests and live acceptance limits](storage-layout/evidence/TOPOLOGY-EXPAND-DEPLOYMENT.md).
+
 ## Topology and canvas Development follow-up
 
 Topology creation now submits null IDs for server assignment; repeated saves retain
