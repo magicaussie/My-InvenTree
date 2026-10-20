@@ -1,14 +1,18 @@
 # My-InvenTree deployment — status and checkpoints
 
 For day-to-day cabinet and drawer/bin editing, see the
-[Storage Layout graphical user guide](storage-layout/README.md). Its screenshots
-are read-only Development captures, not additional commissioning evidence.
+[Storage Layout graphical user guide](storage-layout/README.md). Screenshots are
+credential-free authenticated Development captures; isolated-fixture writes are
+identified where used and are not additional commissioning evidence.
 
-## Current deployment checkpoint — approved 9bb88e3c6 run stopped before build/backup/activation
+## Current deployment checkpoint — approved Cabinet / Structure feature activated in Development
 
-The approved commit is `9bb88e3c607931e04645aa8024f600b126d1e733`; the locally generated Git archive `/tmp/myinventree-002jo-9bb88e3c6.tar` and a fresh `git archive` of that commit both hash to the approved SHA-256 `c0e34a80d65310bf0fc290704be46fda6324bc98d4942b2e66e8d9481ff25e9e`. Remote checks found `/home/spetchal/myinventree-dev-build-9bb88e3c6` already exists and is populated, while `/home/spetchal/myinventree-9bb88e3c6.tar` is absent. The instruction to stop if the fresh staging directory exists was therefore followed: no transfer, archive extraction, image tag/build, backup, migration, or activation was performed. Do not reuse or replace that existing staging directory without a newly approved bounded path/process.
-
-Read-only checks confirmed installed `/etc/myinventree-dev/compose.yml` matches `contrib/remote-development/compose.yml` byte-for-byte (both SHA-256 `f2d46709c2e01a6c724852842369867be2fe3e9743dde0f0e6c4c2a0c137f8b2`). Development backend and frontend remain at the approved baseline IDs `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d` and `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017`, both healthy; the review tags still resolve to those same IDs. The transfer/build/activation and backup gates remain pending. No database, volumes, other services, Main, or hardware were touched.
+- **Approved source input:** commit `9bb88e3c607931e04645aa8024f600b126d1e733`; archive SHA-256 `c0e34a80d65310bf0fc290704be46fda6324bc98d4942b2e66e8d9481ff25e9e`. Transferred archive `/home/spetchal/myinventree-002jo-9bb88e3c6.tar`; staging `/home/spetchal/myinventree-dev-build-9bb88e3c6` was reused read-only after approval and exact per-file/path content reconciliation. No re-extraction or overwrite occurred. Installed `/etc/myinventree-dev/compose.yml` matched `contrib/remote-development/compose.yml` byte-for-byte (SHA-256 `f2d46709c2e01a6c724852842369867be2fe3e9743dde0f0e6c4c2a0c137f8b2`); policy review confirmed no host binds, privileged mode or hardware access.
+- **Rollback and built images:** rollback tags `localhost/myinventree-dev-backend:rollback-002jo` and `localhost/myinventree-dev-frontend:rollback-002jo` retain prior backend `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d` and frontend `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017`. The approved backend/frontend targets were built once with `--pull=false`; no subsequent image rebuild was made. Running review IDs after restart: backend `sha256:0a9530a566651f0da7d22da35c0107297316969c5ede22ff76e9b43bd41a978c`; frontend `sha256:1b744d12dc75804dde441a941aafa4ae970e2f815f24305e59a664816774592c`. Backend, proxy, database and Redis were healthy; bootstrap exited 0.
+- **Verified backup before activation:** established `sudo -n python3 - < contrib/remote-development/backup-verify.py` completed successfully before `inventree-deploy up`. Backup directory `/var/backups/myinventree-dev/20261020T022240Z`; `postgres.dump` SHA-256 `ac35d1c17889b67f0fb927d1824c176dfda4779fa6c06ee26b126d5e0c1669d7`. No backup contents or secrets are recorded here.
+- **Schema and safety:** `storage_layout.0004_cabinet_structure` is applied. Read-only Django plugin query after activation confirmed `ENABLE_HARDWARE=False` and `DISPATCHER_ENABLED=False`. No worker, Main, WLED/controller action, unrelated CasaOS service, volume deletion or privilege expansion occurred.
+- **Live browser test diagnosis and corrected result:** the first acceptance assertion (`0 !== 1`) was a test-coordinate defect. The shelf/opening drags started inside the already-drawn partition, so SVG hit-testing targeted the partition rather than the canvas. After separating draw coordinates, a second test-only comparison defect surfaced: an expected cabinet revision increment was incorrectly treated as a logical layout mutation. The corrected script compares layout payload excluding only the expected revision field and checks that revision against the cabinet revision. Corrected authenticated `--exercise --restart` passed: cabinet `b457e5ab-7125-4e19-9c04-6e32ed402fea`; body envelope, partition, shelf and opening drawn; envelope and partition resized; structure saved and reloaded; stale revision PATCH rejected with HTTP 412 and left saved state unchanged; logical dimensions/layout unchanged; state persisted across restricted Development restart. Fixture retained for audit. Successful screenshot SHA-256: drawn `dc1e1381dad33d830d53170871565174dfdc6d0d5ea6623a04674f8eea4d0cb5`, saved `7993607853b669bec1c6f7240c2eff60d12cec2439b5ecfc836e7df095f45d41`, refreshed `2bc3545743140872b55bb7e9d0fda34254156f01a4011afc902f7fe69cc6d128`, after restart `ea61e13d05a7b7ca70841a893177f205b980b5ef19aac8076b71c5eb1a2710cb`. The retained first failed-draw diagnostic screenshot `docs/storage-layout/images/live-structure-exercise-draw-failure.png` hashes to `ca60c5402773844e05cfce757386ba47ac185c5dc71ec2514b133411d4ac2c0e`; it documents the coordinate failure, not an application defect. The first failed fixture ID was `d7524140-5107-41a0-b1fc-f9513930be00`; the successful fixture is listed above. Failed attempts left isolated disposable records; no shared cabinet was edited.
+- **Limits:** the isolated acceptance cabinet began with an empty layout and no active mapping, so it proves no logical-layout payload changes for that fixture, not preservation of existing populated inventory/mappings. Existing populated-stock behavior was tested in the earlier `live-layout-safety-acceptance.cjs` run (quantity 7 and location unchanged during drawer/bin edits), but no live test joined that populated fixture with Cabinet / Structure edits. Non-admin permissions remain unverified: a prior test-user login failed with `username_password_mismatch`; no claim of live permission acceptance is made. The focused local Playwright structure test passed (1/1). The full `designers.spec.ts` run had 11/15 pass and four additional failures in drawer geometry expectations (`x=40` expected, `x=50` actual) and `Layout` tab selectors; these unrelated failures were not changed or attributed to Cabinet / Structure. Main and hardware remain untouched.
 
 ## Historical verified result — transferred archive and live acceptance; build/activation stopped
 
@@ -28,43 +32,22 @@ Development at <http://192.168.1.108:18081/web/> was previously running review-t
 
 Non-admin permissions are UNVERIFIED: normal API user creation returned 201, but login returned 400 `username_password_mismatch`; test users were cleaned up and their removal verified by prefix. Do not claim privileged-actor permission behavior was tested.
 
-## Cabinet / Structure source and live status
+## Historical pre-deployment status — superseded by current checkpoint
 
-Local, uncommitted source adds a `Cabinet / Structure` editor and an additive
-`Cabinet.structure` JSON field (`null=True`, `blank=True`, `default=None`). This
-nullable migration leaves existing cabinet rows logically unset and does not
-rewrite legacy dimensions or layout data. It has **not** been built, migrated,
-activated or deployed to Development; no live migration was run. Source-level
-frontend/backend tests belong to the concurrent feature work and are not evidence
-of deployment. The authenticated check is
-`node contrib/remote-development/live-structure-acceptance.cjs`; it is read-only,
-checks the currently running Development designer before and after refresh, and
-captures screenshots under `docs/storage-layout/images/`. It intentionally does
-does not edit shared cabinet records. Its optional `--exercise` mode creates a
-new isolated cabinet, and only proceeds if the currently running live UI exposes
-the Structure tab; it then draws the envelope, partition, shelf and opening with
-pointer input, resizes the envelope and partition, saves and verifies backend plus
-refresh persistence while asserting logical dimensions/layout are unchanged. The
-separate `--restart` option requires `--exercise` and additionally invokes only the
-restricted Development restart. Neither write mode has been run because the current
-live deployment does not contain this feature. The absent tab remains the expected
-current live result; exercise acceptance is pending an approved feature deployment.
+Before the approved build/activation, the source-only review correctly recorded the
+nullable `Cabinet.structure` migration, a read-only live UI, and no deployed feature.
+That state is superseded by the current deployment checkpoint at the top of this file.
+The migration remains additive and nullable; legacy logical dimensions are not
+converted. The live test `contrib/remote-development/live-structure-acceptance.cjs`
+now includes an opt-in isolated fixture exercise, stale revision check, refresh and
+restricted Development restart. It does not edit shared cabinet records.
 
-Any future approval to build and activate this schema change must identify the
-exact reviewed commit and archive, and specifically authorize the migration. Before
-migration, use only the existing administrator-approved private Development backup
-and verification procedure documented below (`backup-verify.py`); do not invent a
-backup route, expand deployment privileges, or migrate without a verified backup.
-An additive nullable field is a compatibility safeguard, not a substitute for
-backup/restore validation. Main, hardware and worker gates remain out of scope.
-
-There is no approved build/activation command template for this new input. Do not
-infer deployment authorization from historical deployment records or adapt stale
-commands. A supervisor must first provide the exact reviewed source commit/hash and
-explicitly approve the operation and scope. Any separately approved migration must
-use only the existing administrator-approved private Development backup and
-verification mechanism; preserve named volumes. Main, hardware and worker gates
-remain out of scope.
+The deployment still required an exact approved source/archive, the existing
+administrator-approved private backup verification procedure (`backup-verify.py`),
+rollback tags and restricted Development activation. Those gates were satisfied for
+the exact checkpoint above; they do not authorize Main, hardware actions, workers,
+volume deletion or privilege expansion. Preserve named volumes and never expose
+backup contents or secrets.
 
 ## Historical verified result (2026-10-19; superseded by checkpoint 002J-N)
 

@@ -12,30 +12,19 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
-## Cabinet / Structure feature status — local source only
+## Cabinet / Structure feature status — Development deployment and browser verification
 
-The local cabinet physical-structure editor and nullable `Cabinet.structure` migration
-are not deployed to Development. An approved deployment attempt for commit
-`9bb88e3c607931e04645aa8024f600b126d1e733` was stopped before transfer/build/backup/
-activation because its designated fresh staging directory already existed and the
-expected remote archive was absent; see `docs/DEPLOYMENT.md`. Do not describe the
-feature as live or resume deployment from existing staging without a newly approved
-bounded path/process. The default live acceptance script
-`contrib/remote-development/live-structure-acceptance.cjs` is read-only against the
-current shared Development cabinet; absence of the new tab is the expected result.
-Its opt-in `--exercise` mode creates a disposable isolated cabinet and refuses to
-write unless the currently running UI exposes the feature; `--restart` additionally
-opts into the restricted Development restart. Neither mode is approved/run against
-the current old deployment. Never edit shared cabinet data to manufacture
-acceptance screenshots. Before any separately approved migration, use only the existing
-administrator-approved private backup/verification mechanism in `docs/DEPLOYMENT.md`.
+The additive nullable `Cabinet.structure` migration and Cabinet / Structure editor were deployed to Development from approved commit `9bb88e3c607931e04645aa8024f600b126d1e733`; archive SHA-256, build/backup evidence, live image IDs, acceptance results and limitations are recorded in `docs/DEPLOYMENT.md`. The authenticated isolated-fixture browser run passed pointer drawing/resizing, save, refresh, stale-revision rejection and restricted Development restart. Screenshots are in `docs/storage-layout/images/live-structure-exercise-*.png`. The test does not modify shared cabinets, and retained disposable fixtures are explicitly identified in the deployment record.
 
-## Current deployment checkpoint — transferred archive review only; Development activation stopped
+Never deploy Main, enable workers, operate WLED/hardware, or edit shared cabinet data for screenshots. Keep `ENABLE_HARDWARE=False` and `DISPATCHER_ENABLED=False`. Do not infer inventory/mapping preservation from an empty disposable fixture or non-admin authorization from an admin run. Reuse only the established private backup verification mechanism in `docs/DEPLOYMENT.md`; no volume deletion or privilege expansion is allowed.
 
-- User-approved source commit: `10e05fdc21d563c14c9ea10da26f51867bf5229f`. Transferred archive SHA-256: `da20e278215d926125f2dffa28452f35ce18fac8091119c05651fb0d2ea53191`. Read-only reconciliation found extracted content matching the archive (tar comparison differed only in ownership metadata), and installed `/etc/myinventree-dev/compose.yml` matched exactly.
-- Review tags matched running images: backend `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d`, frontend `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017`. Existing staging `/home/spetchal/myinventree-dev-build-10e05fdc2` was already populated, services were already running these new images, and rollback tag `rollback-10e05fdc2` recorded the expected prior image IDs (backend `31b46f14…`, frontend `19e1c007…`). Because these did not match the expected old IDs, build/activation was STOPPED. Do not claim this session built the images or that build provenance is cryptographically proven. Images were created Oct 20 00:20 UTC and were healthy.
-- Live authenticated browser acceptance passed `live-bin-drawing-acceptance.cjs`: real cabinet/drawer/bin draw, move, resize, undo/redo, save, automatic correct parent, stable IDs over repeated saves and refresh, restricted restart, and collision HTTP 400 with unchanged revision/location count. Fixture cabinet `4664428c-f9f4-4722-a468-43a2c95c9a1f`, drawer `1abcbab9-49e0-4afd-9804-641266ffd654`. `live-layout-safety-acceptance.cjs` also passed on disposable populated stock: record quantity 7 and its location remained unchanged after drawer/bin rename, archive and repeated save; native location retained.
-- Non-admin permissions remain UNVERIFIED: normal API user creation returned 201, but login returned 400 `username_password_mismatch`; test users were cleaned up and prefix-verified. No existing data was touched; acceptance fixtures were retained. Main remained untouched; WLED stayed off and no workers were changed. Details are in `docs/DEPLOYMENT.md`.
+## Current deployment checkpoint — approved Cabinet / Structure build activated in Development
+
+- Approved commit `9bb88e3c607931e04645aa8024f600b126d1e733`; archive SHA-256 `c0e34a80d65310bf0fc290704be46fda6324bc98d4942b2e66e8d9481ff25e9e`. Exact staged content was hash/byte reconciled to the approved archive. Installed compose matched the archived `contrib/remote-development/compose.yml`; protected deployment details and backup evidence are in `docs/DEPLOYMENT.md`.
+- Rollback tags `rollback-002jo` preserved the baseline images `sha256:3e58e7f8f488bdb2f702d8f65776034c0aa7d53b51de8ec5308a336f3a6bf10d` (backend) and `sha256:a758696d416464b6eacb47d54f43b148a0e3f1f9bc22f5186b14912d4aa4b017` (frontend). Running review image IDs are backend `sha256:0a9530a566651f0da7d22da35c0107297316969c5ede22ff76e9b43bd41a978c`, frontend `sha256:1b744d12dc75804dde441a941aafa4ae970e2f815f24305e59a664816774592c`; all four long-running Development services were healthy after the approved restart. Migration `storage_layout.0004_cabinet_structure` is applied.
+- Verified persisted plugin gates remain `ENABLE_HARDWARE=False`, `DISPATCHER_ENABLED=False`. No Main, workers, hardware, unrelated services or volume deletion were involved. Live acceptance passed on isolated fixture `b457e5ab-7125-4e19-9c04-6e32ed402fea`; details, failure diagnosis, screenshot hashes and unverified permissions/data scopes are in `docs/DEPLOYMENT.md`.
+- Preserve owner untracked `ZED_ACTIVE_TASK.md` and `dev_browser_settings.py` as well as any other untracked owner files. Do not stage or commit them.
+
 
 ## Historical deployment checkpoint 002J-L: Development operational; Main forbidden
 

@@ -30,53 +30,49 @@ a real Development UI capture from 2026-10-19 using the application build
 recorded in [DEPLOYMENT.md](../DEPLOYMENT.md). No cabinet, topology or mapping
 changes were submitted for this guide. All other diagrams in this guide are
 illustrative Mermaid diagrams, not screenshots or evidence of a live workflow.
-The current Development browser acceptance is documented in
-[deployment evidence](../DEPLOYMENT.md#current-verified-result--transferred-archive-and-live-acceptance-buildactivation-stopped).
-The live suite verified cabinet/drawer editing including Draw drawer, selection,
-multiselection, alignment, distribution, geometry edits, undo/redo, and persistence
-through save, refresh and restricted restart. A separate authenticated acceptance
-verified **Draw bin** as well as move/resize, undo/redo, save, automatic native parent,
-stable IDs through repeated saves and refresh, restricted restart, and collision
-rejection without revision/location-count changes. This describes the currently
-running review-tag images; their build provenance is not established by this
-verification session, and build/activation were stopped. A second live safety test
-confirmed a disposable populated stock record retained quantity and location through
-drawer/bin rename, archive and repeated saves. This is not general stock-placement
-acceptance. No screenshots from these suites are included or implied here.
+## Prior browser verification — drawer/bin workflows
 
-## Cabinet / Structure mode — source-only, not live-verified
+Before the Cabinet / Structure deployment, Development browser suites verified
+cabinet/drawer editing, Draw bin, move/resize, undo/redo, save/refresh/restart and
+collision rejection; a separate populated-stock check retained quantity and location
+through drawer/bin rename, archive and repeated saves. That earlier checkpoint ran
+review-tag images whose build provenance was not established there. It is historical
+context, not evidence about the current Cabinet / Structure image build. See the
+[current deployment evidence](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
 
-The current local source adds a separate `Cabinet / Structure` tab for a front-view
-millimetre-based physical envelope. Its editor is designed to initialize an envelope,
-then draw/edit cabinet body, partition, shelf, opening, door and panel features; Save
-writes a separate structure document and refresh should reload it. This document is
-separate from the existing drawer/bin layout: legacy `width_units` and `height_units`
-are not converted, and editing structure must not alter drawers, bins, native
-locations, stock or electrical mappings. These are source-level design expectations,
-not claims of deployed/live behaviour: the currently running Development application
-has not received this source or its migration.
+## Cabinet / Structure mode — Development browser-verified
+
+Development has a separate `Cabinet / Structure` tab for a front-view millimetre-based
+physical envelope. The authenticated isolated-fixture run verified pointer drawing and
+resizing of the outer envelope, partition, shelf and opening; save, refresh and
+restricted restart persistence; and stale-revision rejection. This document is separate
+from the existing drawer/bin layout: legacy `width_units` and `height_units` are not
+converted. The live acceptance fixture began empty; preservation of populated stock,
+native locations and electrical mappings during structure edits remains unverified.
 
 The authenticated live check is
 [`live-structure-acceptance.cjs`](../../contrib/remote-development/live-structure-acceptance.cjs).
-Run with no arguments for the read-only Development audit; it records the current
-cabinet designer before and after refresh without saving or changing shared records.
-After the feature is separately approved and deployed, `--exercise` opts into writes
-to a newly created isolated cabinet only (the fixture is retained for audit). That mode first requires the live Structure
-tab, then uses pointer drawing/resizing for the outer envelope, partition, shelf and
-opening, saves and checks API/refresh persistence plus unchanged logical dimensions
-and layout. `--exercise --restart` additionally requests only the restricted
-Development restart. Do not run either write mode against the current old deployment;
-no feature deployment or live exercise has been approved or performed. The live editor shows the existing `Layout`,
-`Topology`, `Mapping`, `Colors` and `Diagnostics` tabs, with no `Cabinet / Structure`
-tab before or after refresh. These captures document absence on the running UI; they
-are not evidence that the feature works live:
+Its no-argument mode is read-only against the existing cabinet. `--exercise` writes only
+to a newly created isolated cabinet, retained for audit, and `--exercise --restart`
+additionally requests only the restricted Development restart. It must never be run
+against Main. The successful cabinet fixture was
+`b457e5ab-7125-4e19-9c04-6e32ed402fea`; details and exact deployment evidence are in
+[DEPLOYMENT.md](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
 
-![Current Development cabinet editor without Cabinet / Structure tab](images/live-structure-development-before-refresh.png)
+Live screenshots from the successful exercise:
 
-[After-refresh screenshot](images/live-structure-development-after-refresh.png).
-Until a separately approved fixture-based live write test runs, body/divider/shelf
-edits and save-refresh persistence are **not browser-verified**. See
-[deployment evidence](../DEPLOYMENT.md#cabinet-structure-source-and-live-status).
+![Cabinet structure features drawn in the Development browser](images/live-structure-exercise-drawn.png)
+
+![Saved cabinet structure in Development](images/live-structure-exercise-saved.png)
+
+![Cabinet structure after browser refresh](images/live-structure-exercise-refreshed.png)
+
+![Cabinet structure after restricted Development restart](images/live-structure-exercise-after-restart.png)
+
+The earlier absence screenshots (`live-structure-development-before-refresh.png` and
+`live-structure-development-after-refresh.png`) document the UI before deployment only;
+they are historical, not the current state. See the deployment record for limitations,
+including unverified non-admin permissions and existing-data/mapping preservation.
 
 ## 1. Find or create a cabinet
 

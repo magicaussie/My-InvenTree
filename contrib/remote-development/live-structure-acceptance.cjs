@@ -58,6 +58,12 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
     const baseline=await readCabinet();
     const layoutResponse=await req('get',layoutUrl); assert.equal(layoutResponse.status(),200,`layout GET HTTP ${layoutResponse.status()}`);
     const baselineLayout=await layoutResponse.json();
+    const assertLayoutPreserved=async expectedRevision=>{
+      const response=await req('get',layoutUrl); assert.equal(response.status(),200,`layout GET HTTP ${response.status()}`);
+      const actual=await response.json();
+      assert.equal(actual.cabinet.revision,expectedRevision,'logical layout revision must match the cabinet revision');
+      assert.deepEqual({...actual,cabinet:{...actual.cabinet,revision:baselineLayout.cabinet.revision}},baselineLayout,'structure editing changed logical layout data');
+    };
     const designUrl=`${base}/web/plugin/storage-layout/cabinets/${cabinet.id}/design`;
     await page.goto(designUrl,{waitUntil:'domcontentloaded'}); await page.getByTestId('cabinet-designer').waitFor({timeout:30000});
     await page.getByRole('tab',{name:'Cabinet / Structure',exact:true}).click();
@@ -69,8 +75,17 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
       await page.mouse.move(points[0].x,points[0].y); await page.mouse.down(); await page.mouse.move(points[1].x,points[1].y,{steps:10}); await page.mouse.up();
     };
     await page.getByRole('button',{name:'Draw Cabinet',exact:true}).click(); await dragCanvas(10,10,590,790);
-    for (const feature of ['partition','shelf','opening']) { await page.getByRole('button',{name:new RegExp(`^${feature}$`,'i')}).click(); await dragCanvas(40,40,feature==='partition'?60:feature==='shelf'?560:100,feature==='partition'?760:feature==='shelf'?60:120); }
-    assert.equal(await page.getByTestId('feature-partition').count(),1); assert.equal(await page.getByTestId('feature-shelf').count(),1); assert.equal(await page.getByTestId('feature-opening').count(),1);
+    const featureDrags = {partition:[40,40,60,760],shelf:[80,100,560,120],opening:[80,200,300,300]};
+    for (const [feature, coordinates] of Object.entries(featureDrags)) { await page.getByRole('button',{name:new RegExp(`^${feature}$`,'i')}).click(); await dragCanvas(...coordinates); }
+    const featureCounts = Object.fromEntries(['partition','shelf','opening'].map(type => [type, page.getByTestId(`feature-${type}`).count()]));
+    const observedFeatureCounts = Object.fromEntries(await Promise.all(Object.entries(featureCounts).map(async ([type, count]) => [type, await count])));
+    if (Object.values(observedFeatureCounts).some(count => count !== 1)) {
+      console.log(`DRAW DIAGNOSTIC cabinet=${cabinet.id} counts=${JSON.stringify(observedFeatureCounts)}`);
+      console.log(`DRAW DIAGNOSTIC active buttons=${JSON.stringify(await page.getByRole('button').allTextContents())}`);
+      await screenshot(page,'live-structure-exercise-draw-failure.png');
+      console.log(`DRAW DIAGNOSTIC svg=${(await svg.evaluate(node => node.outerHTML)).slice(0,12000)}`);
+    }
+    assert.deepEqual(observedFeatureCounts, {partition:1,shelf:1,opening:1});
     await screenshot(page,'live-structure-exercise-drawn.png');
     // Resize the envelope and selected feature using the real pointer handles.
     const envelopeHandle=page.getByTestId('cabinet-resize-handle'); let box=await envelopeHandle.boundingBox(); assert.ok(box);
@@ -83,20 +98,23 @@ const screenshot = async (page, name) => { fs.mkdirSync(evidenceDir, {recursive:
     await screenshot(page,'live-structure-exercise-saved.png');
     let persisted=await readCabinet(); assert.ok(persisted.structure,'saved structure absent from cabinet API');
     const expected=persisted.structure; assert.deepEqual(expected.features.map(f=>f.type).sort(),['opening','partition','shelf']);
+    const stale=await req('patch',cabinetUrl,{structure:expected},{'If-Match':String(baseline.revision)});
+    assert.equal(stale.status(),412,`stale revision PATCH HTTP ${stale.status()}`);
+    const afterStale=await readCabinet(); assert.equal(afterStale.revision,persisted.revision,'stale revision altered cabinet revision'); assert.deepEqual(afterStale.structure,expected,'stale revision altered structure');
     assert.ok(expected.envelope.width>600&&expected.envelope.height>800,'envelope pointer resize not persisted');
     const partition=expected.features.find(f=>f.type==='partition'); assert.ok(partition.width>20&&partition.height>20,'partition feature resize not persisted');
     assert.equal(persisted.width_units,baseline.width_units); assert.equal(persisted.height_units,baseline.height_units);
-    assert.deepEqual((await (await req('get',layoutUrl)).json()),baselineLayout,'structure editing changed logical layout');
+    await assertLayoutPreserved(persisted.revision);
     await page.reload({waitUntil:'domcontentloaded'}); await page.getByTestId('cabinet-designer').waitFor({timeout:30000}); await page.getByRole('tab',{name:'Cabinet / Structure',exact:true}).click();
     await page.getByTestId('feature-partition').waitFor({state:'visible'}); await screenshot(page,'live-structure-exercise-refreshed.png');
     persisted=await readCabinet(); assert.deepEqual(persisted.structure,expected,'structure differs after refresh');
     assert.equal(persisted.width_units,baseline.width_units); assert.equal(persisted.height_units,baseline.height_units);
-    assert.deepEqual((await (await req('get',layoutUrl)).json()),baselineLayout,'refresh changed logical layout');
+    await assertLayoutPreserved(persisted.revision);
     if (restart) {
       execFileSync('ssh',['-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','inventree-deploy@mainserver-1','inventree-deploy','restart'],{encoding:'utf8',timeout:120000,stdio:['ignore','ignore','ignore']});
       let healthy=false; for(let i=0;i<60;i++){try{if((await context.request.get(`${base}/api/`,{timeout:5000})).status()===200){healthy=true;break;}}catch{} await page.waitForTimeout(2000);}
       assert.ok(healthy,'Development API did not recover after restricted restart'); await page.reload({waitUntil:'domcontentloaded',timeout:60000}); await page.getByTestId('cabinet-designer').waitFor({timeout:60000}); await page.getByRole('tab',{name:'Cabinet / Structure',exact:true}).click();
-      persisted=await readCabinet(); assert.deepEqual(persisted.structure,expected,'structure differs after restricted restart'); assert.deepEqual((await (await req('get',layoutUrl)).json()),baselineLayout,'restart altered logical layout');
+      persisted=await readCabinet(); assert.deepEqual(persisted.structure,expected,'structure differs after restricted restart'); await assertLayoutPreserved(persisted.revision);
       await screenshot(page,'live-structure-exercise-after-restart.png');
     }
     console.log(`EXERCISE PASS cabinet=${cabinet.id}; structure persisted across refresh${restart?' and restricted Development restart':''}; logical dimensions and layout unchanged.`);
