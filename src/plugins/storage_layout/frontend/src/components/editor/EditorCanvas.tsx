@@ -148,10 +148,10 @@ export function EditorCanvas(props: EditorCanvasProps) {
     const exit = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setViewportExpanded(false);
     };
-    document.addEventListener('keydown', exit);
+    document.addEventListener('keydown', exit, true);
     return () => {
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', exit);
+      document.removeEventListener('keydown', exit, true);
     };
   }, [viewportExpanded]);
 

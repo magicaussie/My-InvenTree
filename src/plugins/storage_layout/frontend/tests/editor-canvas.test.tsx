@@ -86,7 +86,10 @@ describe('EditorCanvas', () => {
       expect(workspace).toHaveStyle({ position: 'fixed', inset: '0' });
       expect(document.body.style.overflow).toBe('hidden');
       expect(screen.getByRole('application')).toBe(canvas);
-      fireEvent.keyDown(document, { key: 'Escape' });
+      canvas.addEventListener('keydown', (event) => event.stopPropagation(), {
+        once: true
+      });
+      fireEvent.keyDown(canvas, { key: 'Escape' });
       expect(
         screen.getByRole('button', { name: 'Expand canvas' })
       ).toHaveAttribute('aria-pressed', 'false');

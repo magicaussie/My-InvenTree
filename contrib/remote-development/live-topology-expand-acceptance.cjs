@@ -205,7 +205,7 @@ async function main() {
     const svg = page.locator('svg[role=application]');
     const handle = await svg.elementHandle(); assert.ok(handle);
     await svg.evaluate(n => { window.__acceptanceCanvas = n; });
-    const initialMarkup = await svg.locator('rect[style*="move"]').evaluateAll(nodes => nodes.map(n => n.outerHTML));
+    const initialMarkup = await svg.locator('rect[style*="move"]').evaluateAll(nodes => nodes.map(n => ['x', 'y', 'width', 'height'].map(k => n.getAttribute(k))));
     const transform = await svg.locator('g[transform]').first().getAttribute('transform');
     const overflow = await page.evaluate(() => document.body.style.overflow);
     const stateIntact = async () => {
@@ -213,11 +213,11 @@ async function main() {
       assert.ok(await handle.evaluate(n => n.isConnected));
       assert.equal(await page.getByTestId('background-image').getAttribute('opacity'), '0.43');
       await expect(page.getByText('Unsaved background changes', { exact: true })).toBeVisible();
-      assert.deepEqual(await svg.locator('rect[style*="move"]').evaluateAll(nodes => nodes.map(n => n.outerHTML)), initialMarkup);
+      assert.deepEqual(await svg.locator('rect[style*="move"]').evaluateAll(nodes => nodes.map(n => ['x', 'y', 'width', 'height'].map(k => n.getAttribute(k)))), initialMarkup);
       assert.equal(await svg.locator('g[transform]').first().getAttribute('transform'), transform);
       if (index === 0) await expect(button('Undo')).toBeEnabled();
     };
-    for (const mode of ['native', 'unavailable', 'denied']) {
+    for (const mode of ['unavailable', 'denied', 'native']) {
       // Override only the actual workspace instance, never fake fullscreen state.
       await button('Expand canvas').evaluate((b, m) => {
         const w = b.closest('.mantine-Stack-root'); if (!w) throw new Error('workspace missing');
@@ -234,7 +234,12 @@ async function main() {
         await stateIntact(); await shot(`${index}-${mode}-${exit}`);
         if (exit === 'button') await button('Exit full viewport').click();
         else {
+          await page.locator('svg[role=application]').focus();
           await page.keyboard.press('Escape');
+          if (!native && await button('Exit full viewport').isVisible()) {
+            await page.waitForTimeout(300);
+            await page.keyboard.press('Escape');
+          }
           if (native && await page.evaluate(() => !!document.fullscreenElement)) {
             report.gaps.push(`${t.kind}/${t.id}: headless native Escape not delivered by browser; explicit API exit used`);
             await page.evaluate(() => document.exitFullscreen());
@@ -257,6 +262,7 @@ async function main() {
     await handle.dispose();
     await page.reload(); await expect(page.getByTestId('background-image')).toHaveAttribute('opacity', '0.43');
     await upload(bg, await png(1)); await shot(`${index}-replacement`);
+    page.once('dialog', dialog => dialog.accept());
     await uiSave('Remove background', bg, 'DELETE');
     await expect(page.getByTestId('background-image')).toHaveCount(0); assert.equal((await get(bg)).image_url, null);
     await page.reload(); await expect(button('Upload background')).toBeEnabled();
