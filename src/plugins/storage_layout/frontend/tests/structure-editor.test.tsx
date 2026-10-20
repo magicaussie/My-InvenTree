@@ -42,6 +42,35 @@ beforeEach(() => {
 });
 
 describe('StructureEditor', () => {
+  it('clears undo history when switching cabinets', async () => {
+    const { context: pluginContext } = context({ ...document, features: [{ id: 'p1', type: 'partition', x: 30, y: 40, width: 10, height: 50 }] });
+    const { rerender } = render(<MantineProvider><StructureEditor context={pluginContext} cabinetId='cabinet-1' /></MantineProvider>);
+    const feature = await screen.findByTestId('feature-partition');
+    fireEvent.pointerDown(feature, { clientX: 60, clientY: 60, pointerId: 1 });
+    fireEvent.pointerUp(feature, { clientX: 60, clientY: 60, pointerId: 1 });
+    fireEvent.click(screen.getByRole('button', { name: 'Span cabinet height' }));
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
+    rerender(<MantineProvider><StructureEditor context={pluginContext} cabinetId='cabinet-2' /></MantineProvider>);
+    await screen.findByTestId('feature-partition');
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled();
+    expect(screen.getByTestId('feature-partition')).toHaveAttribute('height', '50');
+  });
+  it('spans a divider without changing thickness and ignores keyboard commands when inactive', async () => {
+    const { context: pluginContext } = context({ ...document, features: [{ id: 'p1', type: 'partition', x: 30, y: 40, width: 10, height: 50 }] });
+    render(<MantineProvider><StructureEditor context={pluginContext} cabinetId='cabinet-1' active={false} /></MantineProvider>);
+    const feature = await screen.findByTestId('feature-partition');
+    fireEvent.pointerDown(feature, { clientX: 60, clientY: 60, pointerId: 1 });
+    fireEvent.pointerUp(feature, { clientX: 60, clientY: 60, pointerId: 1 });
+    fireEvent.click(screen.getByRole('button', { name: 'Span cabinet height' }));
+    expect(feature).toHaveAttribute('height', '400');
+    expect(feature).toHaveAttribute('width', '10');
+    expect(feature).toHaveAttribute('y', '0');
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(feature).toHaveAttribute('height', '400');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(feature).toHaveAttribute('height', '50');
+  });
   it('requires explicit millimetre initialization when legacy structure is null', async () => {
     const { context: pluginContext } = context(null);
     render(

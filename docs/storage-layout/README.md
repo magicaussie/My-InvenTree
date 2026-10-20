@@ -40,6 +40,47 @@ review-tag images whose build provenance was not established there. It is histor
 context, not evidence about the current Cabinet / Structure image build. See the
 [current deployment evidence](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
 
+## Saved structure → drawer reference — source implementation, not yet deployed
+
+The following controls require a newly approved Development build. The historical
+screenshots below do **not** show or verify these additions.
+
+```mermaid
+flowchart TD
+    A[Cabinet / Structure: draw body and features in mm] --> B[Save structure]
+    B --> C[Drawers: Load / use saved structure]
+    C --> D[Choose Guide placement with opening]
+    D --> E[Add drawer fitted to opening or draw inside it]
+    E --> F[Review logical geometry and Save layout]
+    F --> G[Design drawer interior and bins: top-down]
+```
+
+- Structure properties offer **Span cabinet height** for a selected partition and
+  **Span cabinet width** for a shelf. They retain thickness, are undoable, and do not
+  move drawers. Draw Cabinet now highlights its active state.
+- In **Drawers**, explicitly choose **Load / use saved structure** after saving the
+  physical document. It fetches the saved version, never the unsaved Structure draft.
+  Repeat this action after subsequent structure saves; **Hide structure reference**
+  removes only the guide. The reference is session-local, not a persisted binding.
+- The mm envelope is projected onto the existing logical canvas using independent
+  horizontal/vertical ratios. This may distort aspect ratio; it is a proportional
+  reference, **not** a physical calibration or a silent unit conversion. Neither
+  cabinet logical dimensions nor existing drawer geometry is changed.
+- Cyan dashed rectangles are openings, grey shapes are partitions/shelves, purple
+  outlines are doors/panels. Select an opening with **Guide placement with opening**.
+  **Add drawer fitted to opening** creates a normal new drawer in the local undoable
+  draft. Coordinates round inward to whole logical units; openings too small for a
+  one-unit rectangle or overlapping an existing drawer are rejected without changes.
+- A selected opening also constrains newly pointer-drawn drawers. Clear the selection
+  for free placement. Existing drawers, Add/duplicate, and move/resize retain legacy
+  rules: openings are guides, not mandatory structural constraints or inventory parents.
+- Save layout separately. Structure and layout retain independent revision checks:
+  if a structure save makes a loaded layout stale, reload the layout when prompted;
+  do not discard an unsaved draft without reviewing it. No automatic merge is attempted.
+- Bins remain in their **parent drawer interior, top-down**, not the cabinet front.
+  Loading/hiding a reference creates no native Locations, stock, mappings or LED actions.
+- Keyboard undo/delete acts only in the active editor tab, not a hidden Structure editor.
+
 ## Cabinet / Structure mode — Development browser-verified
 
 Development has a separate `Cabinet / Structure` tab for a front-view millimetre-based

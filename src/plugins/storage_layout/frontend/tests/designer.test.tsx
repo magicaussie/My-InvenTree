@@ -1,6 +1,7 @@
 import type { InvenTreePluginContext } from '@inventreedb/ui';
 import { MantineProvider } from '@mantine/core';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -82,6 +83,58 @@ function fakeContext(
     ...overrides
   } as unknown as InvenTreePluginContext;
 }
+
+describe('CabinetDesigner structure reference', () => {
+  it('ignores a reference response from a previously selected cabinet', async () => {
+    const context = fakeContext();
+    const { rerender } = render(<MantineProvider><CabinetDesigner context={context} cabinetId='cabinet-1' /></MantineProvider>);
+    await screen.findByLabelText('Cabinet width in logical units');
+    let resolveReference!: (value: unknown) => void;
+    vi.mocked(context.api.get).mockImplementationOnce(() => new Promise((resolve) => { resolveReference = resolve; }) as ReturnType<typeof context.api.get>);
+    fireEvent.click(screen.getByRole('button', { name: 'Load / use saved structure' }));
+    rerender(<MantineProvider><CabinetDesigner context={context} cabinetId='cabinet-2' /></MantineProvider>);
+    await act(async () => {
+      resolveReference({ data: { ...CABINET, structure: { schema_version: 1, units: 'mm', view: 'front', envelope: { width: 1200, height: 1600, depth: 400 }, features: [] } }, headers: {} });
+    });
+    expect(screen.queryByTestId('structure-reference')).not.toBeInTheDocument();
+  });
+  it('explicitly loads projected structure and adds a collision-checked undoable drawer without writing structure', async () => {
+    const context = fakeContext();
+    const originalGet = context.api.get.bind(context.api);
+    context.api.get = vi.fn(async (url: string) => {
+      if (url.endsWith('/cabinets/cabinet-1/')) return {
+        data: { ...CABINET, structure: { schema_version: 1, units: 'mm', view: 'front', envelope: { width: 1200, height: 1600, depth: 400 }, features: [{ id: 'o1', type: 'opening', x: 40, y: 80, width: 400, height: 200 }] } }, headers: {}
+      };
+      return originalGet(url);
+    }) as typeof context.api.get;
+    render(<MantineProvider><CabinetDesigner context={context} cabinetId='cabinet-1' /></MantineProvider>);
+    await screen.findByLabelText('Cabinet width in logical units');
+    expect(screen.queryByTestId('structure-reference')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Load / use saved structure' }));
+    const reference = await screen.findByTestId('structure-reference');
+    expect(reference.querySelectorAll('rect')[1]).toHaveAttribute('width', '200');
+    fireEvent.click(screen.getAllByLabelText('Guide placement with opening').find((element) => element.tagName === 'INPUT')!);
+    fireEvent.click(await screen.findByRole('option', { name: 'Opening 1 (400 × 200 mm)', hidden: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add drawer fitted to opening' }));
+    expect(screen.getByTestId('entity-count')).toHaveTextContent('1 item');
+    fireEvent.click(screen.getByRole('button', { name: 'Add drawer fitted to opening' }));
+    expect(screen.getByTestId('entity-count')).toHaveTextContent('1 item');
+    expect(screen.getByText(/drawn drawer must fit inside the cabinet/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByTestId('entity-count')).toHaveTextContent('0 items');
+    expect(context.api.put).not.toHaveBeenCalled();
+    expect(context.api.patch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Redo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+    await waitFor(() => expect(context.api.put).toHaveBeenCalledOnce());
+    const saved = vi.mocked(context.api.put).mock.calls[0][1] as { drawers: DrawerInput[]; structure?: unknown };
+    expect(saved.structure).toBeUndefined();
+    expect(saved.drawers[0]).toMatchObject({ is_new: true, x: 20, y: 40, width: 200, height: 100, location: null, allocation: null });
+    fireEvent.click(screen.getByRole('button', { name: 'Hide structure reference' }));
+    expect(screen.queryByTestId('structure-reference')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Cabinet width in logical units')).toHaveValue('600');
+  });
+});
 
 describe('CabinetDesigner dimensions', () => {
   it('edits native cabinet width and height through undoable layout commands', async () => {

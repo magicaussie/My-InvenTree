@@ -22,12 +22,13 @@ import {
   NumberInput,
   Paper,
   ScrollArea,
+  Select,
   Stack,
   Tabs,
   Text,
   UnstyledButton
 } from '@mantine/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StorageLayoutClient } from '../api/client';
 import type { Diagnostic } from '../api/types';
 import {
@@ -65,7 +66,12 @@ import {
 import { SimulationPanel } from './editor/SimulationPanel';
 import { EditorToolbar } from './editor/Toolbar';
 import { TopologyEditor } from './editor/TopologyEditor';
-import { StructureEditor } from './StructureEditor';
+import { type StructureDocument, StructureEditor } from './StructureEditor';
+import {
+  containsRect,
+  fitOpening,
+  projectStructure
+} from '../state/structureReference';
 
 export interface CabinetDesignerProps {
   context: InvenTreePluginContext;
@@ -89,6 +95,50 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
   );
 
   const [activeTab, setActiveTab] = useState<string | null>('layout');
+  const [reference, setReference] = useState<StructureDocument | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [loadingReference, setLoadingReference] = useState(false);
+  const projected = reference
+    ? projectStructure(reference, {
+        width: editor.draft.cabinet.width_units,
+        height: editor.draft.cabinet.height_units
+      })
+    : [];
+  const openings = projected.filter((feature) => feature.type === 'opening');
+  const selectedOpening = openings.find((feature) => feature.id === openingId);
+  const referenceRequest = useRef(0);
+  const loadReference = async () => {
+    const request = ++referenceRequest.current;
+    setLoadingReference(true);
+    try {
+      const { data } = await client.getCabinet(cabinetId);
+      if (request !== referenceRequest.current) return;
+      const structure =
+        (data as typeof data & { structure?: StructureDocument | null })
+          .structure ?? null;
+      setReference(structure);
+      setOpeningId(null);
+      setServerMessage(
+        structure
+          ? t`Saved structure loaded as a visual reference. No drawer geometry was changed.`
+          : t`No saved structure. Create and save one in Cabinet / Structure first.`
+      );
+    } catch (error) {
+      if (request === referenceRequest.current)
+        setServerMessage((error as Error).message);
+    } finally {
+      if (request === referenceRequest.current) setLoadingReference(false);
+    }
+  };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Cabinet identity changes must clear the session-local guide even though the reset uses no cabinet fields.
+  useEffect(() => {
+    setReference(null);
+    setOpeningId(null);
+    setLoadingReference(false);
+    return () => {
+      referenceRequest.current++;
+    };
+  }, [cabinetId]);
   const [snap, setSnap] = useState(true);
   const [grid, setGrid] = useState(10);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
@@ -277,6 +327,12 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         width: editor.draft.cabinet.width_units,
         height: editor.draft.cabinet.height_units
       };
+      if (drawn && selectedOpening && !containsRect(selectedOpening, drawn)) {
+        setServerMessage(
+          t`The drawn drawer must fit inside the selected opening. Clear the opening selection for free placement.`
+        );
+        return;
+      }
       const size = drawn
         ? { width: drawn.width, height: drawn.height }
         : {
@@ -337,7 +393,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
       editor.apply({ type: 'add_drawer', drawer });
       editor.setSelection([drawer.id]);
     },
-    [activeDrawers, editor, grid]
+    [activeDrawers, editor, grid, selectedOpening]
   );
 
   const duplicateSelection = useCallback(() => {
@@ -549,7 +605,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable;
-      if (typing) return;
+      if (typing || activeTab !== 'layout') return;
 
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
@@ -576,7 +632,13 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [archiveSelection, duplicateSelection, editor, selectionIds.length]);
+  }, [
+    activeTab,
+    archiveSelection,
+    duplicateSelection,
+    editor,
+    selectionIds.length
+  ]);
 
   const openLocation = useCallback(
     (locationId: number) => {
@@ -856,6 +918,53 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
               gap='xs'
               style={{ flex: '1 1 520px', minWidth: 300, minHeight: 480 }}
             >
+              <Paper withBorder p='xs'>
+                <Stack gap='xs'>
+                  <Group>
+                    <Button
+                      variant='light'
+                      loading={loadingReference}
+                      onClick={() => void loadReference()}
+                    >{t`Load / use saved structure`}</Button>
+                    {reference && (
+                      <Button
+                        variant='subtle'
+                        onClick={() => {
+                          setReference(null);
+                          setOpeningId(null);
+                        }}
+                      >{t`Hide structure reference`}</Button>
+                    )}
+                  </Group>
+                  {reference && (
+                    <>
+                      <Text size='sm'>{t`Front-view reference: ${reference.envelope.width} × ${reference.envelope.height} mm scaled to logical canvas. Horizontal and vertical scales are independent; this is not a physical unit conversion. Existing drawers are unchanged. Bins use the drawer interior top-down.`}</Text>
+                      <Select
+                        label={t`Guide placement with opening`}
+                        placeholder={t`Free placement`}
+                        clearable
+                        value={openingId}
+                        onChange={setOpeningId}
+                        data={openings.map((opening, index) => ({
+                          value: opening.id,
+                          label: `Opening ${index + 1} (${reference.features.find((f) => f.id === opening.id)?.width} × ${reference.features.find((f) => f.id === opening.id)?.height} mm)`
+                        }))}
+                      />
+                      <Button
+                        disabled={!selectedOpening || editor.status !== 'ready'}
+                        onClick={() =>
+                          selectedOpening &&
+                          addDrawer(fitOpening(selectedOpening))
+                        }
+                      >{t`Add drawer fitted to opening`}</Button>
+                      <Text
+                        size='xs'
+                        c='dimmed'
+                      >{t`Cyan dashed areas are openings; solid grey features are dividers/shelves; purple outlines are doors/panels. Selected openings constrain newly drawn drawers only. Move/resize and existing drawers remain independent.`}</Text>
+                    </>
+                  )}
+                </Stack>
+              </Paper>
               <EditorCanvas
                 bounds={{
                   width: editor.draft.cabinet.width_units,
@@ -873,6 +982,47 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
                 onResize={onResize}
                 overlay={
                   <>
+                    {reference && (
+                      <g data-testid='structure-reference'>
+                        <rect
+                          x={0}
+                          y={0}
+                          width={editor.draft.cabinet.width_units}
+                          height={editor.draft.cabinet.height_units}
+                          fill='none'
+                          stroke='#168aad'
+                          strokeWidth={3}
+                        />
+                        {projected.map((feature) => (
+                          <rect
+                            key={feature.id}
+                            x={feature.x}
+                            y={feature.y}
+                            width={feature.width}
+                            height={feature.height}
+                            fill={
+                              feature.type === 'opening'
+                                ? '#22b8cf'
+                                : ['partition', 'shelf'].includes(feature.type)
+                                  ? '#868e96'
+                                  : 'none'
+                            }
+                            fillOpacity={feature.id === openingId ? 0.3 : 0.12}
+                            stroke={
+                              feature.type === 'opening'
+                                ? '#168aad'
+                                : ['door', 'panel'].includes(feature.type)
+                                  ? '#7950b2'
+                                  : '#495057'
+                            }
+                            strokeWidth={feature.id === openingId ? 3 : 1.5}
+                            strokeDasharray={
+                              feature.type === 'opening' ? '6 4' : undefined
+                            }
+                          />
+                        ))}
+                      </g>
+                    )}
                     <AllocationBands
                       regions={regions}
                       totalPixels={editor.totalPixels}
@@ -1031,6 +1181,7 @@ export function CabinetDesigner({ context, cabinetId }: CabinetDesignerProps) {
       </Tabs>
       <div style={{ display: activeTab === 'structure' ? 'block' : 'none' }}>
         <StructureEditor
+          active={activeTab === 'structure'}
           context={context}
           cabinetId={cabinetId}
           readOnly={editor.status !== 'ready'}

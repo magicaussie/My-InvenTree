@@ -1,5 +1,22 @@
 # My-InvenTree deployment — status and checkpoints
 
+## Pending source review — saved structure reference controls (not deployed)
+
+The working-tree frontend adds explicit **Load / use saved structure** in Drawers,
+proportional mm-to-logical display projection, optional opening-guided drawing and
+integer-inward fitted drawer creation, plus undoable partition/shelf span controls
+and active-tab keyboard isolation. These changes reuse the existing canvas and
+layout save commands; no backend schema, migration, inventory, mapping or hardware
+contract changes are introduced. See the updated [graphical guide](storage-layout/README.md#saved-structure--drawer-reference--source-implementation-not-yet-deployed).
+
+Local frontend suite: **327 tests passed across 18 files**, with TypeScript checking passing. Regression tests include cabinet-switch isolation for pending reference requests and Structure undo history.
+These are local source tests, not live acceptance of the new controls. No image
+build, activation, remote restart, privileged operation or Main/hardware action was
+performed for this change. The running image IDs recorded below are the prior
+checkpoint, not freshly inspected by this task. A new exact reviewed source/archive
+and owner approval remain required before any privileged image build/activation.
+This source change is recorded separately from the deployed application. Deployment remains gated on approval of its exact commit/archive and bounded build commands.
+
 For day-to-day cabinet and drawer/bin editing, see the
 [Storage Layout graphical user guide](storage-layout/README.md). Screenshots are
 credential-free authenticated Development captures; isolated-fixture writes are

@@ -127,11 +127,13 @@ type Drag =
 export function StructureEditor({
   context,
   cabinetId,
-  readOnly = false
+  readOnly = false,
+  active = true
 }: {
   context: InvenTreePluginContext;
   cabinetId: string;
   readOnly?: boolean;
+  active?: boolean;
 }) {
   const client = useMemo(
     () => new StorageLayoutClient(context.api),
@@ -153,11 +155,23 @@ export function StructureEditor({
   const [past, setPast] = useState<StructureDocument[]>([]);
   const [future, setFuture] = useState<StructureDocument[]>([]);
   const drag = useRef<Drag | null>(null);
+  const session = useRef(0);
   const initial = useRef({ width: 600, height: 800, depth: 400 });
   const dirty = JSON.stringify(document) !== JSON.stringify(saved);
 
   useEffect(() => {
     let alive = true;
+    session.current++;
+    setSaving(false);
+    setDocument(null);
+    setSaved(null);
+    setRevision(null);
+    setPast([]);
+    setFuture([]);
+    setSelection(null);
+    setError('');
+    setTool('select');
+    drag.current = null;
     client
       .getCabinet(cabinetId)
       .then(({ data }) => {
@@ -172,6 +186,7 @@ export function StructureEditor({
       .catch((e) => alive && setError(String(e)));
     return () => {
       alive = false;
+      session.current++;
     };
   }, [client, cabinetId]);
 
@@ -225,6 +240,13 @@ export function StructureEditor({
   };
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
+      if (
+        !active ||
+        readOnly ||
+        /INPUT|TEXTAREA/.test((event.target as HTMLElement)?.tagName ?? '') ||
+        (event.target as HTMLElement)?.isContentEditable
+      )
+        return;
       if (event.key === 'Escape') {
         const active = drag.current;
         if (active && 'original' in active) setDocument(active.original);
@@ -254,7 +276,7 @@ export function StructureEditor({
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [commit, document, readOnly, redo, selection, undo]);
+  }, [active, commit, document, readOnly, redo, selection, undo]);
 
   const point = (event: React.PointerEvent<SVGElement>) => {
     const bounds =
@@ -376,6 +398,7 @@ export function StructureEditor({
   const errors = document ? validationErrors(document) : [];
   const save = async () => {
     if (!document || revision === null || errors.length > 0) return;
+    const saveSession = session.current;
     setSaving(true);
     setError('');
     try {
@@ -384,6 +407,7 @@ export function StructureEditor({
         document,
         revision
       );
+      if (saveSession !== session.current) return;
       const result =
         (response as typeof response & { structure?: StructureDocument })
           .structure ?? document;
@@ -391,9 +415,9 @@ export function StructureEditor({
       setSaved(result);
       setRevision(response.revision);
     } catch (e) {
-      setError(String(e));
+      if (saveSession === session.current) setError(String(e));
     } finally {
-      setSaving(false);
+      if (saveSession === session.current) setSaving(false);
     }
   };
   if (!document)
@@ -463,6 +487,8 @@ export function StructureEditor({
           w={160}
         />
         <Button
+          variant={tool === 'cabinet' ? 'filled' : 'default'}
+          title='Drag from the origin to set the cabinet envelope; existing features are not scaled.'
           onClick={() => setTool('cabinet')}
           disabled={readOnly}
         >{t`Draw Cabinet`}</Button>
@@ -701,6 +727,26 @@ export function StructureEditor({
                 <Text>
                   {selected.type} · {selected.id.slice(0, 8)}
                 </Text>
+                {(selected.type === 'partition' ||
+                  selected.type === 'shelf') && (
+                  <Button
+                    variant='light'
+                    disabled={readOnly}
+                    title='Keep thickness and position on the other axis; span the full envelope.'
+                    onClick={() =>
+                      update(
+                        selected.id,
+                        selected.type === 'partition'
+                          ? { y: 0, height: document.envelope.height }
+                          : { x: 0, width: document.envelope.width }
+                      )
+                    }
+                  >
+                    {selected.type === 'partition'
+                      ? t`Span cabinet height`
+                      : t`Span cabinet width`}
+                  </Button>
+                )}
                 {(['x', 'y', 'width', 'height'] as const).map((key) => (
                   <NumberInput
                     key={key}
