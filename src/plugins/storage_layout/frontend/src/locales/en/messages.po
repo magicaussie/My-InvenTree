@@ -13,6 +13,24 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/components/CabinetDesigner.tsx
+#: src/components/CabinetList.tsx
+#~ msgid "Width (units)"
+#~ msgstr "Width (units)"
+
+#: src/components/CabinetDesigner.tsx
+#~ msgid "Cabinet width in units"
+#~ msgstr "Cabinet width in units"
+
+#: src/components/CabinetDesigner.tsx
+#: src/components/CabinetList.tsx
+#~ msgid "Height (units)"
+#~ msgstr "Height (units)"
+
+#: src/components/CabinetDesigner.tsx
+#~ msgid "Cabinet height in units"
+#~ msgstr "Cabinet height in units"
+
 #. placeholder {0}: result.errors.length
 #. placeholder {1}: result.warnings.length
 #: src/components/CabinetDesigner.tsx
@@ -77,6 +95,18 @@ msgstr "revision {0}"
 msgid "Read-only"
 msgstr "Read-only"
 
+#: src/components/CabinetDesigner.tsx
+msgid "Native stock location status"
+msgstr "Native stock location status"
+
+#: src/components/CabinetDesigner.tsx
+msgid "Stock location linked"
+msgstr "Stock location linked"
+
+#: src/components/CabinetDesigner.tsx
+msgid "No stock location"
+msgstr "No stock location"
+
 #. placeholder {0}: editor.totalPixels
 #: src/components/CabinetDesigner.tsx
 msgid "mapping N={0}"
@@ -108,9 +138,8 @@ msgid "Your draft remains unsaved. Check the response above, correct the issue i
 msgstr "Your draft remains unsaved. Check the response above, correct the issue if needed, then retry or copy the error for your administrator."
 
 #: src/components/CabinetDesigner.tsx
-#: src/components/DrawerDesigner.tsx
-msgid "Layout"
-msgstr "Layout"
+msgid "Drawers and Bins"
+msgstr "Drawers and Bins"
 
 #: src/components/CabinetDesigner.tsx
 msgid "Topology"
@@ -146,21 +175,21 @@ msgstr "Cabinet properties"
 
 #: src/components/CabinetDesigner.tsx
 #: src/components/CabinetList.tsx
-msgid "Width (units)"
-msgstr "Width (units)"
+msgid "Width (logical units)"
+msgstr "Width (logical units)"
 
 #: src/components/CabinetDesigner.tsx
-msgid "Cabinet width in units"
-msgstr "Cabinet width in units"
+msgid "Cabinet width in logical units"
+msgstr "Cabinet width in logical units"
 
 #: src/components/CabinetDesigner.tsx
 #: src/components/CabinetList.tsx
-msgid "Height (units)"
-msgstr "Height (units)"
+msgid "Height (logical units)"
+msgstr "Height (logical units)"
 
 #: src/components/CabinetDesigner.tsx
-msgid "Cabinet height in units"
-msgstr "Cabinet height in units"
+msgid "Cabinet height in logical units"
+msgstr "Cabinet height in logical units"
 
 #: src/components/CabinetDesigner.tsx
 msgid "One or more drawers extend beyond these cabinet bounds. Their saved positions were not changed."
@@ -230,6 +259,18 @@ msgid "Cabinet {0}x{1} units. Grid {grid}. {2} logical pixels."
 msgstr "Cabinet {0}x{1} units. Grid {grid}. {2} logical pixels."
 
 #: src/components/CabinetList.tsx
+#~ msgid "Create a cabinet to start designing its drawers and bins. Cabinets are bound to existing native stock locations."
+#~ msgstr "Create a cabinet to start designing its drawers and bins. Cabinets are bound to existing native stock locations."
+
+#: src/components/CabinetList.tsx
+#~ msgid "Native location ID"
+#~ msgstr "Native location ID"
+
+#: src/components/CabinetList.tsx
+#~ msgid "Existing structural StockLocation that anchors the cabinet."
+#~ msgstr "Existing structural StockLocation that anchors the cabinet."
+
+#: src/components/CabinetList.tsx
 msgid "Storage Layout"
 msgstr "Storage Layout"
 
@@ -253,8 +294,8 @@ msgid "No cabinets yet"
 msgstr "No cabinets yet"
 
 #: src/components/CabinetList.tsx
-msgid "Create a cabinet to start designing its drawers and bins. Cabinets are bound to existing native stock locations."
-msgstr "Create a cabinet to start designing its drawers and bins. Cabinets are bound to existing native stock locations."
+msgid "Create a cabinet to start designing its drawers and bins. Cabinets can be bound to an existing native stock location or a new root location."
+msgstr "Create a cabinet to start designing its drawers and bins. Cabinets can be bound to an existing native stock location or a new root location."
 
 #: src/components/CabinetList.tsx
 #: src/components/CabinetList.tsx
@@ -281,12 +322,24 @@ msgid "Design"
 msgstr "Design"
 
 #: src/components/CabinetList.tsx
-msgid "Native location ID"
-msgstr "Native location ID"
+msgid "Choose existing"
+msgstr "Choose existing"
 
 #: src/components/CabinetList.tsx
-msgid "Existing structural StockLocation that anchors the cabinet."
-msgstr "Existing structural StockLocation that anchors the cabinet."
+msgid "Create root location"
+msgstr "Create root location"
+
+#: src/components/CabinetList.tsx
+msgid "New root StockLocation name"
+msgstr "New root StockLocation name"
+
+#: src/components/CabinetList.tsx
+msgid "Cabinet StockLocation"
+msgstr "Cabinet StockLocation"
+
+#: src/components/CabinetList.tsx
+msgid "Select the existing structural location that anchors this cabinet."
+msgstr "Select the existing structural location that anchors this cabinet."
 
 #: src/components/CabinetList.tsx
 #: src/components/editor/Modals.tsx
@@ -371,6 +424,10 @@ msgstr "Generate bin grid"
 #: src/components/DrawerDesigner.tsx
 msgid "Grid generator"
 msgstr "Grid generator"
+
+#: src/components/DrawerDesigner.tsx
+msgid "Layout"
+msgstr "Layout"
 
 #: src/components/DrawerDesigner.tsx
 msgid "Bins"
@@ -596,6 +653,14 @@ msgid "Locate item"
 msgstr "Locate item"
 
 #: src/components/editor/EditorCanvas.tsx
+#~ msgid "Drawing — drag on cabinet"
+#~ msgstr "Drawing — drag on cabinet"
+
+#: src/components/editor/EditorCanvas.tsx
+#~ msgid "Draw drawer"
+#~ msgstr "Draw drawer"
+
+#: src/components/editor/EditorCanvas.tsx
 #: src/components/editor/EditorCanvas.tsx
 msgid "Zoom in"
 msgstr "Zoom in"
@@ -616,12 +681,32 @@ msgid "Reset view"
 msgstr "Reset view"
 
 #: src/components/editor/EditorCanvas.tsx
-msgid "Drawing — drag on cabinet"
-msgstr "Drawing — drag on cabinet"
+msgid "Select mode"
+msgstr "Select mode"
 
 #: src/components/editor/EditorCanvas.tsx
-msgid "Draw drawer"
-msgstr "Draw drawer"
+msgid "Draw mode"
+msgstr "Draw mode"
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Pan mode"
+msgstr "Pan mode"
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Select"
+msgstr "Select"
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Drawing — drag to create"
+msgstr "Drawing — drag to create"
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Draw"
+msgstr "Draw"
+
+#: src/components/editor/EditorCanvas.tsx
+msgid "Pan"
+msgstr "Pan"
 
 #: src/components/editor/EditorCanvas.tsx
 msgid "Grid"
@@ -742,6 +827,23 @@ msgid "Add a function colour"
 msgstr "Add a function colour"
 
 #: src/components/editor/Inspector.tsx
+#~ msgid "Front rectangle"
+#~ msgstr "Front rectangle"
+
+#: src/components/editor/Inspector.tsx
+#~ msgid "Interior (top-down plane)"
+#~ msgstr "Interior (top-down plane)"
+
+#: src/components/editor/Inspector.tsx
+#: src/components/editor/Inspector.tsx
+#~ msgid "Location ID"
+#~ msgstr "Location ID"
+
+#: src/components/editor/Inspector.tsx
+#~ msgid "Rectangle"
+#~ msgstr "Rectangle"
+
+#: src/components/editor/Inspector.tsx
 #: src/components/editor/SimulationPanel.tsx
 msgid "Drawer"
 msgstr "Drawer"
@@ -766,8 +868,8 @@ msgid "Display number"
 msgstr "Display number"
 
 #: src/components/editor/Inspector.tsx
-msgid "Front rectangle"
-msgstr "Front rectangle"
+msgid "Front rectangle (logical units)"
+msgstr "Front rectangle (logical units)"
 
 #: src/components/editor/Inspector.tsx
 #: src/components/editor/Inspector.tsx
@@ -790,8 +892,8 @@ msgid "Height"
 msgstr "Height"
 
 #: src/components/editor/Inspector.tsx
-msgid "Interior (top-down plane)"
-msgstr "Interior (top-down plane)"
+msgid "Interior (top-down logical units)"
+msgstr "Interior (top-down logical units)"
 
 #: src/components/editor/Inspector.tsx
 msgid "Interior width"
@@ -808,8 +910,8 @@ msgstr "Native location"
 
 #: src/components/editor/Inspector.tsx
 #: src/components/editor/Inspector.tsx
-msgid "Location ID"
-msgstr "Location ID"
+msgid "Stock location"
+msgstr "Stock location"
 
 #: src/components/editor/Inspector.tsx
 #: src/components/editor/Inspector.tsx
@@ -870,8 +972,8 @@ msgid "Bound"
 msgstr "Bound"
 
 #: src/components/editor/Inspector.tsx
-msgid "Rectangle"
-msgstr "Rectangle"
+msgid "Rectangle (logical units)"
+msgstr "Rectangle (logical units)"
 
 #: src/components/editor/Inspector.tsx
 msgid "{stockCount} stock item(s) at this location (informational)."

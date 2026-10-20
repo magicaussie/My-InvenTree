@@ -55,7 +55,7 @@ export function recordedCalls(page: Page): Promise<RecordedCall[]> {
   );
 }
 
-/** Drag the first drawer/bin rectangle by a pixel offset. */
+/** Drag by logical canvas units, independent of fit and zoom. */
 export async function dragFirstEntity(page: Page, dx: number, dy: number) {
   const rect = page.locator('rect[style*="move"]').first();
   const box = await rect.boundingBox();
@@ -66,6 +66,14 @@ export async function dragFirstEntity(page: Page, dx: number, dy: number) {
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.mouse.move(startX + dx, startY + dy, { steps: 8 });
+  const delta = await rect.evaluate((element, offset) => {
+    const matrix = element.getScreenCTM();
+    if (!matrix) throw new Error('entity has no screen transform');
+    return {
+      x: matrix.a * offset.dx + matrix.c * offset.dy,
+      y: matrix.b * offset.dx + matrix.d * offset.dy
+    };
+  }, { dx, dy });
+  await page.mouse.move(startX + delta.x, startY + delta.y, { steps: 8 });
   await page.mouse.up();
 }

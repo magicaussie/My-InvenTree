@@ -28,6 +28,8 @@ from django.db.models import Q
 from django.db.models.signals import post_save
 from django.utils.translation import gettext_lazy as _
 
+from django_cleanup import cleanup
+
 # region choices
 
 
@@ -189,6 +191,7 @@ class AppendOnlyModel(models.Model):
 # endregion
 
 
+@cleanup.ignore
 class Cabinet(StorageLayoutModel):
     """A physical storage cabinet.
 
@@ -239,6 +242,11 @@ class Cabinet(StorageLayoutModel):
     height_units = models.PositiveIntegerField(
         validators=[MinValueValidator(1)], verbose_name=_('Height (units)')
     )
+    background_image = models.FileField(
+        upload_to='storage_layout/backgrounds/', blank=True, default=''
+    )
+    background_metadata = models.JSONField(default=dict, blank=True)
+
     structure = models.JSONField(
         null=True, blank=True, default=None, verbose_name=_('Physical structure')
     )
@@ -335,6 +343,7 @@ class Cabinet(StorageLayoutModel):
             raise ValidationError(errors)
 
 
+@cleanup.ignore
 class Drawer(StorageLayoutModel):
     """A drawer within a cabinet, with front-face geometry and interior plane."""
 
@@ -377,6 +386,11 @@ class Drawer(StorageLayoutModel):
         related_name='drawers',
         verbose_name=_('Cabinet'),
     )
+    background_image = models.FileField(
+        upload_to='storage_layout/backgrounds/', blank=True, default=''
+    )
+    background_metadata = models.JSONField(default=dict, blank=True)
+
     label = models.CharField(max_length=64, verbose_name=_('Label'))
     display_number = models.PositiveIntegerField(verbose_name=_('Display number'))
 

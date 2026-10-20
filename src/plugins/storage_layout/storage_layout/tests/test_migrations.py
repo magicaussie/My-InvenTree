@@ -19,7 +19,9 @@ MIGRATION_0002 = '0002_mapping_and_constraints'
 MIGRATION_0003 = '0003_operations_audit_permissions'
 MIGRATION_0004 = '0004_cabinet_structure'
 
-LATEST = MIGRATION_0004
+MIGRATION_0005 = '0005_background_images'
+
+LATEST = MIGRATION_0005
 
 TABLES = (
     'storage_layout_cabinet',
@@ -111,11 +113,16 @@ class MigrationLifecycleTests(TransactionTestCase):
         self.assertIn('storage_layout_designaudit', names)
 
         migrate_to(MIGRATION_0004)
-        self.assertIn('structure', [
-            field.name for field in MigrationExecutor(connection).loader.project_state(
-                [(APP, MIGRATION_0004)]
-            ).apps.get_model(APP, 'Cabinet')._meta.fields
-        ])
+        self.assertIn(
+            'structure',
+            [
+                field.name
+                for field in MigrationExecutor(connection)
+                .loader.project_state([(APP, MIGRATION_0004)])
+                .apps.get_model(APP, 'Cabinet')
+                ._meta.fields
+            ],
+        )
 
     def test_operation_rows_created_for_existing_cabinets(self):
         """The 0003 data migration precreates reservation rows."""
@@ -182,3 +189,29 @@ class MigrationDependencyTests(TransactionTestCase):
         ]
 
         self.assertIn(('stock', '0128_remove_stockitem_notes'), dependencies)
+
+    def test_background_migration_preserves_structure(self):
+        """Existing cabinets retain structure and start with no reference."""
+        executor = migrate_to(MIGRATION_0004)
+        old = executor.loader.project_state([(APP, MIGRATION_0004)]).apps.get_model(
+            APP, 'Cabinet'
+        )
+        location = StockLocation.objects.create(name='Legacy image migration')
+        structure = {'schema_version': 1, 'features': []}
+        cabinet = old.objects.create(
+            name='Legacy',
+            slug='legacy-background',
+            location_id=location.pk,
+            width_units=100,
+            height_units=200,
+            structure=structure,
+        )
+        executor = migrate_to(MIGRATION_0005)
+        model = executor.loader.project_state([(APP, MIGRATION_0005)]).apps.get_model(
+            APP, 'Cabinet'
+        )
+        restored = model.objects.get(pk=cabinet.pk)
+        self.assertEqual(restored.structure, structure)
+        self.assertFalse(restored.background_image)
+        self.assertEqual(restored.background_metadata, {})
+        self.assertEqual(restored.revision, cabinet.revision)

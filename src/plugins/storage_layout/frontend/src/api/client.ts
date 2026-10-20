@@ -214,18 +214,6 @@ export class StorageLayoutClient {
     return this.post<CabinetSummary>(Endpoints.cabinets(), body);
   }
 
-  async updateStructure(
-    id: string,
-    structure: import('./types').StructureDocument,
-    revision: number
-  ) {
-    return this.patch<CabinetSummary>(
-      Endpoints.cabinet(id),
-      { structure },
-      revision
-    );
-  }
-
   async updateCabinet(
     id: string,
     body: Partial<{

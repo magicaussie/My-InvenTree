@@ -321,3 +321,20 @@ Recovery: use dedicated `status` then `restart` for transient Dev failures. Do n
 - Application emits read-only font-cache/Gunicorn-control-directory warnings and default report-template initialization warnings; login/designer persistence and service health passed despite these. Full reporting/background-task acceptance was not performed.
 - Restart/replacement durability is proven; host reboot is not. No automatic image/source updater, scheduled/off-host backup, or tested full disaster-recovery stack is claimed.
 - Local untracked owner files remain untouched. No push or pull request was requested or performed.
+
+
+## 002J-Q source checkpoint — incomplete, NOT approved for activation
+
+See [the Development-only proposal and exact local test report](ai/002J-Q-DEVELOPMENT-PROPOSAL.md).
+Source retires Structure UI while retaining backend structure data and adds the
+secured background media API with additive migration 0005. Image canvas/editor UI
+is **not yet implemented**; this checkpoint is not a complete image feature.
+
+Local validation: 561 backend tests, 7 migration tests, 315 frontend unit tests,
+typecheck and changed-file Ruff/Biome checks passed; migration drift check passed.
+Fixture Chromium harness: 25 passed, 1 zoom/empty-space deselection failure remains.
+Full frontend lint still finds pre-existing formatting in commands.test.ts.
+No authenticated Development image acceptance, restart durability, image deployment,
+private backup or isolated restore was performed. Existing Development remains
+untouched. Main, workers and hardware remain forbidden. The exact review source
+archive manifest is recorded separately; it is not permission to build or activate.

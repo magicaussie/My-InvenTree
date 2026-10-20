@@ -12,6 +12,19 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
+## 002J-Q source checkpoint — incomplete; do not activate
+
+Source retires the Cabinet / Structure frontend and opening-reference workflow,
+but preserves `Cabinet.structure` and backend compatibility. Additive migration
+`0005_background_images` adds independent cabinet/drawer FileFields and normalized
+metadata. Image content is served through ownership-checked plugin endpoints;
+all writes use aggregate CAS. Automatic django-cleanup is disabled for these two
+models to avoid deleting shared references; failed new writes clean their own file.
+Image editor UI/canvas integration and image browser acceptance remain pending.
+This is not a completed image feature or a deployed build. Existing historical
+checkpoints below describe older builds, not this source. See the 002J-Q proposal
+and test report in `docs/DEPLOYMENT.md`. No Main, live DB or hardware work is allowed.
+
 ## Saved structure reference — source implementation, not deployed
 
 Drawers now offers an explicit saved-structure reference with opening-guided drawing and inward-rounded fitted drawer creation. Cabinet / Structure adds undoable full-height partition/full-width shelf controls. Physical mm geometry is proportionally projected with independent axes; this is not physical calibration and never converts legacy logical dimensions. Bins retain their parent drawer top-down frame. Existing drawers and move/resize remain independent of opening guides. Reference requests and Structure undo history are isolated by cabinet identity. Frontend verification: 327 tests across 18 files and typecheck passed; no live browser acceptance or deployment was performed for these additions. The graphical guide was updated. Require a newly approved exact archive/build before privileged deployment; preserve all existing inventory, mappings and hardware gates.

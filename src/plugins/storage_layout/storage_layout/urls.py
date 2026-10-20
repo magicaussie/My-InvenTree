@@ -8,11 +8,31 @@ live under ``plugin``.
 
 from django.urls import path
 
-from storage_layout import api
+from storage_layout import api, backgrounds
 
 API_PREFIX = 'api/v1/'
 
 urlpatterns = [
+    path(
+        f'{API_PREFIX}cabinets/<uuid:pk>/background/',
+        backgrounds.BackgroundView.as_view(),
+        name='cabinet-background',
+    ),
+    path(
+        f'{API_PREFIX}cabinets/<uuid:pk>/background/content/',
+        backgrounds.BackgroundContentView.as_view(),
+        name='cabinet-background-content',
+    ),
+    path(
+        f'{API_PREFIX}drawers/<uuid:pk>/background/',
+        backgrounds.DrawerBackgroundView.as_view(),
+        name='drawer-background',
+    ),
+    path(
+        f'{API_PREFIX}drawers/<uuid:pk>/background/content/',
+        backgrounds.DrawerBackgroundContentView.as_view(),
+        name='drawer-background-content',
+    ),
     # Cabinets
     path(f'{API_PREFIX}cabinets/', api.CabinetList.as_view(), name='cabinet-list'),
     path(

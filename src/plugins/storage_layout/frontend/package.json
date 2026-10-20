@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "harness:prepare": "npm run compile && vite build --emptyOutDir && node scripts/prepare-harness.mjs",
+    "harness:prepare": "npm run translate && vite build --emptyOutDir && node scripts/prepare-harness.mjs",
     "harness": "vite --config harness/vite.config.ts",
     "e2e": "playwright test",
     "e2e:install": "playwright install chromium"

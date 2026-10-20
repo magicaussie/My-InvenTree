@@ -35,7 +35,7 @@ test('zoom keeps painted bounds and allocation overlays aligned and background c
   // Empty painted cabinet space, not the unpainted exterior of the SVG.
   const point = await entity.evaluate((element) => {
     const group = element.closest('g[transform]') as SVGGElement;
-    const point = new DOMPoint(400, 30).matrixTransform(group.getScreenCTM()!);
+    const point = new DOMPoint(250, 30).matrixTransform(group.getScreenCTM()!);
     return { x: point.x, y: point.y };
   });
   await page.mouse.click(point.x, point.y);
@@ -54,9 +54,14 @@ test('zoomed resize retains SVG capture, Escape cancels, and the next resize sav
   if (!box) throw new Error('resize handle has no bounding box');
   const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   const width = Number(await entity.getAttribute('width'));
+  const deltaX = await entity.evaluate((element) => {
+    const matrix = element.getScreenCTM();
+    if (!matrix) throw new Error('entity has no screen transform');
+    return matrix.a * 20;
+  });
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();
-  await page.mouse.move(start.x + 24, start.y, { steps: 4 });
+  await page.mouse.move(start.x + deltaX, start.y, { steps: 4 });
   await expect(entity).toHaveAttribute('width', String(width + 20));
   expect(
     await svg.evaluate((element) =>
@@ -76,9 +81,15 @@ test('zoomed resize retains SVG capture, Escape cancels, and the next resize sav
     (await recordedCalls(page)).filter((call) => call.method === 'PUT')
   ).toHaveLength(0);
 
-  await page.mouse.move(start.x, start.y);
+  // Cancellation can reflow the inspector and refit the viewport. Re-read
+  // screen geometry rather than dragging at a stale handle position.
+  const nextBox = await handle.boundingBox();
+  if (!nextBox) throw new Error('resize handle disappeared after cancellation');
+  const nextStart = { x: nextBox.x + nextBox.width / 2, y: nextBox.y + nextBox.height / 2 };
+  const nextDeltaX = await entity.evaluate((element) => element.getScreenCTM()!.a * 20);
+  await page.mouse.move(nextStart.x, nextStart.y);
   await page.mouse.down();
-  await page.mouse.move(start.x + 24, start.y, { steps: 4 });
+  await page.mouse.move(nextStart.x + nextDeltaX, nextStart.y, { steps: 4 });
   await page.mouse.up();
   await expect(entity).toHaveAttribute('width', String(width + 20));
   await page.getByLabel('Save layout').click();

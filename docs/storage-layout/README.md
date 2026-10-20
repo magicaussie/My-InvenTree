@@ -40,88 +40,44 @@ review-tag images whose build provenance was not established there. It is histor
 context, not evidence about the current Cabinet / Structure image build. See the
 [current deployment evidence](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development).
 
-## Saved structure → drawer reference — source implementation, not yet deployed
+## 002J-Q source checkpoint — incomplete, not deployed
 
-The following controls require a newly approved Development build. The historical
-screenshots below do **not** show or verify these additions.
+The source now retires **Cabinet / Structure**, saved-structure overlays, opening
+selection and fitted-opening drawer creation. Drawers and bins remain ordinary
+logical rectangles. Existing `Cabinet.structure` data and its backend API remain
+intact for compatibility; no cleanup or conversion is performed.
+
+The backend now supports independent cabinet-front and drawer-interior background
+references. **The upload controls and canvas image layers are not yet implemented.**
+Do not interpret this checkpoint as a usable image editor or approved release.
+No new authenticated Development browser evidence or screenshots were captured.
+Historical Structure screenshots remain in the repository for audit only; see
+[the deployment record](../DEPLOYMENT.md) for the previously activated feature.
 
 ```mermaid
 flowchart TD
-    A[Cabinet / Structure: draw body and features in mm] --> B[Save structure]
-    B --> C[Drawers: Load / use saved structure]
-    C --> D[Choose Guide placement with opening]
-    D --> E[Add drawer fitted to opening or draw inside it]
-    E --> F[Review logical geometry and Save layout]
-    F --> G[Design drawer interior and bins: top-down]
+    A[Retired Structure UI] --> B[Saved backend structure retained]
+    C[Cabinet front reference] --> D[Independent normalized image metadata]
+    E[Drawer top-down reference] --> D
+    D --> F[Secured image API implemented]
+    F --> G[Image editor controls and canvas layers still pending]
+    G --> H[Complete acceptance before proposing activation]
 ```
 
-- Structure properties offer **Span cabinet height** for a selected partition and
-  **Span cabinet width** for a shelf. They retain thickness, are undoable, and do not
-  move drawers. Draw Cabinet now highlights its active state.
-- In **Drawers**, explicitly choose **Load / use saved structure** after saving the
-  physical document. It fetches the saved version, never the unsaved Structure draft.
-  Repeat this action after subsequent structure saves; **Hide structure reference**
-  removes only the guide. The reference is session-local, not a persisted binding.
-- The mm envelope is projected onto the existing logical canvas using independent
-  horizontal/vertical ratios. This may distort aspect ratio; it is a proportional
-  reference, **not** a physical calibration or a silent unit conversion. Neither
-  cabinet logical dimensions nor existing drawer geometry is changed.
-- Cyan dashed rectangles are openings, grey shapes are partitions/shelves, purple
-  outlines are doors/panels. Select an opening with **Guide placement with opening**.
-  **Add drawer fitted to opening** creates a normal new drawer in the local undoable
-  draft. Coordinates round inward to whole logical units; openings too small for a
-  one-unit rectangle or overlapping an existing drawer are rejected without changes.
-- A selected opening also constrains newly pointer-drawn drawers. Clear the selection
-  for free placement. Existing drawers, Add/duplicate, and move/resize retain legacy
-  rules: openings are guides, not mandatory structural constraints or inventory parents.
-- Save layout separately. Structure and layout retain independent revision checks:
-  if a structure save makes a loaded layout stale, reload the layout when prompted;
-  do not discard an unsaved draft without reviewing it. No automatic merge is attempted.
-- Bins remain in their **parent drawer interior, top-down**, not the cabinet front.
-  Loading/hiding a reference creates no native Locations, stock, mappings or LED actions.
-- Keyboard undo/delete acts only in the active editor tab, not a hidden Structure editor.
+Image coordinates are normalized canvas fractions: rendered position is
+`(x × canvas width, y × canvas height)` and rendered size is
+`(width × canvas width, height × canvas height)`. Changing canvas dimensions scales
+the reference proportionally per axis; it never edits drawers, bins, stock or LED
+allocations. Aspect lock is persisted editing intent, not automatic physical
+calibration or a backend geometry constraint. Source replacement preserves metadata.
 
-## Cabinet / Structure mode — Development browser-verified
-
-Development has a separate `Cabinet / Structure` tab for a front-view millimetre-based
-physical envelope. Authenticated isolated-fixture browser acceptance verified exact
-numeric dimensions, pointer drawing, moving and resizing of partitions and shelves,
-openings, doors and panels, snap, zoom, pan, fit, select, undo/redo, save, refresh,
-stale-revision rejection and persistence across the restricted Development restart.
-This document is separate from the existing drawer/bin layout: legacy `width_units` and
-`height_units` are not converted.
-
-A separate populated isolated fixture verified that a structure edit did not change
-stock identity/quantity/location, the native Location record, or the electrical-topology
-snapshot; the same stock stayed unchanged through drawer/bin rename, archive and repeated
-save. That fixture had no active LED mapping (`active_mapping` was null), so preservation
-of a populated mapping is not verified. A low-permission browser session was established
-and both cabinet-layout and native-location writes were denied with HTTP 403. See the
-[deployment acceptance record](../DEPLOYMENT.md#current-deployment-checkpoint--approved-cabinet-structure-feature-activated-in-development)
-for fixture IDs, screenshot hashes, auth diagnosis and remaining limits.
-
-The authenticated live check is
-[`live-structure-acceptance.cjs`](../../contrib/remote-development/live-structure-acceptance.cjs).
-Its no-argument mode is read-only against the existing cabinet. `--exercise` writes only
-to a newly created isolated cabinet, retained for audit, and `--exercise --restart`
-additionally requests only the restricted Development restart. The companion populated
-fixture check is [`live-layout-safety-acceptance.cjs`](../../contrib/remote-development/live-layout-safety-acceptance.cjs).
-Both scripts are restricted to approved Development and must never be run against Main.
-
-Live screenshots from the successful exercise:
-
-![Cabinet structure features drawn in the Development browser](images/live-structure-exercise-drawn.png)
-
-![Saved cabinet structure in Development](images/live-structure-exercise-saved.png)
-
-![Cabinet structure after browser refresh](images/live-structure-exercise-refreshed.png)
-
-![Cabinet structure after restricted Development restart](images/live-structure-exercise-after-restart.png)
-
-The earlier absence screenshots (`live-structure-development-before-refresh.png` and
-`live-structure-development-after-refresh.png`) document the UI before deployment only;
-they are historical, not the current state. See the deployment record for limitations,
-including unverified non-admin permissions and existing-data/mapping preservation.
+Only PNG, JPEG and WebP raster uploads are accepted (8 MiB maximum, 20 million
+pixels, no animation); content must match the declared MIME type. Images are decoded
+and re-encoded as PNG with generated filenames. Reads require the same ownership
+and view permissions as layout reads; writes require change permission and the
+cabinet aggregate revision. Responses expose only authorized content endpoints,
+not storage paths or arbitrary external URLs. Replaced/removed files are retained;
+a separate reference-aware retention policy is required before garbage collection.
 
 ## 1. Find or create a cabinet
 
