@@ -11,6 +11,27 @@ discover, locate, test or clear, enable gates, or start workers to follow this g
 Main is forbidden. See [deployment status](../DEPLOYMENT.md) and the
 [hardware readiness runbook](../../src/plugins/storage_layout/LIVE_TEST_READINESS.md).
 
+## Designer workspace — current Development correction
+
+Cabinet and drawer canvases fill the remaining desktop viewport below their
+controls and resize with the window. On first open the drawing fits automatically.
+Use **Zoom in**, **Zoom out**, **Pan** or **Reset view** to take manual control;
+your zoom/pan is then preserved across unrelated edits and window resizing.
+**Fit to view** fits again and resumes automatic fitting as the canvas resizes.
+This changes only the view, never saved drawing dimensions or inventory.
+
+Authenticated Development verification on `f099aa1d3` measured a 696px cabinet
+canvas and 672px drawer canvases at 1600×1100. At narrow widths, stacked panels
+and a minimum usable workspace require vertical scrolling; below 425px the host's
+existing mobile gate still applies. [Exact evidence and limits](evidence/WORKSPACE-F099AA1D3.md).
+
+![Current cabinet workspace, isolated Development fixture](evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/0-1600.png)
+
+[Current drawer workspace](evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/1-1600.png)
+and [425px stacked drawer layout](evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/1-425.png)
+are real authenticated captures with synthetic fixture backgrounds, not shared records.
+Older screenshots below show earlier application layouts.
+
 ## Start here
 
 ```mermaid

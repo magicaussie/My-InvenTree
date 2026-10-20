@@ -12,6 +12,17 @@ For Zed and other coding agents working on this fork, follow [docs/ai/DEVELOPMEN
 
 For every Storage Layout plugin change, review [the graphical user guide](docs/storage-layout/README.md) in the same change. Update affected instructions, diagrams and screenshots whenever UI labels, dimensions, cabinet/drawer/bin workflows, saving, validation, topology, mapping or safety behaviour changes. For changes with no user-facing effect, explicitly record that the guide was reviewed and why no update is needed. Keep screenshots credential-free; use only approved Development browsing, never hardware actions or Main, and do not modify shared cabinet data just to obtain illustrations. Distinguish browser-verified behaviour from source-checked or illustrative instructions.
 
+## Viewport workspace correction — current Development
+
+Application `f099aa1d315a20807a88b3c62dc70c8ee4095b5b` is now deployed.
+Shared cabinet/drawer canvas fills desktop viewport; initial fit and manual
+zoom/pan preservation verified in authenticated Chromium, 22 checks. Frontend
+331 tests pass; changed-file lint, typecheck and build pass. Full lint retains an
+unrelated commands.test.ts formatting failure. Exact images, archive, rollback,
+activation verification and narrow-layout limits: [workspace evidence](docs/storage-layout/evidence/WORKSPACE-F099AA1D3.md).
+No fixture writes, Main/hardware/workers/shared records touched. Owner untracked
+files remain untouched. Earlier checkpoints below are historical.
+
 ## 002J-Q responsive follow-up — Development browser verified with limits
 
 The lead built and deployed application `19d148233b278a4ef6309555eb2cc36b39c72050`.

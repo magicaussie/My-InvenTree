@@ -1,0 +1,1085 @@
+{
+  "app": "f099aa1d315a20807a88b3c62dc70c8ee4095b5b",
+  "base": "http://192.168.1.108:18081",
+  "checks": [
+    "0: initial automatic fit matches explicit fit",
+    "0: 1600x1100 workspace sizing and fit",
+    "0: 1280x900 workspace sizing and fit",
+    "0: 425x844 workspace sizing and fit",
+    "0: explicit zoom survives grid edit and responsive resize",
+    "0: explicit pan survives unrelated edit and resize",
+    "0: explicit Fit restores fitted view",
+    "1: initial automatic fit matches explicit fit",
+    "1: 1600x1100 workspace sizing and fit",
+    "1: 1280x900 workspace sizing and fit",
+    "1: 425x844 workspace sizing and fit",
+    "1: explicit zoom survives grid edit and responsive resize",
+    "1: explicit pan survives unrelated edit and resize",
+    "1: explicit Fit restores fitted view",
+    "2: initial automatic fit matches explicit fit",
+    "2: 1600x1100 workspace sizing and fit",
+    "2: 1280x900 workspace sizing and fit",
+    "2: 425x844 workspace sizing and fit",
+    "2: explicit zoom survives grid edit and responsive resize",
+    "2: explicit pan survives unrelated edit and resize",
+    "2: explicit Fit restores fitted view",
+    "exact fixture layout, backgrounds, inventory, locations, electrical and active mapping preservation"
+  ],
+  "screenshots": [
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/0-1600.png",
+      "sha256": "df5cbefa5161d1a2439cf0d239c247c55ad54a5d31e6eba7abf09742c1ea4916"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/0-1280.png",
+      "sha256": "df8e201e00bb8721cf5667586885934228ac38b0d6cf003e473185f4a606bce4"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/0-425.png",
+      "sha256": "c4f9423bb4a52ab8e42832d027d77ce7910719a9e72de113717b2b22090bc40e"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/1-1600.png",
+      "sha256": "9b297aca0b559de9ba62b814c50462fce450cb6e4e89afbffa8fc6261eadeb5e"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/1-1280.png",
+      "sha256": "6882b15c30537bdfb925d499006a45b630f26fa41757961111d5353045f119ff"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/1-425.png",
+      "sha256": "4ed46deda8ae020027b9ced57aaa1452cd03710c74dae06d241eabc75f6dd33e"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/2-1600.png",
+      "sha256": "15fe66236ff9f4940850afa87d54576a205aa092cee4f969d48ad1e78d4acc88"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/2-1280.png",
+      "sha256": "dad6ab50ebd47457966f969438a25461e54d539b343bc84b2b898dd8be380e2e"
+    },
+    {
+      "path": "docs/storage-layout/evidence/workspace-631c8c10-6ed6-4453-a157-f81bd2a79c28/2-425.png",
+      "sha256": "0f96e1674ab3776896292ed9cedf176b39cbe30a8c6158ad30a739235f11b730"
+    }
+  ],
+  "measurements": [
+    {
+      "index": 0,
+      "viewport": {
+        "width": 1600,
+        "height": 1100
+      },
+      "canvas": {
+        "x": 261,
+        "y": 379.28125,
+        "width": 1018,
+        "height": 695.71875
+      },
+      "transform": "translate(120.36874999999998 24) scale(1.2954375)"
+    },
+    {
+      "index": 0,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "canvas": {
+        "x": 261,
+        "y": 412.078125,
+        "width": 698,
+        "height": 462.921875
+      },
+      "transform": "translate(100.046875 24) scale(0.82984375)"
+    },
+    {
+      "index": 0,
+      "viewport": {
+        "width": 425,
+        "height": 844
+      },
+      "canvas": {
+        "x": 29,
+        "y": 510.140625,
+        "width": 367,
+        "height": 238
+      },
+      "transform": "translate(69.5 24) scale(0.38)"
+    },
+    {
+      "index": 1,
+      "viewport": {
+        "width": 1600,
+        "height": 1100
+      },
+      "canvas": {
+        "x": 241,
+        "y": 403.28125,
+        "width": 1038,
+        "height": 671.71875
+      },
+      "transform": "translate(144.76875 24) scale(2.494875)"
+    },
+    {
+      "index": 1,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "canvas": {
+        "x": 241,
+        "y": 436.078125,
+        "width": 718,
+        "height": 438.921875
+      },
+      "transform": "translate(124.446875 24) scale(1.5636875)"
+    },
+    {
+      "index": 1,
+      "viewport": {
+        "width": 425,
+        "height": 844
+      },
+      "canvas": {
+        "x": 29,
+        "y": 509.5625,
+        "width": 367,
+        "height": 238
+      },
+      "transform": "translate(69.5 24) scale(0.76)"
+    },
+    {
+      "index": 2,
+      "viewport": {
+        "width": 1600,
+        "height": 1100
+      },
+      "canvas": {
+        "x": 241,
+        "y": 403.28125,
+        "width": 1038,
+        "height": 671.71875
+      },
+      "transform": "translate(144.76875 24) scale(2.494875)"
+    },
+    {
+      "index": 2,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "canvas": {
+        "x": 241,
+        "y": 436.078125,
+        "width": 718,
+        "height": 438.921875
+      },
+      "transform": "translate(124.446875 24) scale(1.5636875)"
+    },
+    {
+      "index": 2,
+      "viewport": {
+        "width": 425,
+        "height": 844
+      },
+      "canvas": {
+        "x": 29,
+        "y": 509.5625,
+        "width": 367,
+        "height": 238
+      },
+      "transform": "translate(69.5 24) scale(0.76)"
+    }
+  ],
+  "blocked": [
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    },
+    {
+      "path": "/api/system-internal/observability/end",
+      "method": "POST"
+    }
+  ],
+  "before": {
+    "layout": {
+      "schema_version": 1,
+      "cabinet": {
+        "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+        "name": "SL image acceptance 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "slug": "sl-image-635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "revision": 105,
+        "width_units": 600,
+        "height_units": 500,
+        "archived": false,
+        "location": 308,
+        "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+        "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+        "total_pixels": 120,
+        "numbering_base": 1
+      },
+      "drawers": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "bins": [
+        {
+          "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+          "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Reference bin",
+          "location": 312,
+          "x": 60,
+          "y": 55,
+          "width": 105,
+          "height": 90,
+          "archived": false
+        },
+        {
+          "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+          "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Reference bin",
+          "location": 311,
+          "x": 60,
+          "y": 55,
+          "width": 105,
+          "height": 90,
+          "archived": false
+        }
+      ],
+      "archive_ids": [],
+      "diagnostics": {
+        "valid": true,
+        "errors": [],
+        "warnings": [],
+        "unused_ranges": [],
+        "total_pixels": 120,
+        "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+        "numbering_base": 1
+      }
+    },
+    "electrical": {
+      "schema_version": 1,
+      "cabinet": {
+        "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+        "revision": 105
+      },
+      "controllers": [
+        {
+          "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+          "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "origin": "http://192.0.2.1",
+          "expected_mac": null,
+          "firmware_adapter": "wled-v16.0.1-1d",
+          "enabled": false,
+          "status": "unknown",
+          "commissioning_policy": {},
+          "outputs": [
+            {
+              "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+              "bus_index": 0,
+              "wled_start": 0,
+              "pixel_count": 120,
+              "pins": [
+                16
+              ],
+              "led_type": "22",
+              "colour_order": "GRB",
+              "bus_reverse": false,
+              "skip": 0,
+              "auto_white_mode": 0,
+              "max_current_ma": null,
+              "strings": [
+                {
+                  "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                  "label": "Acceptance string",
+                  "output_offset": 0,
+                  "pixel_count": 120,
+                  "notes": "",
+                  "archived": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "archive_ids": []
+    },
+    "bins": [
+      {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 105,
+          "width_units": 600,
+          "height_units": 500,
+          "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+          "total_pixels": 120
+        },
+        "drawer": {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        "bins": [
+          {
+            "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+            "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+            "label": "Reference bin",
+            "location": 311,
+            "x": 60,
+            "y": 55,
+            "width": 105,
+            "height": 90,
+            "archived": false
+          }
+        ],
+        "archive_ids": []
+      },
+      {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 105,
+          "width_units": 600,
+          "height_units": 500,
+          "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+          "total_pixels": 120
+        },
+        "drawer": {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        },
+        "bins": [
+          {
+            "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+            "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+            "label": "Reference bin",
+            "location": 312,
+            "x": 60,
+            "y": 55,
+            "width": 105,
+            "height": 90,
+            "archived": false
+          }
+        ],
+        "archive_ids": []
+      }
+    ],
+    "backgrounds": [
+      {
+        "image_url": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+        "metadata": {
+          "x": 0.16666666666666666,
+          "y": 0.16,
+          "width": 0.6499999999999999,
+          "height": 0.585,
+          "opacity": 0.55,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      {
+        "image_url": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+        "metadata": {
+          "x": 0.21666666666666667,
+          "y": 0.2,
+          "width": 0.7000000000000001,
+          "height": 0.42,
+          "opacity": 0.65,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      {
+        "image_url": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+        "metadata": {
+          "x": 0.21666666666666667,
+          "y": 0.2,
+          "width": 0.7000000000000001,
+          "height": 0.42,
+          "opacity": 0.75,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      }
+    ],
+    "stock": {
+      "pk": 8,
+      "part": 8,
+      "quantity": 7,
+      "serial": null,
+      "batch": "",
+      "location": 311,
+      "belongs_to": null,
+      "build": null,
+      "consumed_by": null,
+      "customer": null,
+      "delete_on_deplete": true,
+      "expiry_date": null,
+      "in_stock": true,
+      "is_building": false,
+      "link": "",
+      "owner": null,
+      "packaging": null,
+      "parent": null,
+      "purchase_order": null,
+      "purchase_order_reference": null,
+      "sales_order": null,
+      "sales_order_reference": null,
+      "status": 10,
+      "status_text": "OK",
+      "status_custom_key": 10,
+      "supplier_part": null,
+      "SKU": null,
+      "MPN": null,
+      "barcode_hash": "",
+      "creation_date": "2026-10-20 09:47",
+      "stocktake_date": null,
+      "updated": "2026-10-20 09:47",
+      "purchase_price": null,
+      "purchase_price_currency": "USD",
+      "allocated": 0,
+      "expired": false,
+      "installed_items": 0,
+      "child_items": 0,
+      "stale": false,
+      "part_detail": {
+        "pk": 8,
+        "IPN": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "barcode_hash": "",
+        "category_default_location": null,
+        "default_location": null,
+        "default_expiry": 0,
+        "name": "SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "revision": "",
+        "full_name": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c | SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "description": "Retained isolated acceptance",
+        "image": null,
+        "thumbnail": "/static/img/blank_image.thumbnail.png",
+        "active": true,
+        "locked": false,
+        "assembly": false,
+        "component": true,
+        "minimum_stock": "0.000000",
+        "is_template": false,
+        "purchaseable": true,
+        "salable": false,
+        "testable": false,
+        "trackable": false,
+        "virtual": false,
+        "consumable": false,
+        "units": "",
+        "pricing_min": null,
+        "pricing_max": null
+      },
+      "tracking_items": 1
+    },
+    "locations": [
+      {
+        "pk": 308,
+        "barcode_hash": "",
+        "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "level": 0,
+        "description": "",
+        "parent": null,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "items": 1,
+        "sublocations": 4,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": true,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 309,
+        "barcode_hash": "",
+        "name": "Image drawer 1",
+        "level": 1,
+        "description": "",
+        "parent": 308,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+        "items": 1,
+        "sublocations": 1,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": true,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 311,
+        "barcode_hash": "",
+        "name": "Reference bin",
+        "level": 2,
+        "description": "",
+        "parent": 309,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+        "items": 1,
+        "sublocations": 0,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": false,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 310,
+        "barcode_hash": "",
+        "name": "Image drawer 2",
+        "level": 1,
+        "description": "",
+        "parent": 308,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+        "items": 0,
+        "sublocations": 1,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": true,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 312,
+        "barcode_hash": "",
+        "name": "Reference bin",
+        "level": 2,
+        "description": "",
+        "parent": 310,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+        "items": 0,
+        "sublocations": 0,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": false,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      }
+    ]
+  },
+  "after": {
+    "layout": {
+      "schema_version": 1,
+      "cabinet": {
+        "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+        "name": "SL image acceptance 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "slug": "sl-image-635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "revision": 105,
+        "width_units": 600,
+        "height_units": 500,
+        "archived": false,
+        "location": 308,
+        "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+        "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+        "total_pixels": 120,
+        "numbering_base": 1
+      },
+      "drawers": [
+        {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        }
+      ],
+      "bins": [
+        {
+          "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+          "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Reference bin",
+          "location": 312,
+          "x": 60,
+          "y": 55,
+          "width": 105,
+          "height": 90,
+          "archived": false
+        },
+        {
+          "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+          "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Reference bin",
+          "location": 311,
+          "x": 60,
+          "y": 55,
+          "width": 105,
+          "height": 90,
+          "archived": false
+        }
+      ],
+      "archive_ids": [],
+      "diagnostics": {
+        "valid": true,
+        "errors": [],
+        "warnings": [],
+        "unused_ranges": [],
+        "total_pixels": 120,
+        "mapping_hash": "4663e4d0576680e5339f2ac9a1125fda656e6f4678046b7fd61b6b82c2fd9c30",
+        "numbering_base": 1
+      }
+    },
+    "electrical": {
+      "schema_version": 1,
+      "cabinet": {
+        "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+        "revision": 105
+      },
+      "controllers": [
+        {
+          "id": "6034bfcc-d2d5-4762-9d10-04f5a3eb06eb",
+          "name": "Isolated no-contact 635ffee0-94fb-452c-91dd-8ed171f0560c",
+          "origin": "http://192.0.2.1",
+          "expected_mac": null,
+          "firmware_adapter": "wled-v16.0.1-1d",
+          "enabled": false,
+          "status": "unknown",
+          "commissioning_policy": {},
+          "outputs": [
+            {
+              "id": "304492b4-efbe-4b94-a962-6c88bddc893e",
+              "bus_index": 0,
+              "wled_start": 0,
+              "pixel_count": 120,
+              "pins": [
+                16
+              ],
+              "led_type": "22",
+              "colour_order": "GRB",
+              "bus_reverse": false,
+              "skip": 0,
+              "auto_white_mode": 0,
+              "max_current_ma": null,
+              "strings": [
+                {
+                  "id": "9be94472-125d-4e63-b936-ed0ccc63ca78",
+                  "label": "Acceptance string",
+                  "output_offset": 0,
+                  "pixel_count": 120,
+                  "notes": "",
+                  "archived": false
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "archive_ids": []
+    },
+    "bins": [
+      {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 105,
+          "width_units": 600,
+          "height_units": 500,
+          "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+          "total_pixels": 120
+        },
+        "drawer": {
+          "id": "d2959dce-94cc-4d03-8edc-00daa08accad",
+          "label": "Image drawer 1",
+          "display_number": 1,
+          "location": 309,
+          "x": 60,
+          "y": 70,
+          "width": 260,
+          "height": 200,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "f73e4627-0791-4e79-8883-8f863d1e7f49",
+            "logical_start": 1,
+            "logical_end": 60,
+            "pixel_count": 60
+          }
+        },
+        "bins": [
+          {
+            "id": "4fb8ac72-f288-45f7-a897-83d96988fab1",
+            "drawer": "d2959dce-94cc-4d03-8edc-00daa08accad",
+            "label": "Reference bin",
+            "location": 311,
+            "x": 60,
+            "y": 55,
+            "width": 105,
+            "height": 90,
+            "archived": false
+          }
+        ],
+        "archive_ids": []
+      },
+      {
+        "schema_version": 1,
+        "cabinet": {
+          "id": "03551d5b-baf0-40e6-8028-6252d56397ce",
+          "revision": 105,
+          "width_units": 600,
+          "height_units": 500,
+          "active_mapping": "34d92a95-b7ed-4ed7-86f6-798e11bbd9dd",
+          "total_pixels": 120
+        },
+        "drawer": {
+          "id": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+          "label": "Image drawer 2",
+          "display_number": 2,
+          "location": 310,
+          "x": 320,
+          "y": 40,
+          "width": 230,
+          "height": 180,
+          "interior_width": 300,
+          "interior_height": 250,
+          "archived": false,
+          "allocation": {
+            "id": "6206f497-2b84-4c4b-b129-56ae87ba78ca",
+            "logical_start": 61,
+            "logical_end": 120,
+            "pixel_count": 60
+          }
+        },
+        "bins": [
+          {
+            "id": "171b95d0-0711-4b50-95e6-fba9e9310a50",
+            "drawer": "aacce1b1-c5b3-4e75-be5c-f1590937f863",
+            "label": "Reference bin",
+            "location": 312,
+            "x": 60,
+            "y": 55,
+            "width": 105,
+            "height": 90,
+            "archived": false
+          }
+        ],
+        "archive_ids": []
+      }
+    ],
+    "backgrounds": [
+      {
+        "image_url": "/plugin/storage-layout/api/v1/cabinets/03551d5b-baf0-40e6-8028-6252d56397ce/background/content/",
+        "metadata": {
+          "x": 0.16666666666666666,
+          "y": 0.16,
+          "width": 0.6499999999999999,
+          "height": 0.585,
+          "opacity": 0.55,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      {
+        "image_url": "/plugin/storage-layout/api/v1/drawers/d2959dce-94cc-4d03-8edc-00daa08accad/background/content/",
+        "metadata": {
+          "x": 0.21666666666666667,
+          "y": 0.2,
+          "width": 0.7000000000000001,
+          "height": 0.42,
+          "opacity": 0.65,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      },
+      {
+        "image_url": "/plugin/storage-layout/api/v1/drawers/aacce1b1-c5b3-4e75-be5c-f1590937f863/background/content/",
+        "metadata": {
+          "x": 0.21666666666666667,
+          "y": 0.2,
+          "width": 0.7000000000000001,
+          "height": 0.42,
+          "opacity": 0.75,
+          "visible": true,
+          "locked": true,
+          "aspect_locked": true
+        }
+      }
+    ],
+    "stock": {
+      "pk": 8,
+      "part": 8,
+      "quantity": 7,
+      "serial": null,
+      "batch": "",
+      "location": 311,
+      "belongs_to": null,
+      "build": null,
+      "consumed_by": null,
+      "customer": null,
+      "delete_on_deplete": true,
+      "expiry_date": null,
+      "in_stock": true,
+      "is_building": false,
+      "link": "",
+      "owner": null,
+      "packaging": null,
+      "parent": null,
+      "purchase_order": null,
+      "purchase_order_reference": null,
+      "sales_order": null,
+      "sales_order_reference": null,
+      "status": 10,
+      "status_text": "OK",
+      "status_custom_key": 10,
+      "supplier_part": null,
+      "SKU": null,
+      "MPN": null,
+      "barcode_hash": "",
+      "creation_date": "2026-10-20 09:47",
+      "stocktake_date": null,
+      "updated": "2026-10-20 09:47",
+      "purchase_price": null,
+      "purchase_price_currency": "USD",
+      "allocated": 0,
+      "expired": false,
+      "installed_items": 0,
+      "child_items": 0,
+      "stale": false,
+      "part_detail": {
+        "pk": 8,
+        "IPN": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "barcode_hash": "",
+        "category_default_location": null,
+        "default_location": null,
+        "default_expiry": 0,
+        "name": "SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "revision": "",
+        "full_name": "SLIMG-635ffee0-94fb-452c-91dd-8ed171f0560c | SL image 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "description": "Retained isolated acceptance",
+        "image": null,
+        "thumbnail": "/static/img/blank_image.thumbnail.png",
+        "active": true,
+        "locked": false,
+        "assembly": false,
+        "component": true,
+        "minimum_stock": "0.000000",
+        "is_template": false,
+        "purchaseable": true,
+        "salable": false,
+        "testable": false,
+        "trackable": false,
+        "virtual": false,
+        "consumable": false,
+        "units": "",
+        "pricing_min": null,
+        "pricing_max": null
+      },
+      "tracking_items": 1
+    },
+    "locations": [
+      {
+        "pk": 308,
+        "barcode_hash": "",
+        "name": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "level": 0,
+        "description": "",
+        "parent": null,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c",
+        "items": 1,
+        "sublocations": 4,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": true,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 309,
+        "barcode_hash": "",
+        "name": "Image drawer 1",
+        "level": 1,
+        "description": "",
+        "parent": 308,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1",
+        "items": 1,
+        "sublocations": 1,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": true,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 311,
+        "barcode_hash": "",
+        "name": "Reference bin",
+        "level": 2,
+        "description": "",
+        "parent": 309,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 1/Reference bin",
+        "items": 1,
+        "sublocations": 0,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": false,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 310,
+        "barcode_hash": "",
+        "name": "Image drawer 2",
+        "level": 1,
+        "description": "",
+        "parent": 308,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2",
+        "items": 0,
+        "sublocations": 1,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": true,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      },
+      {
+        "pk": 312,
+        "barcode_hash": "",
+        "name": "Reference bin",
+        "level": 2,
+        "description": "",
+        "parent": 310,
+        "pathstring": "SL image isolated 635ffee0-94fb-452c-91dd-8ed171f0560c/Image drawer 2/Reference bin",
+        "items": 0,
+        "sublocations": 0,
+        "owner": null,
+        "icon": "",
+        "custom_icon": null,
+        "structural": false,
+        "external": false,
+        "location_type": null,
+        "location_type_detail": null
+      }
+    ]
+  },
+  "result": "PASS"
+}

@@ -1,6 +1,20 @@
 # My-InvenTree deployment — status and checkpoints
 
-## 002J-Q responsive correction — live follow-up verified (2026-10-20)
+## Current — viewport workspace correction (2026-10-20)
+
+Application `f099aa1d315a20807a88b3c62dc70c8ee4095b5b` is deployed in Development.
+Backend `sha256:65dc0f43f758c78fc7039ca0670f557a57095f99e403779c7a99aca2778910d1`;
+frontend `sha256:592829d518d084ffa7bb1ab42ebcbfe522f3cabdadd9952fab52f0596e59a3c6`.
+Both targets built from committed hash-verified archive. Restricted activation and
+read-only exact verification passed; four services healthy, 0005 applied, gates
+off, mounts/db/redis/unrelated identities unchanged. Rollback tags retained.
+[Full provenance, 22 authenticated browser checks, screenshots and limits](storage-layout/evidence/WORKSPACE-F099AA1D3.md).
+331 frontend tests, typecheck, build and changed-file lint pass; unrelated existing
+full-lint formatting failure documented. No data/schema changes or browser writes.
+Original backup/rehearsal retained; no fresh backup/restore claim. Main/hardware,
+workers, shared records and owner untracked files untouched.
+
+## Historical 002J-Q responsive correction — live follow-up verified (2026-10-20)
 
 Deployed source `19d148233b278a4ef6309555eb2cc36b39c72050`; archive SHA-256
 `9461b1de0e7e6c8efa42bde48576002d38cc828ea0779cd74ff4078c3cab3e73`.
