@@ -13,6 +13,7 @@ import sys
 import tarfile
 import time
 from pathlib import Path
+from textwrap import dedent
 
 os.umask(0o077)
 COMMIT = '56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a'
@@ -28,6 +29,47 @@ NETWORK = 'myinventree-002jq-restore'
 DB = 'myinventree-002jq-restore-db'
 MEDIA = 'myinventree-002jq-restore-media'
 RECORD = Path('/var/backups/myinventree-dev/002jq-56271a1ad-evidence')
+
+
+# Executed verbatim with python -c; local tests compile and run this exact text.
+MEDIA_RESTORE = dedent("""\
+    import hashlib
+    import pathlib
+    import sys
+    import tarfile
+
+    root = pathlib.Path(sys.argv[1]) if len(sys.argv) == 2 else pathlib.Path('/data')
+    root = root.resolve(strict=True)
+    seen = set()
+    with tarfile.open(fileobj=sys.stdin.buffer, mode='r|') as archive:
+        for member in archive:
+            path = pathlib.PurePosixPath(member.name)
+            if (path.is_absolute() or not path.parts or path.parts[0] != 'data'
+                    or '..' in path.parts or not (member.isfile() or member.isdir())):
+                raise ValueError('unsafe archive entry')
+            dest = root.joinpath(*path.parts[1:])
+            if not dest.resolve().is_relative_to(root):
+                raise ValueError('archive destination escapes root')
+            if dest in seen:
+                raise ValueError('duplicate archive entry')
+            seen.add(dest)
+            if member.isdir():
+                dest.mkdir(parents=True, exist_ok=True)
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            digest = hashlib.sha256()
+            with archive.extractfile(member) as source, dest.open('xb') as target:
+                while chunk := source.read(1048576):
+                    digest.update(chunk)
+                    target.write(chunk)
+            with dest.open('rb') as restored:
+                if hashlib.file_digest(restored, 'sha256').digest() != digest.digest():
+                    raise ValueError('restored bytes mismatch')
+    for key in ('secret_key.txt', 'oidc.pem'):
+        if not (root / key).is_file():
+            raise ValueError('missing expected key: ' + key)
+    print('PASS full scratch media/key restore and byte verification')
+""")
 
 
 def run(*args, **kw):
@@ -183,11 +225,16 @@ def recover_originals(reset_tags=True):
     errors = []
     for service in ('backend', 'proxy'):
         try:
-            c = inspect('myinventree-dev-' + service + '-1')
+            try:
+                c = inspect('myinventree-dev-' + service + '-1')
+            except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+                # Recover only the recorded original, never an unverified name.
+                c = inspect(before[service]['Id'])
             assert c['Id'] == before[service]['Id'] and c['Image'] == BASE[service], (
                 'original replaced; recovery forbidden'
             )
-            docker('start', c['Id'], timeout=45)
+            if c['State']['Status'] != 'running':
+                docker('start', c['Id'], timeout=45)
         except BaseException as error:
             errors.append(error)
     if reset_tags:
@@ -208,7 +255,14 @@ def recover_originals(reset_tags=True):
             for service in SERVICES:
                 healthy(service, before[service]['Image'])
             break
-        except (AssertionError, subprocess.SubprocessError):
+        except (
+            AssertionError,
+            OSError,
+            ValueError,
+            KeyError,
+            IndexError,
+            subprocess.SubprocessError,
+        ):
             if time.monotonic() >= deadline:
                 errors.append(RuntimeError('original service health deadline exceeded'))
                 break
@@ -419,25 +473,7 @@ def prepare():
                 stdin=data,
             )
         # Restore every app-data member to scratch volume; validate every file hash.
-        restore = """import tarfile,sys,hashlib,pathlib
-    with tarfile.open(fileobj=sys.stdin.buffer,mode='r|') as t:
-     for m in t:
-      p=pathlib.PurePosixPath(m.name)
-      assert p.parts[0]=='data' and '..' not in p.parts
-      assert m.isfile() or m.isdir(), 'unexpected link/device in backup'
-      dest=pathlib.Path('/data').joinpath(*p.parts[1:])
-      if m.isdir(): dest.mkdir(parents=True,exist_ok=True)
-      else:
-       dest.parent.mkdir(parents=True,exist_ok=True)
-       h=hashlib.sha256()
-       with dest.open('xb') as o:
-        s=t.extractfile(m)
-        while b:=s.read(1048576): h.update(b);o.write(b)
-       assert hashlib.file_digest(dest.open('rb'),'sha256').digest()==h.digest()
-    assert pathlib.Path('/data/secret_key.txt').is_file()
-    assert pathlib.Path('/data/oidc.pem').is_file()
-    print('PASS full scratch media/key restore and byte verification')
-    """
+
         with (
             (backup / 'app-data.tar').open('rb') as data,
             (RECORD / 'media-restore.log').open('xb') as log,
@@ -460,7 +496,7 @@ def prepare():
                 'python',
                 images['backend'],
                 '-c',
-                restore,
+                MEDIA_RESTORE,
                 stdin=data,
                 stdout=log,
             )

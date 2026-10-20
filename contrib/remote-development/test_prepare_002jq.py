@@ -1,7 +1,11 @@
 """Local-only tests: every external process is forbidden unless explicitly mocked."""
 
 import importlib.util
+import io
 import json
+import subprocess
+import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -27,7 +31,12 @@ class PreparationTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.m.RECORD = Path(self.tmp.name)
         self.before = {
-            s: {'Id': s, 'Image': self.m.BASE.get(s, s), 'Mounts': []}
+            s: {
+                'Id': s,
+                'Image': self.m.BASE.get(s, s),
+                'Mounts': [],
+                'State': {'Status': 'exited'},
+            }
             for s in self.m.SERVICES
         }
         (self.m.RECORD / 'runtime-before.json').write_text(json.dumps(self.before))
@@ -84,6 +93,132 @@ class PreparationTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 self.m.recover_originals(False)
         docker.assert_not_called()
+
+    def test_recovery_running_is_idempotent(self):
+        """Never start an already-running original, including repeated recovery."""
+        for row in self.before.values():
+            row['State']['Status'] = 'running'
+        with (
+            patch.object(
+                self.m,
+                'inspect',
+                side_effect=lambda name: self.before[
+                    'backend' if 'backend' in name else 'proxy'
+                ],
+            ),
+            patch.object(self.m, 'docker') as docker,
+            patch.object(self.m, 'healthy'),
+        ):
+            self.m.recover_originals(False)
+            self.m.recover_originals(False)
+        docker.assert_not_called()
+
+    def test_recovery_inspection_failure_uses_recorded_id(self):
+        """A failed name lookup can only fall back to the original ID."""
+
+        def lookup(name):
+            if name.startswith('myinventree-'):
+                raise subprocess.CalledProcessError(1, 'inspect')
+            return self.before[name]
+
+        with (
+            patch.object(self.m, 'inspect', side_effect=lookup),
+            patch.object(self.m, 'docker') as docker,
+            patch.object(
+                self.m,
+                'healthy',
+                side_effect=[ValueError('bad JSON'), None, None, None, None],
+            ),
+            patch.object(self.m.time, 'sleep'),
+        ):
+            self.m.recover_originals(False)
+        self.assertEqual(
+            [call.args for call in docker.call_args_list],
+            [('start', 'backend'), ('start', 'proxy')],
+        )
+
+    def test_recovery_both_inspections_fail_still_checks_health(self):
+        """Inspection errors are collected without skipping other services."""
+        with (
+            patch.object(
+                self.m, 'inspect', side_effect=ValueError('bad JSON')
+            ) as inspect,
+            patch.object(self.m, 'docker') as docker,
+            patch.object(self.m, 'healthy') as health,
+        ):
+            with self.assertRaisesRegex(RuntimeError, 'incomplete'):
+                self.m.recover_originals(False)
+        self.assertEqual(inspect.call_count, 4)
+        self.assertEqual(health.call_count, 4)
+        docker.assert_not_called()
+
+    def test_media_restore_exact_program(self):
+        """Compile and execute the deployed -c text using only disposable files."""
+        compile(self.m.MEDIA_RESTORE, '<media-restore>', 'exec')
+        # Explicitly allow only the local Python child for this isolated test.
+        self.external.stop()
+
+        def execute(entries):
+            data = io.BytesIO()
+            with tarfile.open(fileobj=data, mode='w') as archive:
+                for name, kind, content in entries:
+                    member = tarfile.TarInfo(name)
+                    member.type = kind
+                    member.size = len(content) if kind == tarfile.REGTYPE else 0
+                    if kind in (tarfile.SYMTYPE, tarfile.LNKTYPE):
+                        member.linkname = '/tmp/outside'
+                    archive.addfile(member, io.BytesIO(content))
+            destination = Path(tempfile.mkdtemp(dir=self.tmp.name))
+            result = subprocess.run(
+                [sys.executable, '-c', self.m.MEDIA_RESTORE, str(destination)],
+                input=data.getvalue(),
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+            return result, destination
+
+        normal = [
+            ('data', tarfile.DIRTYPE, b''),
+            ('data/media', tarfile.DIRTYPE, b''),
+            ('data/media/image.png', tarfile.REGTYPE, bytes(range(256)) * 5000),
+            ('data/media/empty', tarfile.REGTYPE, b''),
+            ('data/secret_key.txt', tarfile.REGTYPE, b'disposable secret'),
+            ('data/oidc.pem', tarfile.REGTYPE, b'disposable key'),
+        ]
+        result, dest = execute(normal)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b'PASS full scratch', result.stdout)
+        for name, kind, content in normal:
+            path = dest.joinpath(*Path(name).parts[1:])
+            if kind == tarfile.DIRTYPE:
+                self.assertTrue(path.is_dir())
+            else:
+                self.assertEqual(path.read_bytes(), content)
+        for key in ('secret_key.txt', 'oidc.pem'):
+            with self.subTest(missing=key):
+                result, _ = execute([
+                    entry for entry in normal if entry[0] != 'data/' + key
+                ])
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(b'missing expected key', result.stderr)
+        for name, kind in [
+            ('../outside', tarfile.REGTYPE),
+            ('data/../outside', tarfile.REGTYPE),
+            ('/data/outside', tarfile.REGTYPE),
+            ('other/file', tarfile.REGTYPE),
+            ('data/link', tarfile.SYMTYPE),
+            ('data/hard', tarfile.LNKTYPE),
+            ('data/device', tarfile.CHRTYPE),
+            ('data/fifo', tarfile.FIFOTYPE),
+        ]:
+            with self.subTest(name=name, kind=kind):
+                result, _ = execute([(name, kind, b'')])
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(b'unsafe archive entry', result.stderr)
+        result, _ = execute([*normal, normal[-1]])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b'duplicate archive entry', result.stderr)
 
     def test_health_missing_wrong_image_or_stopped_rejected(self):
         """Reject missing health, incorrect images and stopped containers."""

@@ -156,16 +156,49 @@ command (requires explicit approval; never run after `up` has begun) is:
 ssh -o BatchMode=yes -o StrictHostKeyChecking=yes spetchal@mainserver-1 'sudo -n python3 /home/spetchal/prepare-002jq.py recover-originals'
 ```
 
-It requires recorded original container identities, attempts both original starts,
+It requires recorded original container identities, skips already-running originals,
+attempts starts for stopped originals (falling back to verified recorded IDs if
+name inspection fails),
 restores baseline review tags, and checks all four original image/health states.
 It never recreates containers or restores live data. If it refuses or fails, retain
 private evidence and obtain a new bounded diagnostic/recovery approval.
 
+### Restore execution correction — local verification
+
+Application commit remains `56271a1ada6d531ac264cf6cfc98b7b6c9aecc8a`;
+application archive remains `0bee583df53713b8a6c92506ec41bfb3ffd385646977c0d5493f6ff87916c4ad`.
+Corrected `prepare-002jq.py` SHA-256:
+`73244d398456fa9e2824f7d3c5f7caca26ac4a38b36d048ceffcb2a26ef68236`.
+
+`MEDIA_RESTORE` is a dedented module-level constant, passed verbatim as one
+`python -c` argument in the isolated container. The test compiles and actually
+executes the same text with the local Python interpreter, streamed disposable tar
+input and a temporary destination. It verifies directory creation, empty files,
+multi-chunk binary file bytes, both required keys, missing-key failures, duplicate
+entries, traversal/absolute/wrong-root paths, symlinks, hardlinks, devices and FIFOs.
+No additional module transfer or change to the pinned image input is required.
+
+The full local deployment suite passes **28 tests**. Ruff check/format, py_compile
+and diff whitespace checks pass. Recovery tests cover repeated already-running
+recovery, recorded-ID fallback, failed inspections, independent start attempts,
+health retries/deadlines and refusal to start replacement containers. Independent
+read-only review found no concrete blocker. No other embedded Python program is
+present in the orchestrator: other `-c` arguments are SQL passed to `psql`;
+scratch management uses `python manage.py` with separate argv items. Subprocess
+operations retain their bounded timeouts and no shell interpretation is added.
+
+The graphical Storage Layout guide was reviewed; no update is needed for this
+deployment-tool-only correction. No application files were changed. Existing
+host-side proposal commands above remain gated and are **not executed**. Local
+execution resolves the indentation blocker, not the Docker/backup/media rehearsal
+or live acceptance gates below.
+
 ### Untested limits and residual risks
 
-- Local mocks/static checks only: no Docker, host, backup, restore, build,
-  migration, deployment, restricted SSH or authenticated browser validation was
-  performed for this correction. Historical inspection is not current acceptance.
+- Local mocks/static checks plus an actual disposable Python media-restore test
+  only: no Docker, remote host, live backup/restore, build, migration, deployment,
+  restricted SSH or authenticated browser validation was performed for this
+  correction. Historical inspection is not current acceptance.
 - Host commands default to 900 seconds; inspection/SQL to 30 seconds; recovery
   starts to 45 seconds each. Health retries stop after a 240-second monotonic
   window, plus in-flight bounded inspections. These are per-operation limits,
