@@ -25,3 +25,18 @@ on reload and its drawer PUT stores bins but ignores drawer properties and
 replaces bins across drawers. Strengthen isolated harness persistence and
 cross-drawer isolation before claiming new browser persistence acceptance.
 Live ownership and 390px object gestures remain unverified as previously recorded.
+
+## Isolated browser follow-up
+
+PR #1 is confirmed MERGED on GitHub at
+9044b4080ed0b0c810ae41138e5513b4c1d3d658.
+ passed all 17
+Chromium tests against the local in-memory harness and production bundle. This
+includes zoomed canvas resize/capture, drawer drag and numeric edits with undo,
+CAS Save, stale-save draft retention, bin grid editing and topology ETag
+propagation. All diagnostic/mapping requests were fixture simulations, never
+live hardware. Build/translation preparation completed successfully.
+
+This resumes but does not complete 002J-K: the harness reload/drawer persistence
+gaps described above still need focused repair and regression tests; no new
+live refresh/restart, cross-owner or 390px acceptance is claimed.
