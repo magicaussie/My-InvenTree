@@ -526,11 +526,15 @@ function largeState(): MockState {
 }
 
 export function createMockApi(options: MockOptions = {}): MockApi {
-  const state = options.large ? largeState() : initialState();
+  // sessionStorage survives reload/navigation but is isolated by browser context
+  // (and tab), so Playwright tests never inherit another test's saved fixture.
+  const storageKey = `storage-layout-harness-v1-${options.large ? 'large' : 'default'}`;
+  const stored = sessionStorage.getItem(storageKey);
+  const snapshot = stored ? JSON.parse(stored) : null;
+  const state: MockState = snapshot?.state ?? (options.large ? largeState() : initialState());
   const calls: MockCall[] = [];
   const backgrounds = new Map<string, { image_url: string | null; metadata: Record<string, unknown> }>();
-  const storedBackgrounds = sessionStorage.getItem('storage-layout-harness-backgrounds');
-  if (storedBackgrounds) for (const [key, value] of JSON.parse(storedBackgrounds)) backgrounds.set(key, value);
+  if (snapshot?.backgrounds) for (const [key, value] of snapshot.backgrounds) backgrounds.set(key, value);
   const defaultBackground = () => ({ image_url: null, metadata: { x: 0, y: 0, width: 1, height: 1, opacity: 0.5, visible: true, locked: true, aspect_locked: true } });
 
 
@@ -588,7 +592,7 @@ export function createMockApi(options: MockOptions = {}): MockApi {
         if (method === 'POST') value.image_url = `${BASE}${path}content/`;
         if (method === 'DELETE') value.image_url = null;
         backgrounds.set(key, value);
-        sessionStorage.setItem('storage-layout-harness-backgrounds', JSON.stringify([...backgrounds]));
+
         state.revision += 1;
       }
       return { ...ok(structuredClone(value)), headers: { etag: `"${state.revision}"` } };
@@ -790,9 +794,19 @@ export function createMockApi(options: MockOptions = {}): MockApi {
 
     if (method === 'PUT' && /^\/drawers\/[^/]+\/layout\/$/.test(path)) {
       requireMatch(config);
-      state.bins = mapBins((doc.bins ?? []) as Record<string, unknown>[]);
+      const id = path.split('/')[2];
+      const drawer = state.drawers.find((entry) => entry.id === id);
+      if (!drawer) throw new HttpError(404, { code: 'not_found' });
+      const properties = (doc.drawer ?? {}) as Record<string, unknown>;
+      for (const key of ['label', 'display_number', 'interior_width', 'interior_height'] as const) {
+        if (properties[key] !== undefined) Object.assign(drawer, { [key]: properties[key] });
+      }
+      state.bins = [
+        ...state.bins.filter((bin) => bin.drawer !== id),
+        ...mapBins((doc.bins ?? []) as Record<string, unknown>[]).map((bin) => ({ ...bin, drawer: id }))
+      ];
       state.revision += 1;
-      const response = ok(drawerLayoutDocument(state, path.split('/')[2]));
+      const response = ok(drawerLayoutDocument(state, id));
       response.headers = etagHeaders(state.revision);
       return response;
     }
@@ -983,7 +997,13 @@ export function createMockApi(options: MockOptions = {}): MockApi {
         | undefined;
       calls.push({ method, url, body, headers: config?.headers });
       await Promise.resolve();
-      return handle(method, url, body, config);
+      const response = handle(method, url, body, config);
+      sessionStorage.setItem(storageKey, JSON.stringify({
+        state: { ...state, nextSaveStatus: null },
+        backgrounds: [...backgrounds]
+      }));
+      // HTTP responses must not share mutable objects with the saved fixture.
+      return structuredClone(response);
     };
   }
 

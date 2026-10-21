@@ -58,22 +58,27 @@ export function recordedCalls(page: Page): Promise<RecordedCall[]> {
 /** Drag by logical canvas units, independent of fit and zoom. */
 export async function dragFirstEntity(page: Page, dx: number, dy: number) {
   const rect = page.locator('rect[style*="move"]').first();
-  const box = await rect.boundingBox();
-  if (!box) throw new Error('entity rectangle has no bounding box');
-
-  const startX = box.x + Math.min(8, box.width / 4);
-  const startY = box.y + Math.min(8, box.height / 4);
-
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
-  const delta = await rect.evaluate((element, offset) => {
+  // Wait for scrolling, initial fit and hit testing before sampling coordinates.
+  // Raw mouse input does not perform Playwright's actionability checks.
+  await rect.click({ trial: true });
+  const { start, delta } = await rect.evaluate((element, offset) => {
     const matrix = element.getScreenCTM();
     if (!matrix) throw new Error('entity has no screen transform');
+    const bounds = element.getBBox();
+    const point = new DOMPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2).matrixTransform(matrix);
+    if (document.elementFromPoint(point.x, point.y) !== element) {
+      throw new Error('entity drag start is intercepted');
+    }
     return {
-      x: matrix.a * offset.dx + matrix.c * offset.dy,
-      y: matrix.b * offset.dx + matrix.d * offset.dy
+      start: { x: point.x, y: point.y },
+      delta: {
+        x: matrix.a * offset.dx + matrix.c * offset.dy,
+        y: matrix.b * offset.dx + matrix.d * offset.dy
+      }
     };
   }, { dx, dy });
-  await page.mouse.move(startX + delta.x, startY + delta.y, { steps: 8 });
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 8 });
   await page.mouse.up();
 }
