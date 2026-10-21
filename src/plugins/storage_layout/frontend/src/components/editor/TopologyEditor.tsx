@@ -111,10 +111,12 @@ export function TopologyEditor({
   );
   const [message, setMessage] = useState<string | null>(null);
   const [saveErrors, setSaveErrors] = useState<string[]>([]);
+  const [messageKind, setMessageKind] = useState<'success' | 'error'>('error');
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setStatus('loading');
+    setMessageKind('error');
     setSaveErrors([]);
     setMessage(null);
     try {
@@ -237,6 +239,7 @@ export function TopologyEditor({
   const save = async () => {
     if (readOnly || layoutDirty) return;
     setSaving(true);
+    setMessageKind('error');
     setMessage(null);
     setSaveErrors([]);
     try {
@@ -254,6 +257,7 @@ export function TopologyEditor({
         etag: result.etag ?? `"${result.data.cabinet.revision}"`
       });
       setSaveErrors([]);
+      setMessageKind('success');
       setMessage(t`Electrical topology saved.`);
     } catch (error) {
       const apiError =
@@ -316,7 +320,7 @@ export function TopologyEditor({
 
       {message ? (
         <Alert
-          color={saveErrors.length > 0 || status === 'error' || message !== t`Electrical topology saved.` ? 'red' : 'green'}
+          color={messageKind === 'error' ? 'red' : 'green'}
           onClose={() => { setMessage(null); setSaveErrors([]); }}
           withCloseButton
           role='alert'
