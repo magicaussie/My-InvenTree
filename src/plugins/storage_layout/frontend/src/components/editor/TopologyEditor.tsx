@@ -110,10 +110,13 @@ export function TopologyEditor({
     'loading'
   );
   const [message, setMessage] = useState<string | null>(null);
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setStatus('loading');
+    setSaveErrors([]);
+    setMessage(null);
     try {
       const result = await client.getElectrical(cabinetId);
       setDocument({
@@ -235,6 +238,7 @@ export function TopologyEditor({
     if (readOnly || layoutDirty) return;
     setSaving(true);
     setMessage(null);
+    setSaveErrors([]);
     try {
       const result = await client.saveElectrical(cabinetId, document, etag);
       setDocument({
@@ -249,6 +253,7 @@ export function TopologyEditor({
         revision: result.data.cabinet.revision,
         etag: result.etag ?? `"${result.data.cabinet.revision}"`
       });
+      setSaveErrors([]);
       setMessage(t`Electrical topology saved.`);
     } catch (error) {
       const apiError =
@@ -259,6 +264,13 @@ export function TopologyEditor({
         apiError.isStale
           ? t`Stale revision: reload before saving the electrical topology.`
           : apiError.message
+      );
+      setSaveErrors(
+        apiError.details.map((detail) =>
+          [detail.path, detail.message ?? detail.code]
+            .filter(Boolean)
+            .join(': ')
+        ).filter(Boolean)
       );
     } finally {
       setSaving(false);
@@ -303,8 +315,20 @@ export function TopologyEditor({
       ) : null}
 
       {message ? (
-        <Alert color='blue' onClose={() => setMessage(null)} withCloseButton>
-          {message}
+        <Alert
+          color={saveErrors.length > 0 || status === 'error' || message !== t`Electrical topology saved.` ? 'red' : 'green'}
+          onClose={() => { setMessage(null); setSaveErrors([]); }}
+          withCloseButton
+          role='alert'
+        >
+          <Text>{message}</Text>
+          {saveErrors.length > 0 ? (
+            <Stack gap={4} mt='xs'>
+              {saveErrors.map((detail, index) => (
+                <Text size='sm' key={`${index}-${detail}`}>{detail}</Text>
+              ))}
+            </Stack>
+          ) : null}
         </Alert>
       ) : null}
 
